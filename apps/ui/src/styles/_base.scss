@@ -1,0 +1,84 @@
+// Temi, reset e font. Caricato una volta da main.scss.
+@use 'sass:map';
+@use 'tokens' as *;
+
+@font-face {
+  font-family: 'Geist Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/geist/files/geist-latin-wght-normal.woff2') format('woff2-variations');
+}
+
+@mixin theme-vars($name) {
+  @each $key, $value in map.get($themes, $name) {
+    --#{$key}: #{$value};
+  }
+}
+
+:root {
+  --t-fast: 120ms;
+  --t-panel: 200ms;
+  --t-modal: 320ms;
+  color-scheme: dark;
+  @include theme-vars(dark);
+
+  &[data-theme='light'] {
+    color-scheme: light;
+    @include theme-vars(light);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    --t-fast: 0ms;
+    --t-panel: 0ms;
+    --t-modal: 0ms;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: $bg-0;
+  color: $text-1;
+  font: 450 #{$fs-body}/20px $font;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  overflow: hidden;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+input,
+textarea,
+select {
+  user-select: text;
+}
+
+::selection {
+  background: $ember-glow;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

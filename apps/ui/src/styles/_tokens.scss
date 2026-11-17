@@ -1,0 +1,114 @@
+// Token del design system (DESIGN_SYSTEM.md). Le variabili SCSS puntano
+// a custom property CSS: il tema cambia con data-theme su <html>.
+@use 'sass:map';
+
+// Colori
+$bg-0: var(--bg-0);
+$bg-1: var(--bg-1);
+$bg-2: var(--bg-2);
+$bg-3: var(--bg-3);
+$line: var(--line);
+$text-1: var(--text-1);
+$text-2: var(--text-2);
+$text-3: var(--text-3);
+$ember-400: var(--ember-400);
+$ember-500: var(--ember-500);
+$ember-600: var(--ember-600);
+$ember-glow: var(--ember-glow);
+$on-ember: var(--on-ember);
+$ok: var(--ok);
+$busy: var(--busy);
+$danger: var(--danger);
+$scrim: var(--scrim);
+
+// Valori grezzi per tema, usati solo da _base.scss
+$themes: (
+  dark: (
+    bg-0: #0e0d0c,
+    bg-1: #161412,
+    bg-2: #1f1c19,
+    bg-3: #2a2622,
+    line: #34302b,
+    text-1: #f4efe9,
+    text-2: #b3aa9f,
+    text-3: #7d756c,
+    ember-400: #ff8a4c,
+    ember-500: #ff6a2b,
+    ember-600: #e2541a,
+    ember-glow: rgba(255, 106, 43, 0.35),
+    on-ember: #0e0d0c,
+    ok: #3ddc84,
+    busy: #f5b83d,
+    danger: #ff4d5e,
+    scrim: rgba(0, 0, 0, 0.55),
+  ),
+  light: (
+    bg-0: #f7f4f0,
+    bg-1: #ffffff,
+    bg-2: #fbf9f6,
+    bg-3: #efeae4,
+    line: #e3ddd5,
+    text-1: #1a1714,
+    text-2: #5e564d,
+    text-3: #736a61,
+    ember-400: #f06b32,
+    ember-500: #e8561c,
+    ember-600: #c9460f,
+    ember-glow: rgba(232, 86, 28, 0.28),
+    on-ember: #0e0d0c,
+    ok: #1e9e5a,
+    busy: #b7791f,
+    danger: #d93848,
+    scrim: rgba(26, 23, 20, 0.35),
+  ),
+);
+
+// Tipografia
+$font: 'Geist Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+$fs-display: 32px;
+$fs-h1: 24px;
+$fs-h2: 18px;
+$fs-body: 14px;
+$fs-small: 13px;
+$fs-label: 11px;
+
+// Spaziatura, base 4
+$sp-1: 4px;
+$sp-2: 8px;
+$sp-3: 12px;
+$sp-4: 16px;
+$sp-5: 20px;
+$sp-6: 24px;
+$sp-7: 32px;
+$sp-8: 40px;
+$sp-9: 56px;
+
+// Raggi
+$r-field: 6px;
+$r-button: 10px;
+$r-card: 14px;
+$r-modal: 20px;
+$r-pill: 999px;
+
+// Movimento
+$t-fast: var(--t-fast);
+$t-panel: var(--t-panel);
+$t-modal: var(--t-modal);
+$ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+// Struttura
+$sidebar-w: 72px;
+$detail-w: 320px;
+$titlebar-h: 40px;
+$control-h: 40px;
+
+// Punti di rottura (larghezza finestra)
+$breakpoints: (
+  sm: 1040px,
+  md: 1280px,
+  lg: 1600px,
+);
+
+@function theme($name, $key) {
+  @return map.get(map.get($themes, $name), $key);
+}

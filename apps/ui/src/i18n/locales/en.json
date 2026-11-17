@@ -1,0 +1,111 @@
+{
+  "app": {
+    "name": "Falò",
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "close": "Close"
+  },
+  "nav": {
+    "friends": "Friends",
+    "host": "Host",
+    "invites": "Invites",
+    "settings": "Settings",
+    "me": "Your profile"
+  },
+  "status": {
+    "online": "Online",
+    "busy": "Busy",
+    "invisible": "Invisible"
+  },
+  "friends": {
+    "title": "Friends",
+    "search": "Search friends",
+    "invite": "Invite",
+    "emptyTitle": "Your friends will show up here",
+    "emptyBody": "Send them an invite on Discord or WhatsApp: one click from them, two from you, and you're ready to play.",
+    "emptyAction": "Invite your first friend"
+  },
+  "host": {
+    "title": "Host",
+    "available": "Available to friends",
+    "availableHint": "Friends can see you and ask to join. When you're not available, the streaming engine is off.",
+    "apps": "Games and apps",
+    "desktop": "Desktop",
+    "noSession": "No active session"
+  },
+  "invites": {
+    "title": "Invites",
+    "emptyTitle": "No active invites",
+    "emptyBody": "Invites you create show up here, with uses left and expiry. You can revoke them any time."
+  },
+  "settings": {
+    "title": "Settings",
+    "tabs": {
+      "profile": "Profile",
+      "streaming": "Streaming",
+      "network": "Network",
+      "host": "Host",
+      "permissions": "Default permissions",
+      "advanced": "Advanced",
+      "about": "About"
+    },
+    "language": "Language",
+    "theme": "Theme",
+    "themes": {
+      "system": "Match system",
+      "dark": "Dark",
+      "light": "Light"
+    },
+    "status": "Status",
+    "saved": "Saved",
+    "applyAt": {
+      "now": "Right away",
+      "nextSession": "From the next session",
+      "hostRestart": "When hosting restarts"
+    },
+    "version": "Version {version} · milestone {milestone}",
+    "license": "Free software under the GPL-3.0 license.",
+    "soon": "Coming with milestone {milestone}."
+  },
+  "doctor": {
+    "title": "Network doctor",
+    "rerun": "Run again",
+    "running": "Checking…",
+    "level": {
+      "ok": "All good",
+      "warn": "Worth a look",
+      "fail": "Problem",
+      "pending": "Coming soon"
+    },
+    "check": {
+      "tailscaleInstalled": "Tailscale installed",
+      "tailscaleRunning": "Tailscale connected",
+      "exitNode": "Exit node active",
+      "peersRelay": "Friends reached via relay",
+      "udp": "UDP reachability",
+      "sunshinePorts": "Streaming ports",
+      "bandwidth": "Bandwidth",
+      "jitter": "Line stability",
+      "localSetup": "Local setup"
+    },
+    "action": {
+      "installTailscale": "Install Tailscale from the official site, then reopen Falò.",
+      "loginTailscale": "Sign in to Tailscale with Google, Microsoft or GitHub.",
+      "startTailscale": "Open Tailscale and press “Connect”.",
+      "disableExitNode": "Turn off the exit node while playing: it adds latency.",
+      "enableUpnp": "Enable UPnP on your router, or forward UDP port 41641 to the host PC."
+    }
+  },
+  "core": {
+    "offlineTitle": "I can't reach Falò.",
+    "offlineWhy": "The background service seems to be closed.",
+    "offlineFix": "Reopen it from the Start menu or Launchpad: this window reconnects on its own."
+  },
+  "errors": {
+    "notImplemented": "This feature arrives with milestone {milestone}."
+  },
+  "ping": {
+    "direct": "direct",
+    "relay": "relay"
+  }
+}

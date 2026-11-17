@@ -1,0 +1,17 @@
+[package]
+name = "falo-store"
+description = "Persistenza di Falò: config.toml validato e SQLite con migrazioni"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+toml_edit.workspace = true
+rusqlite.workspace = true
+tempfile.workspace = true
+
+[lints]
+workspace = true

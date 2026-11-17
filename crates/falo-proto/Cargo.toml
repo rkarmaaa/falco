@@ -1,0 +1,30 @@
+[package]
+name = "falo-proto"
+description = "Tipi condivisi di Falò: identità, profili, permessi, inviti, schema IPC"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+serde_json_canonicalizer.workspace = true
+thiserror.workspace = true
+ed25519-dalek.workspace = true
+rand.workspace = true
+sha2.workspace = true
+data-encoding.workspace = true
+zstd.workspace = true
+directories.workspace = true
+interprocess = { workspace = true, optional = true }
+tokio = { workspace = true, optional = true, features = ["io-util"] }
+
+[target.'cfg(windows)'.dependencies]
+widestring = { version = "1", optional = true }
+
+[features]
+# Trasporto IPC locale (named pipe / socket Unix), usato da core e UI
+transport = ["dep:interprocess", "dep:tokio", "dep:widestring"]
+
+[lints]
+workspace = true

@@ -1,0 +1,60 @@
+# config.toml di Falò, gestito dal core
+schema = 1
+
+[general]
+language = "it"              # it | en
+updates = "auto"             # auto | notify | off
+theme = "system"             # system | dark | light
+start_with_system = true
+start_minimized = true
+close_to_tray = true
+
+[profile]
+status = "online"            # online | busy | invisible
+
+[stream]                     # lato ospite
+resolution = "auto"          # auto | "1280x720" | "1920x1080" | "2560x1440" | "3840x2160"
+fps = "auto"                 # auto | 30 | 60 | 90 | 120
+codec = "auto"               # auto | h264 | hevc | av1
+bitrate_mode = "auto"        # auto | fixed
+bitrate_kbps = 30000
+display_mode = "borderless"  # fullscreen | borderless | windowed
+vsync = false
+frame_pacing = true
+audio = "stereo"             # stereo | 5.1 | 7.1
+capture_system_keys = "fullscreen"  # never | fullscreen | always
+overlay = "auto"             # auto | always | never
+
+[host]
+available_on_start = false
+max_guests = 3
+encoder = "auto"             # auto | amf | nvenc | quicksync | videotoolbox | software
+default_role = "spettatore"  # spettatore | giocatore | copilota | fidato
+knock_timeout_s = 30
+apps_autodetect = true
+
+[network]
+provider = "tailscale"       # tailscale | lan | direct | headscale
+presence_port = 47900
+sunshine_base_port = 47989
+address_family = "both"      # ipv4 | ipv6 | both
+upnp = false
+fec_percent = 20
+relay_bitrate_cap_kbps = 8000
+qos_dscp = true
+firewall_scope = "tailnet"   # tailnet | tailnet+lan
+connect_timeout_s = 10
+reconnect_attempts = 3
+warn_exit_node = true
+headscale_url = ""
+
+[performance]
+raise_priority = true
+warn_on_battery = true
+poll_ui_s = 15
+poll_tray_s = 60
+
+[advanced]
+log_level = "warn"           # error | warn | info | debug
+sunshine_overrides = {}      # chiavi grezze aggiunte a sunshine.conf
+moonlight_extra_args = []

@@ -1,0 +1,111 @@
+{
+  "app": {
+    "name": "Falò",
+    "minimize": "Riduci a icona",
+    "maximize": "Ingrandisci",
+    "close": "Chiudi"
+  },
+  "nav": {
+    "friends": "Amici",
+    "host": "Ospita",
+    "invites": "Inviti",
+    "settings": "Impostazioni",
+    "me": "Il tuo profilo"
+  },
+  "status": {
+    "online": "Online",
+    "busy": "Occupato",
+    "invisible": "Invisibile"
+  },
+  "friends": {
+    "title": "Amici",
+    "search": "Cerca un amico",
+    "invite": "Invita",
+    "emptyTitle": "Qui saranno i tuoi amici",
+    "emptyBody": "Mandagli un invito su Discord o WhatsApp: con un clic loro e due tuoi siete pronti a giocare.",
+    "emptyAction": "Invita il primo"
+  },
+  "host": {
+    "title": "Ospita",
+    "available": "Disponibile per gli amici",
+    "availableHint": "Gli amici ti vedono e possono chiedere di entrare. Quando non lo sei, il motore di streaming è spento.",
+    "apps": "Giochi e app",
+    "desktop": "Desktop",
+    "noSession": "Nessuna sessione attiva"
+  },
+  "invites": {
+    "title": "Inviti",
+    "emptyTitle": "Nessun invito attivo",
+    "emptyBody": "Gli inviti che crei compaiono qui, con usi rimasti e scadenza. Puoi revocarli quando vuoi."
+  },
+  "settings": {
+    "title": "Impostazioni",
+    "tabs": {
+      "profile": "Profilo",
+      "streaming": "Streaming",
+      "network": "Rete",
+      "host": "Host",
+      "permissions": "Permessi predefiniti",
+      "advanced": "Avanzate",
+      "about": "Info"
+    },
+    "language": "Lingua",
+    "theme": "Tema",
+    "themes": {
+      "system": "Come il sistema",
+      "dark": "Scuro",
+      "light": "Chiaro"
+    },
+    "status": "Stato",
+    "saved": "Salvato",
+    "applyAt": {
+      "now": "Subito",
+      "nextSession": "Dalla prossima sessione",
+      "hostRestart": "Al riavvio dell'host"
+    },
+    "version": "Versione {version} · milestone {milestone}",
+    "license": "Software libero sotto licenza GPL-3.0.",
+    "soon": "Arriva con la milestone {milestone}."
+  },
+  "doctor": {
+    "title": "Dottore di rete",
+    "rerun": "Ripeti il test",
+    "running": "Controllo in corso…",
+    "level": {
+      "ok": "Tutto bene",
+      "warn": "Da controllare",
+      "fail": "Problema",
+      "pending": "In arrivo"
+    },
+    "check": {
+      "tailscaleInstalled": "Tailscale installato",
+      "tailscaleRunning": "Tailscale collegato",
+      "exitNode": "Exit node attivo",
+      "peersRelay": "Amici raggiunti via relay",
+      "udp": "Raggiungibilità UDP",
+      "sunshinePorts": "Porte dello streaming",
+      "bandwidth": "Banda",
+      "jitter": "Stabilità della linea",
+      "localSetup": "Postazione locale"
+    },
+    "action": {
+      "installTailscale": "Installa Tailscale dal sito ufficiale, poi riapri Falò.",
+      "loginTailscale": "Accedi a Tailscale con Google, Microsoft o GitHub.",
+      "startTailscale": "Apri Tailscale e premi «Connect».",
+      "disableExitNode": "Disattiva l'exit node durante il gioco: aggiunge latenza.",
+      "enableUpnp": "Attiva UPnP sul router, oppure inoltra la porta UDP 41641 al PC host."
+    }
+  },
+  "core": {
+    "offlineTitle": "Non riesco a parlare con Falò.",
+    "offlineWhy": "Il servizio in background sembra chiuso.",
+    "offlineFix": "Riaprilo dal menu Start o dal Launchpad: questa finestra si ricollega da sola."
+  },
+  "errors": {
+    "notImplemented": "Questa funzione arriva con la milestone {milestone}."
+  },
+  "ping": {
+    "direct": "diretto",
+    "relay": "relay"
+  }
+}

@@ -1,0 +1,53 @@
+[workspace]
+resolver = "3"
+members = ["apps/core", "apps/ui/src-tauri", "crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-only"
+repository = "https://github.com/falo-app/falo"
+rust-version = "1.85"
+
+[workspace.dependencies]
+falo-proto = { path = "crates/falo-proto" }
+falo-net = { path = "crates/falo-net" }
+falo-store = { path = "crates/falo-store" }
+falo-engines = { path = "crates/falo-engines" }
+
+anyhow = "1"
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_json_canonicalizer = "0.3"
+tokio = { version = "1", default-features = false }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "env-filter", "std"] }
+tracing-appender = "0.2"
+ed25519-dalek = "2"
+rand = "0.9"
+sha2 = "0.10"
+data-encoding = "2"
+zstd = { version = "0.13", default-features = false }
+directories = "6"
+toml_edit = { version = "0.22", features = ["serde"] }
+rusqlite = { version = "0.32", features = ["bundled"] }
+which = "7"
+interprocess = { version = "2", features = ["tokio"] }
+tray-icon = "0.25"
+tao = "0.37"
+image = { version = "0.25", default-features = false, features = ["png"] }
+tempfile = "3"
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true

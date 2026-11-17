@@ -1,0 +1,34 @@
+{
+  "Version": "1.90.0",
+  "BackendState": "Running",
+  "TailscaleIPs": ["100.101.102.103", "fd7a:115c:a1e0::1"],
+  "Self": {
+    "ID": "nSelf123",
+    "HostName": "marco-pc",
+    "OS": "windows",
+    "TailscaleIPs": ["100.101.102.103"],
+    "Online": true
+  },
+  "Peer": {
+    "nodekey:aaa": {
+      "ID": "nLuca456",
+      "HostName": "luca-pc",
+      "OS": "windows",
+      "TailscaleIPs": ["100.64.0.2"],
+      "Online": true,
+      "ExitNode": false,
+      "Relay": "fra",
+      "CurAddr": "93.44.12.8:41641"
+    },
+    "nodekey:bbb": {
+      "ID": "nBea789",
+      "HostName": "bea-mac",
+      "OS": "macOS",
+      "TailscaleIPs": ["100.64.0.3"],
+      "Online": true,
+      "ExitNode": false,
+      "Relay": "fra",
+      "CurAddr": ""
+    }
+  }
+}

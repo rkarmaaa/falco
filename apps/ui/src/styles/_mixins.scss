@@ -1,0 +1,67 @@
+// Mixin condivisi. Usare sempre questi al posto di valori scritti a mano.
+@use 'sass:map';
+@use 'tokens' as *;
+
+// sm/md/lg: sotto quella larghezza di finestra
+@mixin mq($bp) {
+  @media (max-width: map.get($breakpoints, $bp) - 1px) {
+    @content;
+  }
+}
+
+// Superficie di livello 1–3 con bordo da 1 px
+@mixin surface($level: 2) {
+  @if $level == 1 {
+    background: $bg-1;
+  } @else if $level == 2 {
+    background: $bg-2;
+  } @else {
+    background: $bg-3;
+  }
+  border: 1px solid $line;
+}
+
+@mixin focus-ring {
+  outline: none;
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px $bg-0, 0 0 0 4px $ember-500;
+  }
+}
+
+@mixin truncate {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+// Alone per ciò che è «vivo»
+@mixin glow($color: $ember-glow) {
+  box-shadow: 0 0 0 2px $color, 0 0 18px 2px $color;
+}
+
+@mixin avatar($size) {
+  width: $size;
+  height: $size;
+  flex: 0 0 $size;
+  border-radius: $r-pill;
+}
+
+@mixin label {
+  font-size: $fs-label;
+  line-height: 14px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: $text-3;
+}
+
+@mixin reset-button {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}

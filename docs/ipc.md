@@ -1,0 +1,58 @@
+# Contratto IPC core ↔ UI
+
+JSON-RPC 2.0, un messaggio JSON per riga, su named pipe `\\.\pipe\falo-core-<utente>` (Windows) o socket Unix `core.sock` nella cartella dati locale (macOS). Decisione: [ADR 0002](adr/0002-ipc-json-rpc.md). Tipi Rust in [`crates/falo-proto/src/ipc.rs`](../crates/falo-proto/src/ipc.rs), tipi TypeScript in [`apps/ui/src/ipc/types.ts`](../apps/ui/src/ipc/types.ts).
+
+```json
+→ {"jsonrpc":"2.0","id":1,"method":"host.setAvailable","params":{"available":true}}
+← {"jsonrpc":"2.0","id":1,"result":{"available":true}}
+← {"jsonrpc":"2.0","method":"presence.changed","params":{"self":{"hostAvailable":true}}}
+```
+
+## Metodi
+
+| Metodo | Parametri | Risultato | Stato |
+| --- | --- | --- | --- |
+| `state.snapshot` | — | `StateSnapshot`: versione, milestone, stato, host disponibile, streaming, rete, numero di amici | M0 |
+| `config.get` | — | `{ config }` con tutte le sezioni del §15 | M0 |
+| `config.set` | `{ key: "sezione.chiave", value }` | `{ applyAt: "now" \| "nextSession" \| "hostRestart" }` | M0 |
+| `config.reset` | `{ section }` | `null` | M0 |
+| `profile.update` | `{ status? }` (nome e avatar in M2) | `null` | M0 parziale |
+| `host.setAvailable` | `{ available }` | `{ available }` (avvio di Sunshine in M1) | M0 parziale |
+| `friends.list` | — | elenco di amici dal database | M0 (vuoto fino a M2) |
+| `net.runDoctor` | — | `{ checks: [{ id, level, value, action }] }` | M0 parziale |
+| `app.openUi` | — | `null`; usato dalla seconda istanza del core | M0 |
+| `session.join` | — | — | M1 |
+| `invite.create`, `invite.accept` | — | — | M3 |
+| `friend.setPermissions` | — | — | M4 |
+| `update.check`, `update.install` | — | — | M6 ([ADR 0008](adr/0008-aggiornamenti-automatici.md)) |
+
+## Eventi
+
+| Evento | Parametri | Stato |
+| --- | --- | --- |
+| `presence.changed` | `{ self: { status?, hostAvailable? } }`; in M2 anche gli amici | M0 |
+| `config.changed` | `{ key, value }` oppure `{ section }` | M0 |
+| `invite.progress` | — | M3 |
+| `session.knock`, `session.stats`, `session.ended` | — | M1–M4 |
+| `net.warning` | — | M5 |
+| `update.available` | — | M6 |
+
+## Codici di errore
+
+| Codice | Significato | `data` |
+| --- | --- | --- |
+| `-32700` | JSON non valido | — |
+| `-32601` | Metodo sconosciuto | — |
+| `-32602` | Parametri non validi | — |
+| `-32603` | Errore interno | — |
+| `-32001` | Previsto dalla specifica, non ancora implementato | `{ milestone }` |
+| `-32002` | Valore di configurazione non valido | `{ key, value, allowed, line }` |
+| `-32099` | Solo lato UI: core non raggiungibile | — |
+
+## Prova da riga di comando
+
+Con il core avviato:
+
+```bash
+node scripts/ipc-smoke.mjs
+```

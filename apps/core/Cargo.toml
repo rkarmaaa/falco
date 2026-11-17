@@ -1,0 +1,33 @@
+[package]
+name = "falo-core"
+description = "Demone di Falò: tray, orchestrazione dei motori, IPC verso la UI"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "falo-core"
+path = "src/main.rs"
+
+[dependencies]
+falo-proto = { workspace = true, features = ["transport"] }
+falo-net.workspace = true
+falo-store.workspace = true
+falo-engines.workspace = true
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+tracing-appender.workspace = true
+interprocess.workspace = true
+tokio = { workspace = true, features = ["rt", "macros", "sync", "io-util", "time", "net"] }
+tray-icon.workspace = true
+tao.workspace = true
+image.workspace = true
+
+[lints]
+workspace = true
+
+[build-dependencies]
+embed-manifest = "1"
