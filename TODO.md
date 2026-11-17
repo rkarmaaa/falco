@@ -35,6 +35,7 @@ Fatto in anticipo, utile alle milestone successive:
 
 ## M3 · Inviti
 
+- [ ] Installazione automatica di Tailscale nell'onboarding (o `tsnet`, secondo l'ADR 0012)
 - [ ] Configurazione guidata dell'OAuth client Tailscale e modalità manuale
 - [ ] Creazione, revoca e scadenza degli inviti
 - [ ] Accettazione da link, incolla e appunti; handshake; pairing automatico
@@ -63,10 +64,12 @@ Fatto in anticipo, utile alle milestone successive:
 - [ ] Installer firmato per Windows, app notarizzata per macOS, aggiornamenti firmati
 - [ ] **Notifica di nuova versione** con pulsante «Aggiorna» (toast, voce nel tray, badge su Impostazioni → Info)
 - [ ] **Aggiornamento automatico** senza installazioni manuali: download in background e installazione silenziosa quando non c'è una sessione attiva ([ADR 0008](docs/adr/0008-aggiornamenti-automatici.md))
+- [ ] Pacchetto unico: Sunshine, Moonlight, driver dei controller e Tailscale arrivano con Falò, senza installazioni manuali ([ADR 0012](docs/adr/0012-nessuna-installazione-manuale.md))
 - [ ] Sorgenti GPL-3.0 pubblicati con il rilascio
 
 ## Decisioni da prendere (Marco)
 
+- [ ] **Come arriva Tailscale senza installazione manuale**: installazione silenziosa del client ufficiale oppure `tsnet` dentro Falò ([ADR 0012](docs/adr/0012-nessuna-installazione-manuale.md))
 - [ ] Contrasto di `$text-3` e valori del tema chiaro ([DESIGN_SYSTEM.md](DESIGN_SYSTEM.md#questioni-aperte))
 - [ ] Verifica del marchio «Falò» nel settore
 - [ ] Base dell'host: Sunshine con i permessi di Apollo, oppure Apollo direttamente

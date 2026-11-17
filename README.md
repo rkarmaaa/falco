@@ -20,7 +20,7 @@
 
 Falò è un orchestratore: configura e avvia motori di streaming maturi (Sunshine come host, Moonlight come client) e usa Tailscale come rete privata cifrata. Sopra aggiunge quello che manca per giocare tra amici come su Parsec: **profili, lista amici, inviti con un link e permessi parziali** (chi può usare controller, tastiera, mouse).
 
-- **Un'unica app**: installi, crei il profilo, inviti un amico e giocate. Non configuri mai a mano Sunshine, Moonlight o Tailscale.
+- **Un'unica app**: scarichi solo Falò, crei il profilo, inviti un amico e giocate. Niente da installare o configurare a mano: motori e rete arrivano con Falò.
 - **Zero overhead in gioco**: durante lo streaming la finestra di Falò non esiste; resta solo un demone da pochi MB.
 - **Nessun server nostro**: i dati tra amici viaggiano peer-to-peer dentro la tailnet.
 - **Sicuro per costruzione**: nessuna porta esposta su Internet, ogni messaggio tra amici è firmato, i permessi si applicano sull'host.
@@ -110,4 +110,4 @@ Con il core avviato, `node scripts/ipc-smoke.mjs` prova l'IPC dalla riga di coma
 
 ## Licenza
 
-Falò è software libero sotto licenza [GPL-3.0](LICENSE), come Sunshine e Moonlight da cui deriva. Tailscale non è incluso: si usa il client ufficiale con il proprio account. Nome, logo e icone sono originali.
+Falò è software libero sotto licenza [GPL-3.0](LICENSE), come Sunshine e Moonlight da cui deriva. Tailscale è il client ufficiale, installato da Falò in automatico; ognuno usa il proprio account. Nome, logo e icone sono originali.

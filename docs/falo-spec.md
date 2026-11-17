@@ -9,6 +9,7 @@ Falò è un'app desktop per Windows 11 e macOS per giocare in streaming con gli 
 **Obiettivi**
 
 - **Un'unica app:** installi, crei il profilo, inviti un amico e giocate. L'utente non configura mai a mano Sunshine, Moonlight o Tailscale.
+- **Nessuna installazione manuale:** l'utente scarica solo Falò. Motori, driver e rete arrivano con il pacchetto o vengono installati da Falò in automatico; l'utente al massimo conferma con un clic (UAC, permessi di sistema, login). Vincolo deciso il 2026-11-18, vedi ADR 0012.
 - **Prestazioni prima di tutto:** l'app non aggiunge latenza e, mentre si gioca, non consuma risorse in modo misurabile.
 - **Rete automatica ma configurabile:** default automatici, un pannello avanzato con ogni parametro e una diagnostica che dice cosa non va e come risolverlo.
 - **Identità sociale leggera:** nome, immagine profilo, lista amici, inviti con permessi parziali.
@@ -77,7 +78,7 @@ Il colore d'accento segna il codice nuovo di Falò; i bordi tratteggiati indican
 | `falo-ui` | Finestra Tauri: legge e modifica lo stato tramite il core | Solo quando la finestra è aperta |
 | `falo-sunshine` | Cattura schermo e audio, codifica hardware, ricezione input, applicazione permessi | Solo quando l'host è «Disponibile» |
 | `falo-moonlight` | Decodifica hardware, finestra dello stream, invio input | Solo durante una sessione da ospite |
-| Client Tailscale | Rete WireGuard, indirizzi `100.x`, attraversamento NAT | Gestito da Tailscale, installato a parte |
+| Client Tailscale | Rete WireGuard, indirizzi `100.x`, attraversamento NAT | Installato e aggiornato da Falò in automatico (ADR 0012) |
 
 **Contratto IPC tra core e UI**
 
@@ -116,7 +117,7 @@ Falò è scritto in Rust per il core, Vue 3 dentro Tauri 2 per l'interfaccia e C
 **Licenze**
 
 - Sunshine, moonlight-qt e Apollo sono GPL-3.0: i fork e Falò restano GPL-3.0, con sorgenti pubblici a ogni rilascio.
-- Tailscale non viene incluso nel pacchetto: l'utente installa il client ufficiale e usa il proprio account.
+- Tailscale non viene ricompilato dentro Falò: Falò scarica e installa in automatico il client ufficiale (o usa la libreria `tsnet`, da decidere nell'ADR 0012); l'utente usa il proprio account e non installa nulla a mano.
 - Il piano gratuito Personal di Tailscale è pensato per uso non commerciale ([prezzi Tailscale](https://tailscale.com/docs/account/manage-plans/free-plans-discounts)). Per un uso tra amici va bene; se Falò diventasse un prodotto a pagamento, ogni utente resta comunque sul proprio account.
 - Nome, logo e icone devono essere originali: nessun asset di Parsec, Moonlight o Sunshine.
 
@@ -288,7 +289,7 @@ Modalità manuale, senza OAuth: Falò apre la finestra Share del dispositivo nel
 
 1. L'invito arriva in tre modi: clic sul link `falo://`, incolla nel campo «Ho un invito», oppure rilevamento automatico negli appunti quando la finestra prende il focus («Hai un invito di Marco negli appunti»). Molte chat non rendono cliccabili gli schemi personalizzati, quindi il rilevamento negli appunti è il percorso principale.
 2. Il core verifica firma e scadenza, poi mostra una scheda con nome, tag e permessi descritti a parole.
-3. Se Tailscale manca o non è collegato, parte la procedura guidata di installazione e login.
+3. Se Tailscale manca, Falò lo installa da solo; se non è collegato, apre il login nel browser.
 4. Falò apre `inviteUrl` nel browser: l'ospite accetta la condivisione su Tailscale. Il core controlla `tailscale status --json` ogni 2 s, fino a 5 minuti, finché il nodo dell'host compare.
 5. Il core chiama `POST /v1/handshake` sull'host, inviando il token, il proprio profilo firmato e il proprio ID nodo.
 6. L'host verifica token, scadenza e usi rimasti, e controlla con `tailscale whois` che l'IP sorgente sia un nodo condiviso. Se l'invito richiede approvazione, l'host vede una notifica «Luca vuole unirsi».
@@ -753,7 +754,7 @@ L'app ha una sola schermata principale, gli Amici, e tutto il resto si raggiunge
 
 | Schermata | Contenuto | Azione primaria |
 | --- | --- | --- |
-| Onboarding | Benvenuto, profilo (nome e avatar), Tailscale (rileva, installa, accedi), «Voglio anche ospitare?»; se sì: permessi di sistema, OAuth Tailscale guidato, Dottore di rete rapido | «Continua», obiettivo sotto i 3 minuti |
+| Onboarding | Benvenuto, profilo (nome e avatar), Tailscale (installato da Falò in automatico, l'utente fa solo il login), «Voglio anche ospitare?»; se sì: permessi di sistema, OAuth Tailscale guidato, Dottore di rete rapido | «Continua», obiettivo sotto i 3 minuti |
 | Amici | Ricerca, gruppi «In gioco ora» (card grandi con gioco, posti liberi, avatar degli ospiti), «Online», «Offline» (chiuso di default) | «Entra» sulla card di chi gioca, «Invita» in alto |
 | Dettaglio amico (pannello) | Avatar 96 px, nome, tag, dispositivi, chip del ruolo, permessi modificabili, ultime sessioni, rimuovi e blocca | «Chiedi di entrare» o «Invitalo a giocare» |
 | Invita (modale) | Ruolo con riepilogo dei permessi, validità, usi, approvazione; poi link, «Copia», anteprima di ciò che vedrà l'amico | «Crea link» |
@@ -817,7 +818,7 @@ Windows 11 è la piattaforma host completa; macOS è un client completo e un hos
 | Encoder | AMF (AMD), NVENC (NVIDIA), Quick Sync (Intel) | VideoToolbox |
 | Controller virtuali | Sì, Xbox 360 tramite il driver installato con Sunshine | No: limite della piattaforma |
 | Permessi di sistema | Regole firewall create dall'installer | Registrazione schermo, Accessibilità, Rete locale, Notifiche: ognuno spiegato prima della richiesta |
-| Tailscale | Installazione guidata dell'MSI ufficiale; CLI `tailscale.exe` | Versione Standalone consigliata; il core cerca la CLI dentro `Tailscale.app` |
+| Tailscale | MSI ufficiale installato in silenzio da Falò; CLI `tailscale.exe` | Versione Standalone installata da Falò; il core cerca la CLI dentro `Tailscale.app` |
 | Link `falo://` | Plugin deep-link di Tauri, registrato nel registro | `CFBundleURLTypes` nell'`Info.plist` |
 | Avvio con il sistema | Plugin autostart, avvio nel tray | `SMAppService` come elemento di login |
 | Firma del codice | Certificato di firma del codice (per esempio Azure Trusted Signing); senza, SmartScreen avvisa | Apple Developer Program, Hardened Runtime, notarizzazione di ogni binario annidato |
