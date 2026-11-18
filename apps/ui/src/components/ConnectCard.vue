@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Collegamento diretto a un host per indirizzo (provvisorio M1, sostituito dagli inviti in M3)
+// Collegamento diretto a un host per indirizzo, senza invito (impostazioni avanzate)
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Link2, Play } from 'lucide-vue-next';

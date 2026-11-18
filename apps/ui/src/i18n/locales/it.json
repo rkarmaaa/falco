@@ -209,9 +209,9 @@
     "relay": "relay"
   },
   "connect": {
-    "title": "Connettiti a un host",
-    "provisional": "Provvisorio",
-    "hint": "Inserisci l'indirizzo Tailscale o di rete locale dell'host. Dalla milestone M3 basterà un invito.",
+    "title": "Connessione diretta",
+    "provisional": "Avanzato",
+    "hint": "Collegati a un host per indirizzo (Tailscale o rete locale), senza invito. Utile per prove e reti particolari.",
     "address": "Indirizzo dell'host",
     "pair": "Associa",
     "join": "Entra",

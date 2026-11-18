@@ -16,7 +16,6 @@ JSON-RPC 2.0, un messaggio JSON per riga, su named pipe `\\.\pipe\falco-core-<ut
 | `config.get` | — | `{ config }` con tutte le sezioni del §15 | M0 |
 | `config.set` | `{ key: "sezione.chiave", value }` | `{ applyAt: "now" \| "nextSession" \| "hostRestart" }` | M0 |
 | `config.reset` | `{ section }` | `null` | M0 |
-| `profile.update` | `{ status? }` (nome e avatar in M2) | `null` | M0 parziale |
 | `host.setAvailable` | `{ available }` | `{ available }`; avvia o ferma Sunshine, avanzamento con `host.state` | M1 |
 | `net.runDoctor` | — | `{ checks: [{ id, level, value, action }] }`: Tailscale, UDP/NAT, percorso, porte, banda, jitter, postazione | M5 |
 | `net.lanPeers` | — | Falco visti in LAN `[{ id, name, ip, port }]` | M5 |

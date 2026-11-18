@@ -209,9 +209,9 @@
     "relay": "relay"
   },
   "connect": {
-    "title": "Connect to a host",
-    "provisional": "Provisional",
-    "hint": "Enter the host's Tailscale or local network address. From milestone M3 an invite will be enough.",
+    "title": "Direct connection",
+    "provisional": "Advanced",
+    "hint": "Connect to a host by address (Tailscale or local network), without an invite. Handy for tests and special networks.",
     "address": "Host address",
     "pair": "Pair",
     "join": "Join",

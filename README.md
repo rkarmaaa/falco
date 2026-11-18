@@ -56,17 +56,18 @@ flowchart LR
 
 ```text
 apps/
-  core/            demone Rust: tray, IPC, orchestrazione
-  ui/              Tauri 2 + Vue 3 + SCSS, avviata su richiesta
+  core/             demone Rust: tray, IPC, host e ospite, presenza, inviti, permessi, aggiornamenti
+  ui/               Tauri 2 + Vue 3 + SCSS, avviata su richiesta
 crates/
-  falco-proto/      identità Ed25519, profili firmati, permessi, inviti, schema IPC
-  falco-net/        provider di rete (Tailscale) e Dottore di rete
-  falco-store/      config.toml validato e SQLite con migrazioni
-  falco-engines/    sunshine.conf, argomenti di Moonlight, processi
-engines/           fork di Sunshine e Moonlight (submodule, da aggiungere)
-packaging/         installer Windows e bundle macOS
-docs/              specifica, ADR, guide
-scripts/           sviluppo, test di fumo, sync dei fork
+  falco-proto/      identità Ed25519, profili firmati, permessi, inviti, FPP, schema IPC
+  falco-net/        Tailscale, LAN (mDNS), diagnostica e Dottore di rete
+  falco-store/      config.toml validato, schema delle impostazioni, SQLite con migrazioni
+  falco-engines/    sunshine.conf e API REST, argomenti e stato di Moonlight, processi
+assets/brand/       logo in SVG, PNG, ICO e ICNS
+engines/            fork di Sunshine e Moonlight (submodule, da aggiungere)
+packaging/          hook dell'installer Windows, plist e entitlements macOS
+docs/               specifica, ADR, contratto IPC
+scripts/            pacchetto, motori, prove end-to-end, rpc, sync dei fork
 ```
 
 ## Sviluppo
@@ -113,7 +114,12 @@ Solo interfaccia nel browser, con un core simulato:
 npm --prefix apps/ui run dev
 ```
 
-Con il core avviato, `node scripts/ipc-smoke.mjs` prova l'IPC, `node scripts/rpc.mjs <metodo> [json]` chiama un metodo e `node scripts/e2e-loopback.mjs [porta]` esegue la prova completa di M1 su un solo PC. `falco-core bench 60 tray` misura RAM e CPU.
+Con il core avviato:
+
+- `node scripts/rpc.mjs <metodo> [json]` chiama un metodo dell'IPC;
+- `node scripts/e2e-loopback.mjs [porta]` prova host e ospite su un solo PC;
+- `node scripts/e2e-friends.mjs [porta]` prova inviti, presenza, permessi e Dottore di rete con due istanze (la seconda con `FALCO_INSTANCE=b`);
+- `falco-core bench 60 tray` misura RAM e CPU (§10).
 
 ## Pacchetto e rilascio
 
