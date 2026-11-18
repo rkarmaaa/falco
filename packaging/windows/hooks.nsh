@@ -17,8 +17,10 @@
   nsExec::Exec 'netsh advfirewall firewall add rule name="Falco Sunshine" dir=in action=allow program="$INSTDIR\engines\sunshine\sunshine.exe" remoteip=100.64.0.0/10,fd7a:115c:a1e0::/48 enable=yes'
   nsExec::Exec 'netsh advfirewall firewall delete rule name="Falco Presence"'
   nsExec::Exec 'netsh advfirewall firewall add rule name="Falco Presence" dir=in action=allow program="$INSTDIR\falco-core.exe" remoteip=100.64.0.0/10,fd7a:115c:a1e0::/48 enable=yes'
-  ; Avvio del core nel tray: registra da solo avvio con il sistema e schema falco://
-  Exec '"$INSTDIR\falco-core.exe" --autostart'
+  ; Avvio del core nel tray: registra da solo avvio con il sistema e schema falco://.
+  ; Come utente normale, non con i privilegi dell'installer: un core da amministratore
+  ; crea una pipe che la finestra di Falco (utente normale) non può aprire (EPERM).
+  nsis_tauri_utils::RunAsUser "$INSTDIR\falco-core.exe" "--autostart"
 !macroend
 
 !macro NSIS_HOOK_PREUNINSTALL

@@ -16,6 +16,7 @@ Formato [Keep a Changelog](https://keepachangelog.com/it/1.1.0/), versioni [SemV
 ### Corretto
 
 - Chiudere la finestra con la X mostrava l'errore «window|destroy not allowed by ACL».
+- Dopo l'installazione la finestra diceva «Non riesco a parlare con Falco»: l'installer avviava il servizio con i privilegi di amministratore e la finestra non poteva collegarsi. Ora lo avvia come utente normale.
 
 ### Rimosso
 
