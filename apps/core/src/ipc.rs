@@ -105,6 +105,11 @@ struct SetConfig {
 }
 
 #[derive(Deserialize)]
+struct ImportConfig {
+    text: String,
+}
+
+#[derive(Deserialize)]
 struct ResetConfig {
     section: String,
 }
@@ -454,6 +459,24 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
             .map_err(anyhow_err(codes::SESSION_FAILED))?;
             return Ok(Value::Null);
         }
+        methods::NET_RUN_DOCTOR => {
+            return Ok(crate::doctor::to_json(&crate::doctor::run(core).await));
+        }
+        methods::NET_LOGIN_HEADSCALE => {
+            // Stesso client Tailscale, server di controllo personalizzato (§9)
+            let (ts, url) = {
+                let c = core.lock().await;
+                (c.net.clone(), c.config.config().network.headscale_url.clone())
+            };
+            if !url.starts_with("https://") {
+                return Err(RpcError::new(
+                    codes::INVALID_PARAMS,
+                    "imposta prima l'URL di Headscale",
+                ));
+            }
+            let out = ts.run(&["login", "--login-server", &url]).await.map_err(internal)?;
+            return Ok(json!({ "output": String::from_utf8_lossy(&out) }));
+        }
         methods::FRIEND_REMOVE => {
             let p: FriendRef = params(req.params)?;
             crate::social::remove_friend(core, &p.id, false).await;
@@ -525,6 +548,20 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
             let net = crate::core::Core::net_status(c.net.clone()).await;
             serde_json::to_value(c.snapshot(&net)).map_err(internal)
         }
+        methods::CONFIG_SCHEMA => {
+            serde_json::to_value(falco_store::schema::fields()).map_err(internal)
+        }
+        methods::CONFIG_EXPORT => Ok(json!({ "text": c.config.text() })),
+        methods::CONFIG_IMPORT => {
+            let p: ImportConfig = params(req.params)?;
+            c.config.replace_text(&p.text).map_err(config_error)?;
+            c.emit(events::CONFIG_CHANGED, json!({ "section": "*" }));
+            c.refresh_tray();
+            Ok(Value::Null)
+        }
+        methods::NET_LAN_PEERS => {
+            serde_json::to_value(c.lan_peers.values().collect::<Vec<_>>()).map_err(internal)
+        }
         methods::CONFIG_GET => {
             let cfg = c.config.config();
             Ok(json!({ "config": cfg }))
@@ -569,11 +606,6 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
                 c.emit(events::PRESENCE_CHANGED, json!({ "self": { "profile": true } }));
             }
             Ok(Value::Null)
-        }
-        methods::NET_RUN_DOCTOR => {
-            let status = crate::core::Core::net_status(c.net.clone()).await;
-            let warn = c.config.config().network.warn_exit_node;
-            Ok(json!({ "checks": falco_net::doctor::tailscale_checks(&status, warn) }))
         }
         methods::APP_OPEN_UI => {
             c.open_ui();

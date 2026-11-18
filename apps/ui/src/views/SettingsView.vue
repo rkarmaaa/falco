@@ -9,13 +9,14 @@ import DiagnosticRow from '@/components/DiagnosticRow.vue';
 import UiAvatar from '@/components/UiAvatar.vue';
 import UiField from '@/components/UiField.vue';
 import ConnectCard from '@/components/ConnectCard.vue';
+import SettingsForm from '@/components/SettingsForm.vue';
 import { core, setConfig, setStatus } from '@/stores/core';
 import { rename, setAvatar, social } from '@/stores/social';
 import { isRpcError, rpc, type DoctorCheck, type Status } from '@/ipc';
 
 type Tab = 'profile' | 'streaming' | 'network' | 'host' | 'permissions' | 'advanced' | 'about';
 const tabs: Tab[] = ['profile', 'streaming', 'network', 'host', 'permissions', 'advanced', 'about'];
-const soon: Partial<Record<Tab, string>> = { streaming: 'M5', permissions: 'M4' };
+const soon: Partial<Record<Tab, string>> = {};
 
 const { t } = useI18n();
 const tab = ref<Tab>('profile');
@@ -72,6 +73,40 @@ async function saveOAuth(): Promise<void> {
     oauthSecret.value = '';
   } catch (e) {
     oauthMsg.value = { ok: false, text: isRpcError(e) ? e.message : t('connect.genericError') };
+  }
+}
+
+function flashSaved(): void {
+  saved.value = true;
+  setTimeout(() => (saved.value = false), 1500);
+}
+
+async function exportConfig(): Promise<void> {
+  const { text } = await rpc<{ text: string }>('config.export');
+  const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+  const a = Object.assign(document.createElement('a'), { href: url, download: 'falco-config.toml' });
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+const importMsg = ref<{ ok: boolean; text: string } | null>(null);
+async function importConfig(e: Event): Promise<void> {
+  const f = (e.target as HTMLInputElement).files?.[0];
+  if (!f) return;
+  try {
+    await rpc('config.import', { text: await f.text() });
+    importMsg.value = { ok: true, text: t('settings.imported') };
+  } catch (err) {
+    importMsg.value = { ok: false, text: isRpcError(err) ? err.message : t('connect.genericError') };
+  }
+}
+
+async function headscaleLogin(): Promise<void> {
+  try {
+    await rpc('net.loginHeadscale');
+    importMsg.value = { ok: true, text: t('settings.headscaleStarted') };
+  } catch (err) {
+    importMsg.value = { ok: false, text: isRpcError(err) ? err.message : t('connect.genericError') };
   }
 }
 
@@ -167,8 +202,22 @@ function openTab(next: Tab): void {
           </UiButton>
         </div>
         <ul class="doctor">
-          <DiagnosticRow v-for="c in checks" :key="c.id" :check="c" />
+          <DiagnosticRow v-for="(c, i) in checks" :key="c.id + i" :check="c" />
         </ul>
+        <h2 class="subtitle">{{ $t('settings.networkParams') }}</h2>
+        <SettingsForm :sections="['network']" @saved="flashSaved" />
+        <UiButton
+          v-if="core.config?.network.provider === 'headscale'"
+          variant="secondary"
+          :size="32"
+          @click="headscaleLogin"
+        >
+          {{ $t('settings.headscaleLogin') }}
+        </UiButton>
+      </template>
+
+      <template v-else-if="tab === 'streaming'">
+        <SettingsForm :sections="['stream']" @saved="flashSaved" />
       </template>
 
       <template v-else-if="tab === 'host'">
@@ -183,9 +232,25 @@ function openTab(next: Tab): void {
           <UiButton variant="secondary" type="submit" :disabled="!oauthId || !oauthSecret">{{ $t('settings.save') }}</UiButton>
         </form>
         <p v-if="oauthMsg" :class="oauthMsg.ok ? 'ok' : 'error'" role="status">{{ oauthMsg.text }}</p>
+        <h2 class="subtitle">{{ $t('settings.hostParams') }}</h2>
+        <SettingsForm :sections="['host']" @saved="flashSaved" />
+      </template>
+
+      <template v-else-if="tab === 'permissions'">
+        <p class="muted">{{ $t('settings.permissionsIntro') }}</p>
+        <SettingsForm :sections="['host']" @saved="flashSaved" />
       </template>
 
       <template v-else-if="tab === 'advanced'">
+        <SettingsForm :sections="['general', 'performance', 'advanced']" @saved="flashSaved" />
+        <div class="io">
+          <UiButton variant="secondary" :size="32" @click="exportConfig">{{ $t('settings.export') }}</UiButton>
+          <label class="import">
+            <span>{{ $t('settings.import') }}</span>
+            <input class="sr-only" type="file" accept=".toml,text/plain" @change="importConfig" />
+          </label>
+        </div>
+        <p v-if="importMsg" :class="importMsg.ok ? 'ok' : 'error'" role="status">{{ importMsg.text }}</p>
         <ConnectCard />
       </template>
 
@@ -273,6 +338,27 @@ function openTab(next: Tab): void {
 
     .muted {
       color: $text-2;
+    }
+
+    .io {
+      display: flex;
+      gap: $sp-2;
+
+      .import {
+        @include surface(2);
+        display: inline-flex;
+        align-items: center;
+        height: 32px;
+        padding: 0 $sp-3;
+        border-radius: $r-button;
+        font-size: $fs-small;
+        font-weight: 600;
+        cursor: pointer;
+
+        &:focus-within {
+          border-color: $accent-fg;
+        }
+      }
     }
 
     .error {

@@ -137,7 +137,16 @@
       "clientId": "Client ID",
       "secret": "Client secret",
       "saved": "Credenziali verificate e salvate nel portachiavi."
-    }
+    },
+    "networkParams": "Parametri di rete",
+    "hostParams": "Parametri dell'host",
+    "applyAtHint": "Quando ha effetto la modifica",
+    "permissionsIntro": "Ruolo dato ai nuovi amici e regole di ingresso. I permessi di ogni amico si cambiano dal suo pannello.",
+    "export": "Esporta impostazioni",
+    "import": "Importa impostazioni",
+    "imported": "Impostazioni importate e verificate.",
+    "headscaleLogin": "Accedi al server Headscale",
+    "headscaleStarted": "Accesso avviato: completa il login nel browser."
   },
   "doctor": {
     "title": "Dottore di rete",
@@ -158,14 +167,32 @@
       "sunshinePorts": "Porte dello streaming",
       "bandwidth": "Banda",
       "jitter": "Stabilità della linea",
-      "localSetup": "Postazione locale"
+      "localSetup": "Postazione locale",
+      "nat": "Tipo di NAT",
+      "peerPath": "Percorso verso l'amico",
+      "wifi": "Connessione",
+      "battery": "Alimentazione",
+      "powerSaver": "Piano energetico",
+      "otherVpn": "Altre VPN attive"
     },
     "action": {
       "installTailscale": "Installa Tailscale dal sito ufficiale, poi riapri Falco.",
       "loginTailscale": "Accedi a Tailscale con Google, Microsoft o GitHub.",
       "startTailscale": "Apri Tailscale e premi «Connect».",
       "disableExitNode": "Disattiva l'exit node durante il gioco: aggiunge latenza.",
-      "enableUpnp": "Attiva UPnP sul router, oppure inoltra la porta UDP 41641 al PC host."
+      "enableUpnp": "Attiva UPnP sul router, oppure inoltra la porta UDP 41641 al PC host.",
+      "unblockUdp": "Il traffico UDP sembra bloccato: controlla firewall o router, oppure prova un'altra rete.",
+      "friendOffline": "L'amico non risponde: chiedigli di aprire Falco.",
+      "hostOff": "Attiva «Disponibile» per provare le porte dello streaming.",
+      "firewall": "Il firewall blocca lo streaming: consenti Falco nelle impostazioni del firewall.",
+      "lowBandwidth": "Banda bassa: chiudi download e streaming in corso o abbassa la qualità.",
+      "unstableLine": "Linea instabile: usa il cavo o avvicinati al router.",
+      "needFriend": "Serve un amico online per misurarlo.",
+      "useCable": "Sei su Wi-Fi a 2,4 GHz: usa il cavo o la rete a 5/6 GHz.",
+      "cableBetter": "Va bene, ma il cavo è più stabile per giocare.",
+      "plugIn": "Il portatile è a batteria: collegalo alla corrente per le prestazioni migliori.",
+      "highPerformance": "Piano «risparmio energia» attivo: passa a «bilanciato» o «prestazioni elevate».",
+      "disableVpn": "Un'altra VPN può aggiungere latenza: disattivala durante il gioco."
     }
   },
   "core": {
@@ -310,5 +337,95 @@
     "declined": "{name} ha rifiutato la richiesta. Non è il momento giusto. Riprova più tardi.",
     "unknown": "{name} non ti riconosce come amico. L'amicizia potrebbe essere stata rimossa. Chiedigli un nuovo invito.",
     "offline": "Non riesco a raggiungere {name}. Il suo Falco o Tailscale sembra spento. Chiedigli di aprire Falco."
+  },
+  "cfg": {
+    "general": {
+      "language": "Lingua",
+      "theme": "Tema",
+      "updates": "Aggiornamenti",
+      "start_with_system": "Avvia con il sistema",
+      "start_minimized": "Avvia nel tray",
+      "close_to_tray": "Chiudendo la finestra resta nel tray"
+    },
+    "stream": {
+      "resolution": "Risoluzione",
+      "fps": "Fotogrammi al secondo",
+      "codec": "Codec video",
+      "bitrate_mode": "Bitrate",
+      "bitrate_kbps": "Bitrate fisso (kbps)",
+      "display_mode": "Modalità finestra",
+      "vsync": "V-Sync",
+      "frame_pacing": "Frame pacing",
+      "audio": "Audio",
+      "capture_system_keys": "Cattura scorciatoie di sistema",
+      "overlay": "Statistiche a schermo"
+    },
+    "host": {
+      "available_on_start": "Disponibile all'avvio",
+      "max_guests": "Ospiti contemporanei",
+      "encoder": "Encoder",
+      "default_role": "Ruolo predefinito dei nuovi amici",
+      "knock_timeout_s": "Attesa massima per «bussa» (s)",
+      "apps_autodetect": "Rileva i launcher di giochi"
+    },
+    "network": {
+      "provider": "Provider di rete",
+      "presence_port": "Porta di presenza",
+      "sunshine_base_port": "Porta base dello streaming",
+      "address_family": "Famiglia di indirizzi",
+      "upnp": "UPnP / NAT-PMP",
+      "fec_percent": "Correzione errori (FEC %)",
+      "relay_bitrate_cap_kbps": "Tetto bitrate via relay (kbps)",
+      "qos_dscp": "Priorità QoS (DSCP 46)",
+      "firewall_scope": "Ambito del firewall",
+      "connect_timeout_s": "Timeout di connessione (s)",
+      "reconnect_attempts": "Tentativi di riconnessione",
+      "warn_exit_node": "Avvisa se c'è un exit node",
+      "headscale_url": "URL del server Headscale"
+    },
+    "performance": {
+      "raise_priority": "Alza la priorità dei motori in gioco",
+      "warn_on_battery": "Avvisa se il portatile è a batteria",
+      "poll_ui_s": "Aggiornamento amici a finestra aperta (s)",
+      "poll_tray_s": "Aggiornamento amici nel tray (s)"
+    },
+    "advanced": {
+      "log_level": "Livello dei log"
+    },
+    "opt": {
+      "auto": "Automatico",
+      "it": "Italiano",
+      "en": "English",
+      "system": "Come il sistema",
+      "dark": "Scuro",
+      "light": "Chiaro",
+      "notify": "Solo notifica",
+      "off": "Disattivati",
+      "fixed": "Fisso",
+      "fullscreen": "Schermo intero",
+      "borderless": "Senza bordi",
+      "windowed": "In finestra",
+      "stereo": "Stereo",
+      "never": "Mai",
+      "always": "Sempre",
+      "software": "Software (CPU)",
+      "tailscale": "Tailscale",
+      "lan": "Rete locale (LAN)",
+      "direct": "Diretto (porte aperte)",
+      "headscale": "Headscale",
+      "both": "IPv4 e IPv6",
+      "ipv4": "Solo IPv4",
+      "ipv6": "Solo IPv6",
+      "tailnet": "Solo tailnet",
+      "tailnet+lan": "Tailnet e LAN",
+      "error": "Errori",
+      "warn": "Avvisi",
+      "info": "Informazioni",
+      "debug": "Debug",
+      "spettatore": "Spettatore",
+      "giocatore": "Giocatore",
+      "copilota": "Co-pilota",
+      "fidato": "Fidato"
+    }
   }
 }

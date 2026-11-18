@@ -75,18 +75,28 @@ impl Host {
         HostSettings {
             encoder: encoder_pref(cfg.host.encoder).into(),
             max_guests: cfg.host.max_guests,
-            upnp: cfg.network.upnp,
+            upnp: cfg.network.upnp || cfg.network.provider == falco_store::config::Provider::Direct,
             fec_percent: cfg.network.fec_percent,
             base_port: cfg.network.sunshine_base_port,
             // Nome distinto da un eventuale Sunshine già presente sullo stesso PC
             name: format!("{} (Falco)", device_name()),
             dir: self.dir.clone(),
-            overrides: cfg
-                .advanced
-                .sunshine_overrides
-                .iter()
-                .map(|(k, v)| (k.clone(), v.as_str().map_or_else(|| v.to_string(), str::to_owned)))
-                .collect(),
+            overrides: {
+                let mut o: std::collections::BTreeMap<String, String> = cfg
+                    .advanced
+                    .sunshine_overrides
+                    .iter()
+                    .map(|(k, v)| {
+                        (k.clone(), v.as_str().map_or_else(|| v.to_string(), str::to_owned))
+                    })
+                    .collect();
+                // Fuori dalla tailnet la cifratura di Sunshine è obbligatoria (§9, §11)
+                if cfg.network.provider == falco_store::config::Provider::Direct {
+                    o.insert("wan_encryption_mode".into(), "2".into());
+                    o.insert("lan_encryption_mode".into(), "1".into());
+                }
+                o
+            },
         }
     }
 

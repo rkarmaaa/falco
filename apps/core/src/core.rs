@@ -13,7 +13,7 @@ use falco_store::{ConfigFile, Db};
 use serde_json::json;
 use tokio::sync::{Mutex, broadcast, mpsc};
 
-pub const MILESTONE: &str = "M4";
+pub const MILESTONE: &str = "M5";
 
 /// Secondi Unix correnti.
 pub fn now() -> i64 {
@@ -102,6 +102,8 @@ pub struct Core {
     pub joined: Option<String>,
     /// «Disponibile» scelto dall'utente (non un avvio temporaneo per il pairing).
     pub user_available: bool,
+    /// Altri Falco visti nella rete locale (provider LAN), per ID.
+    pub lan_peers: std::collections::HashMap<String, falco_net::lan::LanPeer>,
     ui: Option<Child>,
     events: broadcast::Sender<Notification>,
     notify_tray: Notify,
@@ -136,6 +138,7 @@ impl Core {
             knocks: std::collections::HashMap::new(),
             joined: None,
             user_available: false,
+            lan_peers: std::collections::HashMap::new(),
             ui: None,
             events: broadcast::channel(64).0,
             notify_tray,
@@ -337,6 +340,20 @@ pub async fn run(core: Core, mut tray_rx: mpsc::UnboundedReceiver<TrayCommand>) 
     let presence_server = tokio::spawn(crate::fpp_server::run(shared.clone()));
     let presence_client = tokio::spawn(crate::social::run(shared.clone()));
     let access = tokio::spawn(crate::access::run(shared.clone()));
+    // Eventi di Tailscale (LocalAPI): aggiornano subito la presenza invece di aspettare il timer
+    let lan = tokio::spawn(crate::netmodes::lan_task(shared.clone()));
+    let ipn = {
+        let (ts, poke) = {
+            let c = shared.lock().await;
+            (c.net.clone(), c.poke.clone())
+        };
+        tokio::spawn(async move {
+            loop {
+                falco_net::diagnostics::watch_ipn(&ts, || poke.notify_one()).await;
+                tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+            }
+        })
+    };
     let available = shared.lock().await.config.config().host.available_on_start;
     if available {
         tokio::spawn(set_available(shared.clone(), true));
@@ -377,4 +394,6 @@ pub async fn run(core: Core, mut tray_rx: mpsc::UnboundedReceiver<TrayCommand>) 
     presence_server.abort();
     presence_client.abort();
     access.abort();
+    ipn.abort();
+    lan.abort();
 }

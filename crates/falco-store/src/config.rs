@@ -477,6 +477,14 @@ impl ConfigFile {
         Ok(apply_at(dotted))
     }
 
+    /// Importa un file intero (Avanzate → Importa): validato prima di sostituire.
+    pub fn replace_text(&mut self, text: &str) -> Result<(), ConfigError> {
+        let doc: DocumentMut = text.parse().map_err(|e: toml_edit::TomlError| {
+            ConfigError::Parse { line: span_line(text, e.span()), message: e.message().to_owned() }
+        })?;
+        self.commit(doc)
+    }
+
     /// «Ripristina default» per un gruppo.
     pub fn reset_section(&mut self, section: &str) -> Result<(), ConfigError> {
         let defaults: DocumentMut =

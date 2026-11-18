@@ -18,7 +18,12 @@ JSON-RPC 2.0, un messaggio JSON per riga, su named pipe `\\.\pipe\falco-core-<ut
 | `config.reset` | `{ section }` | `null` | M0 |
 | `profile.update` | `{ status? }` (nome e avatar in M2) | `null` | M0 parziale |
 | `host.setAvailable` | `{ available }` | `{ available }`; avvia o ferma Sunshine, avanzamento con `host.state` | M1 |
-| `net.runDoctor` | — | `{ checks: [{ id, level, value, action }] }` | M0 parziale |
+| `net.runDoctor` | — | `{ checks: [{ id, level, value, action }] }`: Tailscale, UDP/NAT, percorso, porte, banda, jitter, postazione | M5 |
+| `net.lanPeers` | — | Falco visti in LAN `[{ id, name, ip, port }]` | M5 |
+| `net.loginHeadscale` | — | avvia `tailscale login --login-server` | M5 |
+| `config.schema` | — | chiavi con tipo, opzioni, intervalli, `applyAt` | M5 |
+| `config.export` | — | `{ text }` | M5 |
+| `config.import` | `{ text }` | `null` (validato prima di salvare) | M5 |
 | `app.openUi` | — | `null`; usato dalla seconda istanza del core | M0 |
 | `host.pairings` | — | richieste di pairing in attesa `[{ id, name, address }]` | M1 |
 | `host.approvePairing` | `{ id, pin, name }` | `null` | M1 |

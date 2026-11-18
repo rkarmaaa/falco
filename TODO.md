@@ -58,12 +58,13 @@ Fatto in anticipo, utile alle milestone successive:
 - [ ] Barra rapida sovrapposta al gioco (ora la scorciatoia apre la finestra su Ospita)
 - [ ] **Marco**: test con client modificato e tre ospiti contemporanei con controller separati
 
-## M5 · Rete e diagnostica
+## M5 · Rete e diagnostica (fatto)
 
-- [ ] Provider LAN, Diretto e Headscale dietro `NetworkProvider`
-- [ ] Dottore di rete con tutti i controlli del §9
-- [ ] Impostazioni avanzate complete secondo il §15
-- [ ] Eventi della LocalAPI di Tailscale al posto del polling
+- [x] Provider dietro una scelta unica: Tailscale (default), **LAN** con mDNS `_falco._tcp` e indirizzo locale preferito, **Diretto** (tutte le interfacce, UPnP, cifratura di Sunshine obbligatoria, IP pubblico negli inviti), **Headscale** (login con `--login-server`)
+- [x] Dottore di rete completo: Tailscale, UDP e NAT (`netcheck`), percorso verso ogni amico (`tailscale ping`), porte di Sunshine, banda (`/v1/speedtest`), jitter e perdite (200 pacchetti UDP), Wi-Fi e banda, batteria, risparmio energetico, altre VPN
+- [x] Impostazioni avanzate complete del §15 generate dallo schema (`config.schema`), con momento di applicazione; esporta e importa
+- [x] Eventi della LocalAPI di Tailscale (`debug watch-ipn`) al posto del solo polling
+- [ ] Provider Diretto e LAN da provare su reti vere (**Marco**)
 
 ## M6 · Rilascio 1.0
 

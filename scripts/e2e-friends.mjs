@@ -66,6 +66,11 @@ try {
   await sleep(4000);
   const state = (await b.call('friends.list')).find((f) => f.id === marco.id);
   console.log(`  stato di Marco per B: ${state.state}, posti liberi ${state.slotsFree}`);
+  step('M5: Dottore di rete di B (amico Marco online, host pronto)');
+  for (const c of (await b.call('net.runDoctor')).checks)
+    console.log(`  ${c.level.padEnd(7)} ${c.id}${c.value ? ` · ${c.value}` : ''}`);
+  const portsA = (await a.call('net.runDoctor')).checks.find((c) => c.id === 'sunshinePorts');
+  console.log(`  A ${portsA.level} sunshinePorts · ${portsA.value ?? ''}`);
   const connected = b.waitFor((m) => m.method === 'session.stats' && m.params.phase === 'connected', 60_000);
   await b.call('session.join', { friendId: marco.id });
   await connected;

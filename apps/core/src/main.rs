@@ -6,6 +6,7 @@
 mod access;
 mod bench;
 mod core;
+mod doctor;
 mod fpp_server;
 mod guest;
 mod host;
@@ -13,6 +14,7 @@ mod i18n;
 mod identity;
 mod invites;
 mod ipc;
+mod netmodes;
 mod secrets;
 mod social;
 mod tray;

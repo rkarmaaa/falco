@@ -13,7 +13,9 @@ thiserror.workspace = true
 tracing.workspace = true
 which.workspace = true
 ureq.workspace = true
-tokio = { workspace = true, features = ["process", "time"] }
+mdns-sd = "0.13"
+if-addrs = "0.13"
+tokio = { workspace = true, features = ["process", "time", "io-util"] }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt"] }

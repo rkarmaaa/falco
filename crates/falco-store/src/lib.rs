@@ -3,6 +3,7 @@
 
 pub mod config;
 pub mod db;
+pub mod schema;
 
 pub use config::{Config, ConfigError, ConfigFile};
 pub use db::Db;

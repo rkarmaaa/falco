@@ -97,6 +97,10 @@ impl Srv {
         if !matches!(state, Some(FriendState::Friend | FriendState::Pending)) {
             return Err((StatusCode::FORBIDDEN, "non siete amici".into()));
         }
+        // LAN o Diretto: l'IP deve essere quello annunciato o registrato per l'amico
+        if crate::netmodes::trusted_off_tailnet(&self.core, &key, peer.ip()).await {
+            return Ok(id);
+        }
         // Doppio vincolo: l'IP deve appartenere a un nodo registrato per quell'amico
         let node = self.node_of(peer.ip()).await;
         let owner = match &node {
@@ -225,7 +229,8 @@ async fn handshake(
         return err(StatusCode::UNAUTHORIZED, "profilo di un altro utente");
     }
     // Il nodo dichiarato deve essere quello da cui arriva la richiesta
-    if s.node_of(peer.ip()).await.as_deref() != Some(req.node_id.as_str()) {
+    let direct = crate::netmodes::mode(&s.core).await == crate::netmodes::Mode::Direct;
+    if !direct && s.node_of(peer.ip()).await.as_deref() != Some(req.node_id.as_str()) {
         return err(StatusCode::FORBIDDEN, "dispositivo non riconosciuto da Tailscale");
     }
     let hash = falco_proto::invite::token_hash(&req.token);
@@ -290,6 +295,47 @@ async fn handshake(
     axum::Json(HandshakeResponse { profile, pin, sunshine_port }).into_response()
 }
 
+/// Test di banda del Dottore di rete: 8 MB da scaricare (solo amici).
+async fn speedtest(
+    State(s): State<Srv>,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    method: Method,
+    uri: Uri,
+    headers: HeaderMap,
+) -> Response {
+    if let Err((code, msg)) = s.auth(peer, &method, &uri, &headers, b"", true).await {
+        return err(code, &msg);
+    }
+    (
+        [(header::CONTENT_TYPE, "application/octet-stream"), (header::CACHE_CONTROL, "no-store")],
+        vec![0u8; 8 << 20],
+    )
+        .into_response()
+}
+
+/// Eco UDP per jitter e perdite: risponde solo agli indirizzi dei dispositivi degli amici.
+async fn udp_echo(core: Shared, sock: tokio::net::UdpSocket) {
+    let mut buf = [0u8; 64];
+    loop {
+        let Ok((n, from)) = sock.recv_from(&mut buf).await else { continue };
+        if n != 13 || !buf.starts_with(b"FALCOECHO") {
+            continue;
+        }
+        let known = {
+            let c = core.lock().await;
+            c.db.friends().unwrap_or_default().iter().any(|f| {
+                c.db.devices(&f.id)
+                    .unwrap_or_default()
+                    .iter()
+                    .any(|d| social::split_address(&d.ts_ip).0 == from.ip().to_string())
+            })
+        };
+        if known {
+            let _ = sock.send_to(&buf[..n], from).await;
+        }
+    }
+}
+
 /// Un amico chiede di entrare (§7 «Bussare»); long-poll fino al timeout.
 async fn knock(
     State(s): State<Srv>,
@@ -349,6 +395,7 @@ fn router(s: Srv) -> Router {
         .route("/v1/avatar/{hash}", get(avatar))
         .route("/v1/presence", get(presence))
         .route("/v1/handshake", post(handshake))
+        .route("/v1/speedtest", get(speedtest))
         .route("/v1/friend/remove", post(friend_remove))
         .route("/v1/session/knock", post(knock))
         .route("/v1/session/leave", post(leave))
@@ -367,12 +414,8 @@ pub async fn run(core: Shared) {
             (c.net.clone(), c.config.config().network.presence_port)
         };
         let net = crate::core::Core::net_status(ts).await;
-        let mut want: Vec<(IpAddr, u16)> = net
-            .self_ips
-            .iter()
-            .filter(|ip| social::is_tailnet(**ip))
-            .map(|ip| (*ip, port))
-            .collect();
+        let mut want: Vec<(IpAddr, u16)> =
+            crate::netmodes::bind_ips(&core, &net).await.into_iter().map(|ip| (ip, port)).collect();
         want.sort();
         if want != bound {
             tasks.drain(..).for_each(|t| t.abort());
@@ -384,6 +427,9 @@ pub async fn run(core: Shared) {
                         tasks.push(tokio::spawn(async move {
                             let _ = axum::serve(l, app).await;
                         }));
+                        if let Ok(u) = tokio::net::UdpSocket::bind((*ip, *port)).await {
+                            tasks.push(tokio::spawn(udp_echo(core.clone(), u)));
+                        }
                     }
                     Err(e) => tracing::warn!("presenza non in ascolto su {ip}:{port}: {e}"),
                 }

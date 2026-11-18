@@ -137,7 +137,16 @@
       "clientId": "Client ID",
       "secret": "Client secret",
       "saved": "Credentials verified and saved in the keychain."
-    }
+    },
+    "networkParams": "Network parameters",
+    "hostParams": "Host parameters",
+    "applyAtHint": "When the change takes effect",
+    "permissionsIntro": "Role given to new friends and join rules. Each friend's permissions are changed from their panel.",
+    "export": "Export settings",
+    "import": "Import settings",
+    "imported": "Settings imported and verified.",
+    "headscaleLogin": "Sign in to the Headscale server",
+    "headscaleStarted": "Sign-in started: finish it in your browser."
   },
   "doctor": {
     "title": "Network doctor",
@@ -158,14 +167,32 @@
       "sunshinePorts": "Streaming ports",
       "bandwidth": "Bandwidth",
       "jitter": "Line stability",
-      "localSetup": "Local setup"
+      "localSetup": "Local setup",
+      "nat": "NAT type",
+      "peerPath": "Path to friend",
+      "wifi": "Connection",
+      "battery": "Power",
+      "powerSaver": "Power plan",
+      "otherVpn": "Other active VPNs"
     },
     "action": {
       "installTailscale": "Install Tailscale from the official site, then reopen Falco.",
       "loginTailscale": "Sign in to Tailscale with Google, Microsoft or GitHub.",
       "startTailscale": "Open Tailscale and press “Connect”.",
       "disableExitNode": "Turn off the exit node while playing: it adds latency.",
-      "enableUpnp": "Enable UPnP on your router, or forward UDP port 41641 to the host PC."
+      "enableUpnp": "Enable UPnP on your router, or forward UDP port 41641 to the host PC.",
+      "unblockUdp": "UDP traffic seems blocked: check your firewall or router, or try another network.",
+      "friendOffline": "Your friend isn't answering: ask them to open Falco.",
+      "hostOff": "Turn on “Available” to test the streaming ports.",
+      "firewall": "The firewall is blocking streaming: allow Falco in your firewall settings.",
+      "lowBandwidth": "Low bandwidth: stop downloads and other streams or lower the quality.",
+      "unstableLine": "Unstable line: use a cable or move closer to the router.",
+      "needFriend": "A friend needs to be online to measure this.",
+      "useCable": "You're on 2.4 GHz Wi-Fi: use a cable or the 5/6 GHz network.",
+      "cableBetter": "Fine, but a cable is steadier for gaming.",
+      "plugIn": "The laptop is on battery: plug it in for the best performance.",
+      "highPerformance": "Power saver is on: switch to “balanced” or “high performance”.",
+      "disableVpn": "Another VPN can add latency: turn it off while playing."
     }
   },
   "core": {
@@ -310,5 +337,95 @@
     "declined": "{name} declined the request. It's not a good time. Try again later.",
     "unknown": "{name} doesn't recognise you as a friend. The friendship may have been removed. Ask for a new invite.",
     "offline": "I can't reach {name}. Their Falco or Tailscale seems to be off. Ask them to open Falco."
+  },
+  "cfg": {
+    "general": {
+      "language": "Language",
+      "theme": "Theme",
+      "updates": "Updates",
+      "start_with_system": "Start with the system",
+      "start_minimized": "Start in the tray",
+      "close_to_tray": "Closing the window keeps it in the tray"
+    },
+    "stream": {
+      "resolution": "Resolution",
+      "fps": "Frames per second",
+      "codec": "Video codec",
+      "bitrate_mode": "Bitrate",
+      "bitrate_kbps": "Fixed bitrate (kbps)",
+      "display_mode": "Window mode",
+      "vsync": "V-Sync",
+      "frame_pacing": "Frame pacing",
+      "audio": "Audio",
+      "capture_system_keys": "Capture system shortcuts",
+      "overlay": "On-screen stats"
+    },
+    "host": {
+      "available_on_start": "Available at startup",
+      "max_guests": "Simultaneous guests",
+      "encoder": "Encoder",
+      "default_role": "Default role for new friends",
+      "knock_timeout_s": "Max wait for knocks (s)",
+      "apps_autodetect": "Detect game launchers"
+    },
+    "network": {
+      "provider": "Network provider",
+      "presence_port": "Presence port",
+      "sunshine_base_port": "Streaming base port",
+      "address_family": "Address family",
+      "upnp": "UPnP / NAT-PMP",
+      "fec_percent": "Error correction (FEC %)",
+      "relay_bitrate_cap_kbps": "Relay bitrate cap (kbps)",
+      "qos_dscp": "QoS priority (DSCP 46)",
+      "firewall_scope": "Firewall scope",
+      "connect_timeout_s": "Connection timeout (s)",
+      "reconnect_attempts": "Reconnection attempts",
+      "warn_exit_node": "Warn about exit nodes",
+      "headscale_url": "Headscale server URL"
+    },
+    "performance": {
+      "raise_priority": "Raise engine priority while playing",
+      "warn_on_battery": "Warn when the laptop is on battery",
+      "poll_ui_s": "Friends refresh with window open (s)",
+      "poll_tray_s": "Friends refresh in the tray (s)"
+    },
+    "advanced": {
+      "log_level": "Log level"
+    },
+    "opt": {
+      "auto": "Automatic",
+      "it": "Italiano",
+      "en": "English",
+      "system": "Match system",
+      "dark": "Dark",
+      "light": "Light",
+      "notify": "Notify only",
+      "off": "Off",
+      "fixed": "Fixed",
+      "fullscreen": "Full screen",
+      "borderless": "Borderless",
+      "windowed": "Windowed",
+      "stereo": "Stereo",
+      "never": "Never",
+      "always": "Always",
+      "software": "Software (CPU)",
+      "tailscale": "Tailscale",
+      "lan": "Local network (LAN)",
+      "direct": "Direct (open ports)",
+      "headscale": "Headscale",
+      "both": "IPv4 and IPv6",
+      "ipv4": "IPv4 only",
+      "ipv6": "IPv6 only",
+      "tailnet": "Tailnet only",
+      "tailnet+lan": "Tailnet and LAN",
+      "error": "Errors",
+      "warn": "Warnings",
+      "info": "Info",
+      "debug": "Debug",
+      "spettatore": "Spectator",
+      "giocatore": "Player",
+      "copilota": "Co-pilot",
+      "fidato": "Trusted"
+    }
   }
 }

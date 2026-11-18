@@ -69,13 +69,16 @@ pub async fn create(core: &Shared, p: CreateParams) -> anyhow::Result<Created> {
     let ts = core.lock().await.net.clone();
     let net = ts.status().await?;
     let node = net.self_node_id.clone().context("Tailscale non è collegato")?;
-    let ip = net
-        .self_ips
-        .iter()
-        .find(|ip| ip.is_ipv4())
-        .or(net.self_ips.first())
-        .context("nessun indirizzo Tailscale")?
-        .to_string();
+    let ip = match crate::netmodes::public_ip(core).await {
+        Some(public) => public,
+        None => net
+            .self_ips
+            .iter()
+            .find(|ip| ip.is_ipv4())
+            .or(net.self_ips.first())
+            .context("nessun indirizzo Tailscale")?
+            .to_string(),
+    };
 
     // Invito di condivisione: automatico con OAuth, altrimenti quello incollato
     let node2 = node.clone();

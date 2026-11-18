@@ -231,8 +231,12 @@ async fn poll_once(shared: &Shared, favorites_only: bool) -> bool {
             .into_iter()
             .filter(|f| !favorites_only || f.favorite)
             .map(|f| {
-                let addrs =
+                let mut addrs: Vec<String> =
                     c.db.devices(&f.id).unwrap_or_default().into_iter().map(|d| d.ts_ip).collect();
+                // Provider LAN: stessa rete locale, latenza minima (§9)
+                if let Some(p) = c.lan_peers.get(&f.id) {
+                    addrs.insert(0, join_address(&p.ip.to_string(), p.port));
+                }
                 let etag = c.live.get(&f.id).and_then(|l| l.etag.clone());
                 (f, addrs, etag)
             })
@@ -367,7 +371,10 @@ pub async fn run(shared: Shared) {
         }
         tokio::select! {
             _ = tokio::time::sleep(wait) => {}
-            _ = poke.notified() => {}
+            _ = poke.notified() => {
+                // Gli eventi arrivano a raffiche: un secondo di pausa li raggruppa
+                tokio::time::sleep(Duration::from_secs(1)).await;
+            }
         }
     }
 }

@@ -1,7 +1,9 @@
 //! Rete di Falco (§9). Tutta la logica Tailscale vive qui, dietro `NetworkProvider`.
 #![cfg_attr(test, allow(clippy::unwrap_used))]
 
+pub mod diagnostics;
 pub mod doctor;
+pub mod lan;
 pub mod tailscale;
 pub mod tailscale_api;
 

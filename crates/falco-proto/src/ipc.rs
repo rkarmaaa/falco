@@ -45,6 +45,11 @@ pub mod methods {
     pub const HOST_ANSWER_KNOCK: &str = "host.answerKnock";
     pub const HOST_KICK: &str = "host.kick";
     pub const HOST_GUESTS: &str = "host.guests";
+    pub const CONFIG_SCHEMA: &str = "config.schema";
+    pub const CONFIG_EXPORT: &str = "config.export";
+    pub const CONFIG_IMPORT: &str = "config.import";
+    pub const NET_LAN_PEERS: &str = "net.lanPeers";
+    pub const NET_LOGIN_HEADSCALE: &str = "net.loginHeadscale";
 }
 
 pub mod events {

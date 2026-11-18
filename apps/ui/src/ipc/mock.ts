@@ -38,6 +38,15 @@ export function createMockTransport(): Transport {
   const handlers: Record<string, (p: any) => unknown> = {
     'state.snapshot': () => structuredClone(state),
     'config.get': () => ({ config: structuredClone(config) }),
+    'config.schema': () => [
+      { key: 'stream.fps', type: 'autoInt', options: [30, 60, 90, 120], applyAt: 'nextSession' },
+      { key: 'stream.vsync', type: 'bool', applyAt: 'nextSession' },
+      { key: 'network.provider', type: 'enum', options: ['tailscale', 'lan', 'direct', 'headscale'], applyAt: 'now' },
+      { key: 'network.fec_percent', type: 'int', min: 0, max: 100, applyAt: 'hostRestart' },
+      { key: 'advanced.log_level', type: 'enum', options: ['error', 'warn', 'info', 'debug'], applyAt: 'now' },
+    ],
+    'config.export': () => ({ text: 'schema = 1' }),
+    'config.import': () => null,
     'config.set': ({ key, value }: { key: string; value: unknown }) => {
       const [section, name] = key.split('.') as [string, string];
       (config[section] ??= {})[name] = value;
