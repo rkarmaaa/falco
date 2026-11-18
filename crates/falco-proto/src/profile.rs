@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::canonical::to_canonical_json;
-use crate::identity::{FaloId, Identity, IdentityError};
+use crate::identity::{FalcoId, Identity, IdentityError};
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum ProfileError {
@@ -40,7 +40,7 @@ pub struct Device {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Profile {
-    pub id: FaloId,
+    pub id: FalcoId,
     pub tag: String,
     pub name: String,
     /// SHA-256 esadecimale dell'avatar WebP, se presente.
@@ -54,7 +54,7 @@ pub struct Profile {
 
 impl Profile {
     /// Nuovo profilo con tag e accento derivati dall'ID.
-    pub fn new(id: FaloId, name: &str, updated_at: i64) -> Result<Self, ProfileError> {
+    pub fn new(id: FalcoId, name: &str, updated_at: i64) -> Result<Self, ProfileError> {
         Ok(Self {
             tag: id.tag(),
             accent: id.accent(),

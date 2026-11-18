@@ -490,7 +490,7 @@ mod tests {
     #[test]
     fn migrations_are_idempotent() {
         let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("falo.db");
+        let path = dir.path().join("falco.db");
         assert_eq!(Db::open(&path).unwrap().schema_version().unwrap(), MIGRATIONS.len());
         assert_eq!(Db::open(&path).unwrap().schema_version().unwrap(), MIGRATIONS.len());
     }

@@ -4,12 +4,12 @@ use std::path::Path;
 use std::process::Child;
 use std::sync::Arc;
 
-use falo_net::NetworkProvider;
-use falo_net::tailscale::Tailscale;
-use falo_proto::Status;
-use falo_proto::ipc::{NetworkSummary, Notification, StateSnapshot, TailscaleState, events};
-use falo_store::config::{Config, Language, Status as CfgStatus};
-use falo_store::{ConfigFile, Db};
+use falco_net::NetworkProvider;
+use falco_net::tailscale::Tailscale;
+use falco_proto::Status;
+use falco_proto::ipc::{NetworkSummary, Notification, StateSnapshot, TailscaleState, events};
+use falco_store::config::{Config, Language, Status as CfgStatus};
+use falco_store::{ConfigFile, Db};
 use serde_json::json;
 use tokio::sync::{Mutex, broadcast, mpsc};
 
@@ -137,7 +137,7 @@ impl Core {
 
     /// Notifica di sistema (richieste di ingresso, inviti accettati).
     pub fn notify_user(&self, title: &str, body: &str) {
-        let r = notify_rust::Notification::new().appname("Falò").summary(title).body(body).show();
+        let r = notify_rust::Notification::new().appname("Falco").summary(title).body(body).show();
         if let Err(e) = r {
             tracing::warn!("notifica non mostrata: {e}");
         }
@@ -169,14 +169,17 @@ impl Core {
     }
 
     /// Stato della rete; il chiamante non tiene `&Core` durante l'attesa.
-    pub async fn net_status(net: Tailscale) -> falo_net::NetStatus {
+    pub async fn net_status(net: Tailscale) -> falco_net::NetStatus {
         net.status().await.unwrap_or_else(|e| {
             tracing::warn!("stato Tailscale non disponibile: {e}");
-            falo_net::NetStatus { state: TailscaleState::Stopped, ..falo_net::NetStatus::missing() }
+            falco_net::NetStatus {
+                state: TailscaleState::Stopped,
+                ..falco_net::NetStatus::missing()
+            }
         })
     }
 
-    pub fn snapshot(&mut self, net: &falo_net::NetStatus) -> StateSnapshot {
+    pub fn snapshot(&mut self, net: &falco_net::NetStatus) -> StateSnapshot {
         self.last_self_ips.clone_from(&net.self_ips);
         StateSnapshot {
             host: serde_json::to_value(&self.host.state).unwrap_or_default(),
@@ -197,7 +200,7 @@ impl Core {
         }
     }
 
-    pub fn set_status(&mut self, s: Status) -> Result<(), falo_store::ConfigError> {
+    pub fn set_status(&mut self, s: Status) -> Result<(), falco_store::ConfigError> {
         self.config.set("profile.status", &json!(status_str(s)))?;
         self.emit(events::PRESENCE_CHANGED, json!({ "self": { "status": s } }));
         self.refresh_tray();
@@ -217,16 +220,16 @@ impl Core {
     pub fn path_to(
         &self,
         address: &str,
-        net: &falo_net::NetStatus,
-    ) -> falo_engines::moonlight::NetPath {
-        use falo_engines::moonlight::NetPath;
+        net: &falco_net::NetStatus,
+    ) -> falco_engines::moonlight::NetPath {
+        use falco_engines::moonlight::NetPath;
         let host = address.rsplit_once(':').map_or(address, |(h, _)| h);
         let Ok(ip) = host.parse::<std::net::IpAddr>() else { return NetPath::Lan };
         let cap = self.config.config().network.relay_bitrate_cap_kbps;
         let relayed = net
             .peers
             .iter()
-            .any(|p| p.ips.contains(&ip) && matches!(p.path, falo_net::PeerPath::Relay { .. }));
+            .any(|p| p.ips.contains(&ip) && matches!(p.path, falco_net::PeerPath::Relay { .. }));
         match ip {
             _ if relayed => NetPath::Relay { cap_kbps: cap },
             std::net::IpAddr::V4(v4) if v4.is_loopback() || v4.is_private() => NetPath::Lan,
@@ -251,7 +254,7 @@ impl Core {
             return;
         }
         let exe = std::env::current_exe().ok().and_then(|p| {
-            p.parent().map(|d| d.join(if cfg!(windows) { "falo-ui.exe" } else { "falo-ui" }))
+            p.parent().map(|d| d.join(if cfg!(windows) { "falco-ui.exe" } else { "falco-ui" }))
         });
         match exe.map(|p| std::process::Command::new(&p).spawn()) {
             Some(Ok(child)) => self.ui = Some(child),

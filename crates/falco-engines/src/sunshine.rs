@@ -132,7 +132,7 @@ pub fn generate_conf(s: &HostSettings, gpu: GpuVendor, platform: Platform) -> St
         kv.insert(k.clone(), v.clone());
     }
     let mut out =
-        String::from("# Generato da Falò: non modificare, usa advanced.sunshine_overrides\n");
+        String::from("# Generato da Falco: non modificare, usa advanced.sunshine_overrides\n");
     for (k, v) in kv {
         let _ = writeln!(out, "{k} = {v}");
     }

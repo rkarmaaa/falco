@@ -64,7 +64,7 @@ async function win() {
 
       &.close:hover {
         background: $danger;
-        color: $on-ember;
+        color: $on-accent;
       }
     }
   }

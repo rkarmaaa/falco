@@ -1,4 +1,4 @@
-// Tipi dell'IPC, specchio di crates/falo-proto/src/ipc.rs e falo-store config.
+// Tipi dell'IPC, specchio di crates/falco-proto/src/ipc.rs e falco-store config.
 
 export type Status = 'online' | 'busy' | 'invisible';
 export type TailscaleState = 'missing' | 'stopped' | 'needsLogin' | 'running';

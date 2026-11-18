@@ -1,9 +1,10 @@
 {
   "app": {
-    "name": "Falò",
+    "name": "Falco",
     "minimize": "Minimize",
     "maximize": "Maximize",
-    "close": "Close"
+    "close": "Close",
+    "tagline": "Play with friends. Fast as a falcon."
   },
   "nav": {
     "friends": "Friends",
@@ -155,7 +156,7 @@
       "localSetup": "Local setup"
     },
     "action": {
-      "installTailscale": "Install Tailscale from the official site, then reopen Falò.",
+      "installTailscale": "Install Tailscale from the official site, then reopen Falco.",
       "loginTailscale": "Sign in to Tailscale with Google, Microsoft or GitHub.",
       "startTailscale": "Open Tailscale and press “Connect”.",
       "disableExitNode": "Turn off the exit node while playing: it adds latency.",
@@ -163,7 +164,7 @@
     }
   },
   "core": {
-    "offlineTitle": "I can't reach Falò.",
+    "offlineTitle": "I can't reach Falco.",
     "offlineWhy": "The background service seems to be closed.",
     "offlineFix": "Reopen it from the Start menu or Launchpad: this window reconnects on its own."
   },
@@ -234,7 +235,7 @@
     "uses": "Uses",
     "approvalNote": "With more than one use you'll approve each join.",
     "create": "Create link",
-    "share": "Paste the link on Discord or WhatsApp. If the chat doesn't make it clickable, your friend just copies it: Falò finds it in the clipboard.",
+    "share": "Paste the link on Discord or WhatsApp. If the chat doesn't make it clickable, your friend just copies it: Falco finds it in the clipboard.",
     "copy": "Copy",
     "copied": "Copied",
     "done": "Done",
@@ -245,7 +246,7 @@
     "title": "Accept invite",
     "friends": "You're friends",
     "paste": "Invite link",
-    "invalid": "This link doesn't look like a Falò invite.",
+    "invalid": "This link doesn't look like a Falco invite.",
     "accept": "Accept",
     "browserNote": "Your browser will open to confirm sharing on Tailscale: it takes one click.",
     "step": {
@@ -264,7 +265,7 @@
     "decline": "Decline"
   },
   "onboarding": {
-    "welcome": "Welcome to Falò",
+    "welcome": "Welcome to Falco",
     "intro": "Stream games with your friends, as if they were on the couch next to you. You need a name and, if you like, a picture.",
     "continue": "Continue",
     "profileTitle": "What's your name?",
@@ -277,7 +278,7 @@
       "running": "Tailscale is connected: you're ready.",
       "needsLogin": "Tailscale is installed but you need to sign in. You'll do it with your first invite.",
       "stopped": "Tailscale is off: open it before inviting someone.",
-      "missing": "Tailscale isn't there yet: Falò will install it with your first invite."
+      "missing": "Tailscale isn't there yet: Falco will install it with your first invite."
     }
   }
 }

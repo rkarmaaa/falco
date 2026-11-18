@@ -1,6 +1,6 @@
 # Contratto IPC core ↔ UI
 
-JSON-RPC 2.0, un messaggio JSON per riga, su named pipe `\\.\pipe\falo-core-<utente>` (Windows) o socket Unix `core.sock` nella cartella dati locale (macOS). Decisione: [ADR 0002](adr/0002-ipc-json-rpc.md). Tipi Rust in [`crates/falo-proto/src/ipc.rs`](../crates/falo-proto/src/ipc.rs), tipi TypeScript in [`apps/ui/src/ipc/types.ts`](../apps/ui/src/ipc/types.ts).
+JSON-RPC 2.0, un messaggio JSON per riga, su named pipe `\\.\pipe\falco-core-<utente>` (Windows) o socket Unix `core.sock` nella cartella dati locale (macOS). Decisione: [ADR 0002](adr/0002-ipc-json-rpc.md). Tipi Rust in [`crates/falco-proto/src/ipc.rs`](../crates/falco-proto/src/ipc.rs), tipi TypeScript in [`apps/ui/src/ipc/types.ts`](../apps/ui/src/ipc/types.ts).
 
 ```json
 → {"jsonrpc":"2.0","id":1,"method":"host.setAvailable","params":{"available":true}}

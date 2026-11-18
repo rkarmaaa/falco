@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Pulsante: primario brace, secondario superficie, fantasma, pericolo
+// Pulsante: primario accento, secondario superficie, fantasma, pericolo
 withDefaults(
   defineProps<{
     variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -62,15 +62,15 @@ withDefaults(
   }
 
   &.primary {
-    background: $ember-500;
-    color: $on-ember;
+    background: $accent-500;
+    color: $on-accent;
 
     &:hover {
-      background: $ember-400;
+      background: $accent-400;
     }
 
     &:active {
-      background: $ember-600;
+      background: $accent-600;
     }
   }
 
@@ -99,7 +99,7 @@ withDefaults(
 
     &:hover {
       background: $danger;
-      color: $on-ember;
+      color: $on-accent;
     }
   }
 

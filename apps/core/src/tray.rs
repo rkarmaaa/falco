@@ -1,7 +1,7 @@
 //! Icona e menu del tray (§13 «Fuori dalla finestra»).
 
 use anyhow::Context;
-use falo_proto::Status;
+use falco_proto::Status;
 use tray_icon::menu::{CheckMenuItem, Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 use tray_icon::{Icon, TrayIcon, TrayIconBuilder};
 

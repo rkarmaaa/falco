@@ -3,13 +3,13 @@
 use std::time::Duration;
 
 use anyhow::{Context, bail};
-use falo_net::NetworkProvider;
-use falo_net::tailscale_api::TailscaleApi;
-use falo_proto::fpp::{DEFAULT_PRESENCE_PORT, HandshakeRequest, HandshakeResponse};
-use falo_proto::invite::{self, InviteHost, InvitePayload, InviteTailscale};
-use falo_proto::ipc::events;
-use falo_proto::{Permissions, Role};
-use falo_store::db::{DeviceRow, FriendRow, FriendState};
+use falco_net::NetworkProvider;
+use falco_net::tailscale_api::TailscaleApi;
+use falco_proto::fpp::{DEFAULT_PRESENCE_PORT, HandshakeRequest, HandshakeResponse};
+use falco_proto::invite::{self, InviteHost, InvitePayload, InviteTailscale};
+use falco_proto::ipc::events;
+use falco_proto::{Permissions, Role};
+use falco_store::db::{DeviceRow, FriendRow, FriendState};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tokio::sync::oneshot;
@@ -120,7 +120,7 @@ pub async fn create(core: &Shared, p: CreateParams) -> anyhow::Result<Created> {
 }
 
 fn net_host_name() -> String {
-    std::env::var("COMPUTERNAME").unwrap_or_else(|_| "falo".into()).to_lowercase()
+    std::env::var("COMPUTERNAME").unwrap_or_else(|_| "falco".into()).to_lowercase()
 }
 
 pub fn role_name(r: Role) -> String {
@@ -162,7 +162,7 @@ pub async fn ask_host(core: &Shared, name: &str, tag: &str) -> bool {
         let mut c = core.lock().await;
         c.approvals.insert(id.clone(), tx);
         c.emit(events::INVITE_REQUEST, json!({ "requestId": id, "name": name, "tag": tag }));
-        c.notify_user(&format!("{name} vuole unirsi"), "Apri Falò per accettare o rifiutare.");
+        c.notify_user(&format!("{name} vuole unirsi"), "Apri Falco per accettare o rifiutare.");
     }
     let ok = matches!(tokio::time::timeout(Duration::from_secs(60), rx).await, Ok(Ok(true)));
     core.lock().await.approvals.remove(&id);
@@ -242,7 +242,7 @@ pub async fn accept(core: Shared, link: String) -> anyhow::Result<()> {
     // 1. Tailscale installato e collegato
     progress(&*core.lock().await, "tailscale", None);
     let net = ts.status().await?;
-    if net.state != falo_proto::ipc::TailscaleState::Running {
+    if net.state != falco_proto::ipc::TailscaleState::Running {
         progress(&*core.lock().await, "tailscale", Some(false));
         bail!("Tailscale non è collegato");
     }
@@ -251,7 +251,7 @@ pub async fn accept(core: Shared, link: String) -> anyhow::Result<()> {
     // 2. Condivisione: il browser apre l'invito, poi si attende che l'host sia visibile
     progress(&*core.lock().await, "share", None);
     let host_ip: std::net::IpAddr = p.ts.ip.parse().context("indirizzo dell'host non valido")?;
-    let visible = |n: &falo_net::NetStatus| {
+    let visible = |n: &falco_net::NetStatus| {
         n.self_ips.contains(&host_ip) || n.peers.iter().any(|peer| peer.ips.contains(&host_ip))
     };
     if !visible(&net) {

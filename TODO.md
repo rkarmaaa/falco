@@ -1,6 +1,6 @@
 # TODO
 
-Stato delle milestone del §16 di [docs/falo-spec.md](docs/falo-spec.md). Una milestone si chiude solo con tutti i criteri spuntati.
+Stato delle milestone del §16 di [docs/falco-spec.md](docs/falco-spec.md). Una milestone si chiude solo con tutti i criteri spuntati.
 
 ## M0 · Fondamenta
 
@@ -12,10 +12,10 @@ Stato delle milestone del §16 di [docs/falo-spec.md](docs/falo-spec.md). Una mi
 
 Fatto in anticipo, utile alle milestone successive:
 
-- [x] `falo-proto`: identità Ed25519, tag e accento, profili firmati in JSON canonico, ruoli e permessi, link di invito firmati e compressi
-- [x] `falo-store`: tabelle SQLite del §5, inviti a uso singolo atomici, config con validazione e conservazione di commenti e chiavi sconosciute
-- [x] `falo-net`: lettura di `tailscale status --json`, primi controlli del Dottore di rete
-- [x] `falo-engines`: generazione di `sunshine.conf` e `apps.json`, argomenti e parametri automatici di Moonlight, lettura degli eventi JSON
+- [x] `falco-proto`: identità Ed25519, tag e accento, profili firmati in JSON canonico, ruoli e permessi, link di invito firmati e compressi
+- [x] `falco-store`: tabelle SQLite del §5, inviti a uso singolo atomici, config con validazione e conservazione di commenti e chiavi sconosciute
+- [x] `falco-net`: lettura di `tailscale status --json`, primi controlli del Dottore di rete
+- [x] `falco-engines`: generazione di `sunshine.conf` e `apps.json`, argomenti e parametri automatici di Moonlight, lettura degli eventi JSON
 - [x] UI: design system, barra del titolo, barra laterale, stati vuoti, Ospita, Impostazioni con Dottore di rete, italiano e inglese, core simulato nel browser
 
 ## M1 · Streaming orchestrato (codice completo, manca la prova su hardware)
@@ -24,7 +24,7 @@ Fatto in anticipo, utile alle milestone successive:
 - [x] Il core lancia Moonlight e ne legge lo stato (dai log fino allo stato JSON del fork)
 - [x] Pairing con PIN dalla UI provvisoria; con l'host sullo stesso PC il PIN si conferma da solo
 - [x] Prova end-to-end in loopback solo via IPC: `node scripts/e2e-loopback.mjs` (HEVC, encoder AMD)
-- [x] Comando `falo-core bench [secondi] [stato]` (§10)
+- [x] Comando `falco-core bench [secondi] [stato]` (§10)
 - [ ] **Marco**: 1080p60 HEVC da Windows con GPU AMD a MacBook M1 via Tailscale, latenza uguale ai motori originali (telecamera a 240 fps, §17)
 
 ## M2 · Identità e amici (fatto)
@@ -33,8 +33,8 @@ Fatto in anticipo, utile alle milestone successive:
 - [x] Server di presenza FPP solo sugli IP Tailscale: firma, ±60 s, `tailscale whois`, 20 richieste/min, ETag
 - [x] Lista amici (in gioco, online, occupato, offline, in attesa, bloccato) e dettaglio nel pannello destro
 - [x] Stato online entro 15 s a finestra aperta (60 s in tray, solo preferiti; fermo in streaming)
-- [x] Prova a due istanze: `node scripts/e2e-friends.mjs` (`FALO_INSTANCE=b` per la seconda)
-- [ ] Esportazione e ripristino `.falo-id` (Argon2id + XChaCha20-Poly1305) e collegamento di un secondo dispositivo
+- [x] Prova a due istanze: `node scripts/e2e-friends.mjs` (`FALCO_INSTANCE=b` per la seconda)
+- [ ] Esportazione e ripristino `.falco-id` (Argon2id + XChaCha20-Poly1305) e collegamento di un secondo dispositivo
 
 ## M3 · Inviti (fatto, tranne Tailscale automatico)
 
@@ -69,15 +69,15 @@ Fatto in anticipo, utile alle milestone successive:
 - [ ] Installer firmato per Windows, app notarizzata per macOS, aggiornamenti firmati
 - [ ] **Notifica di nuova versione** con pulsante «Aggiorna» (toast, voce nel tray, badge su Impostazioni → Info)
 - [ ] **Aggiornamento automatico** senza installazioni manuali: download in background e installazione silenziosa quando non c'è una sessione attiva ([ADR 0008](docs/adr/0008-aggiornamenti-automatici.md))
-- [ ] Pacchetto unico: Sunshine, Moonlight, driver dei controller e Tailscale arrivano con Falò, senza installazioni manuali ([ADR 0012](docs/adr/0012-nessuna-installazione-manuale.md))
+- [ ] Pacchetto unico: Sunshine, Moonlight, driver dei controller e Tailscale arrivano con Falco, senza installazioni manuali ([ADR 0012](docs/adr/0012-nessuna-installazione-manuale.md))
 - [ ] Sorgenti GPL-3.0 pubblicati con il rilascio
 
 ## Decisioni da prendere (Marco)
 
-- [ ] **Come arriva Tailscale senza installazione manuale**: installazione silenziosa del client ufficiale oppure `tsnet` dentro Falò ([ADR 0012](docs/adr/0012-nessuna-installazione-manuale.md))
+- [ ] **Come arriva Tailscale senza installazione manuale**: installazione silenziosa del client ufficiale oppure `tsnet` dentro Falco ([ADR 0012](docs/adr/0012-nessuna-installazione-manuale.md))
 - [ ] Contrasto di `$text-3` e valori del tema chiaro ([DESIGN_SYSTEM.md](DESIGN_SYSTEM.md#questioni-aperte))
-- [ ] Verifica del marchio «Falò» nel settore
+- [ ] Verifica del marchio «Falco» nel settore
 - [ ] Base dell'host: Sunshine con i permessi di Apollo, oppure Apollo direttamente
 - [ ] Budget per la firma del codice su Windows e macOS (serve anche agli aggiornamenti automatici)
 - [ ] Supporto ARM64 per Windows in v1 o in v2
-- [ ] Nome dell'organizzazione GitHub (ora segnaposto `falo-app/falo` in `Cargo.toml`)
+- [ ] Nome dell'organizzazione GitHub (ora segnaposto `falco-app/falco` in `Cargo.toml`)

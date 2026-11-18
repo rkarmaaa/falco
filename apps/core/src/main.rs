@@ -1,4 +1,4 @@
-//! falo-core: demone sempre attivo. Tray sul thread principale (tao),
+//! falco-core: demone sempre attivo. Tray sul thread principale (tao),
 //! IPC e logica su un runtime tokio single-thread separato.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 #![cfg_attr(test, allow(clippy::unwrap_used))]
@@ -20,8 +20,8 @@ mod tray;
 use std::path::PathBuf;
 
 use anyhow::Context;
-use falo_proto::ipc::{Request, methods, to_line};
-use falo_store::ConfigFile;
+use falco_proto::ipc::{Request, methods, to_line};
+use falco_store::ConfigFile;
 use tao::event::{Event, StartCause};
 use tao::event_loop::{ControlFlow, EventLoopBuilder};
 use tokio::io::AsyncWriteExt;
@@ -45,11 +45,11 @@ pub struct Paths {
 
 impl Paths {
     fn resolve() -> anyhow::Result<Self> {
-        let dirs = falo_proto::endpoint::project_dirs().context("cartella utente non trovata")?;
+        let dirs = falco_proto::endpoint::project_dirs().context("cartella utente non trovata")?;
         Ok(Self {
             data: dirs.data_local_dir().to_path_buf(),
             config: dirs.config_dir().join("config.toml"),
-            db: dirs.data_dir().join("falo.db"),
+            db: dirs.data_dir().join("falco.db"),
             logs: dirs.data_local_dir().join("logs"),
         })
     }
@@ -58,7 +58,7 @@ impl Paths {
 fn main() -> anyhow::Result<()> {
     let args: Vec<String> = std::env::args().collect();
     if args.iter().any(|a| a == "--version") {
-        println!("falo-core {}", env!("CARGO_PKG_VERSION"));
+        println!("falco-core {}", env!("CARGO_PKG_VERSION"));
         return Ok(());
     }
     if args.get(1).map(String::as_str) == Some("bench") {
@@ -93,7 +93,7 @@ fn main() -> anyhow::Result<()> {
     let initial = TrayUpdate::from_config(config.config());
     let core = Core::new(config, &paths.db, &paths.data, Box::new(notify))?;
 
-    std::thread::Builder::new().name("falo-runtime".into()).spawn(move || {
+    std::thread::Builder::new().name("falco-runtime".into()).spawn(move || {
         let rt = match tokio::runtime::Builder::new_current_thread().enable_all().build() {
             Ok(rt) => rt,
             Err(e) => {
@@ -138,8 +138,8 @@ fn forward_to_running_core() -> bool {
         return false;
     };
     rt.block_on(async {
-        let Ok(stream) = falo_proto::transport::connect().await else { return false };
-        let (_rx, mut tx) = falo_proto::transport::split(stream);
+        let Ok(stream) = falco_proto::transport::connect().await else { return false };
+        let (_rx, mut tx) = falco_proto::transport::split(stream);
         let Ok(line) = to_line(&Request::new(1, methods::APP_OPEN_UI, serde_json::Value::Null))
         else {
             return false;
@@ -150,9 +150,9 @@ fn forward_to_running_core() -> bool {
 
 fn init_logging(
     paths: &Paths,
-    level: falo_store::config::LogLevel,
+    level: falco_store::config::LogLevel,
 ) -> Option<tracing_appender::non_blocking::WorkerGuard> {
-    use falo_store::config::LogLevel;
+    use falco_store::config::LogLevel;
     let level = match level {
         LogLevel::Error => "error",
         LogLevel::Warn => "warn",
@@ -174,7 +174,7 @@ fn init_logging(
         }
     };
     let (writer, guard) = tracing_appender::non_blocking(appender);
-    let filter = tracing_subscriber::EnvFilter::try_from_env("FALO_LOG")
+    let filter = tracing_subscriber::EnvFilter::try_from_env("FALCO_LOG")
         .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new(level));
     tracing_subscriber::fmt().with_env_filter(filter).with_writer(writer).with_ansi(false).init();
     Some(guard)

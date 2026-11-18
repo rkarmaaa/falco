@@ -1,13 +1,13 @@
 // Test di fumo dell'IPC: si collega al core in esecuzione e chiama alcuni metodi.
-// Uso: node scripts/ipc-smoke.mjs [metodo]  (con falo-core già avviato)
+// Uso: node scripts/ipc-smoke.mjs [metodo]  (con falco-core già avviato)
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 
 const endpoint =
   process.platform === 'win32'
-    ? String.raw`\\.\pipe\falo-core-` + (process.env.USERNAME ?? 'user')
-    : path.join(os.homedir(), 'Library/Application Support/app.Falo.Falo/core.sock');
+    ? String.raw`\\.\pipe\falco-core-` + (process.env.USERNAME ?? 'user')
+    : path.join(os.homedir(), 'Library/Application Support/app.Falco.Falco/core.sock');
 
 const calls = process.argv[2] ? [[process.argv[2]]] : [
   ['state.snapshot'],

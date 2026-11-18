@@ -132,9 +132,9 @@ async function approve(p: PendingPairing): Promise<void> {
     border-radius: $r-card;
     transition: box-shadow $t-panel $ease;
 
-    // Host pronto: stato vivo, bordo brace
+    // Host pronto: stato vivo, bordo d'accento
     &.live {
-      box-shadow: inset 0 0 0 1px $ember-500;
+      box-shadow: inset 0 0 0 1px $accent-500;
     }
 
     .state {

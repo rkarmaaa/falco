@@ -43,7 +43,7 @@ const initials = computed(() =>
   display: inline-grid;
   place-items: center;
   background: var(--accent);
-  color: $on-ember;
+  color: $on-accent;
   font-weight: 650;
 
   img {
@@ -73,7 +73,7 @@ const initials = computed(() =>
   }
 
   &.playing {
-    --ring: #{$ember-500};
+    --ring: #{$accent-500};
     @include glow;
   }
 

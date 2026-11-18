@@ -1,60 +1,77 @@
-# Design system di Falò
+# Design system di Falco
 
-> «Notte attorno al fuoco»: superfici scure e calde, un solo colore d'accento color brace usato con parsimonia, tipografia compatta e decisa. Il colore indica sempre uno stato o un'azione, mai una decorazione.
+> «Volo notturno»: superfici grafite fredde, un solo colore d'accento, **Cielo**, usato con parsimonia, tipografia compatta e decisa. Il falco vede tutto e arriva per primo: l'interfaccia è essenziale, rapida, senza ornamenti. Il colore indica sempre uno stato o un'azione, mai una decorazione.
 
-Questo documento è la guida pratica al design system. La fonte di verità per i valori resta il §12 di [`docs/falo-spec.md`](docs/falo-spec.md); l'implementazione vive in [`apps/ui/src/styles`](apps/ui/src/styles) e nei componenti di [`apps/ui/src/components`](apps/ui/src/components). Se un file Figma delle schermate esiste, è la fonte del layout; colori, spazi e tipografia vengono sempre da qui.
+Questo documento è la guida pratica al design system. La fonte di verità per i valori resta il §12 di [`docs/falco-spec.md`](docs/falco-spec.md); l'implementazione vive in [`apps/ui/src/styles`](apps/ui/src/styles) e nei componenti di [`apps/ui/src/components`](apps/ui/src/components). Se un file Figma delle schermate esiste, è la fonte del layout; colori, spazi e tipografia vengono sempre da qui.
 
 ## Indice
 
-1. [Principi](#principi)
-2. [Colori](#colori)
-3. [Tipografia](#tipografia)
-4. [Spazi, raggi, movimento](#spazi-raggi-movimento)
-5. [Struttura della finestra](#struttura-della-finestra)
-6. [Componenti](#componenti)
-7. [Icone e illustrazioni](#icone-e-illustrazioni)
-8. [Testi e tono](#testi-e-tono)
-9. [Accessibilità](#accessibilità)
-10. [Regole SCSS](#regole-scss)
-11. [Questioni aperte](#questioni-aperte)
+1. [Marchio](#marchio)
+2. [Principi](#principi)
+3. [Colori](#colori)
+4. [Tipografia](#tipografia)
+5. [Spazi, raggi, movimento](#spazi-raggi-movimento)
+6. [Struttura della finestra](#struttura-della-finestra)
+7. [Componenti](#componenti)
+8. [Icone e illustrazioni](#icone-e-illustrazioni)
+9. [Testi e tono](#testi-e-tono)
+10. [Accessibilità](#accessibilità)
+11. [Regole SCSS](#regole-scss)
+12. [Questioni aperte](#questioni-aperte)
+
+## Marchio
+
+**Falco** — gioca in streaming con gli amici, *veloce come un falco*.
+
+| Elemento | Regola |
+| --- | --- |
+| Nome | Sempre «Falco», con la maiuscola. Mai «FALCO» nei testi, mai abbreviato |
+| Payoff | «Gioca con gli amici. Veloce come un falco.» (inglese: «Play with friends. Fast as a falcon.») |
+| Simbolo | Testa di falco pellegrino di profilo, rivolta a destra (in avanti): cappuccio Cielo scuro con il «baffo» sotto l'occhio, guancia chiara, becco corto uncinato, occhio e cera **ambra**. File: [`assets/brand/falco-mark.svg`](assets/brand/falco-mark.svg) |
+| Contenitore | Quadrato arrotondato (raggio 22% del lato) su `#12151B`, con alone Cielo tenue dietro la testa |
+| Ambra dell'occhio | `$eye` `#F5A524`: solo nel simbolo e nelle illustrazioni, mai per pulsanti o stati |
+| Area di rispetto | Almeno il 12% del lato attorno al contenitore |
+| Dimensione minima | 16 px (favicon e tray); sotto i 24 px si usa il simbolo senza alone |
+| Da non fare | Ruotare il falco a sinistra, cambiare i colori del simbolo, aggiungere testo dentro il contenitore |
+
+Le icone dell'app si rigenerano dal simbolo con `npx tauri icon ../../assets/brand/falco-mark.svg -o src-tauri/icons` da `apps/ui`.
 
 ## Principi
 
-1. **Una sola azione primaria per schermata**, sempre in brace con testo scuro.
+1. **Una sola azione primaria per schermata**, sempre in Cielo con testo scuro.
 2. **Gerarchia data da spazio e peso del testo**, non da riquadri: bordi da 1 px, nessuna ombra pesante.
-3. **L'alone brace è solo per ciò che è «vivo»**: un amico in gioco, una sessione attiva, l'host disponibile.
+3. **L'alone Cielo è solo per ciò che è «vivo»**: un amico in gioco, una sessione attiva, l'host disponibile.
 4. **Tema scuro di default**, tema chiaro che segue il sistema; entrambi rispettano il contrasto WCAG AA.
 5. **Lo stato non è mai indicato dal solo colore**: c'è sempre un testo o un'icona.
 6. **Leggerezza**: nessuna libreria di componenti, nessun CSS-in-JS a runtime, animazioni solo su `transform` e `opacity`.
 
 ## Colori
 
-I token SCSS (`$bg-0`, `$ember-500`…) puntano a custom property CSS (`var(--bg-0)`). Il tema cambia impostando `data-theme="dark|light"` su `<html>`; con `theme = "system"` lo decide `prefers-color-scheme`.
+I token SCSS (`$bg-0`, `$accent-500`…) puntano a custom property CSS (`var(--bg-0)`). Il tema cambia impostando `data-theme="dark|light"` su `<html>`; con `theme = "system"` lo decide `prefers-color-scheme`.
 
 ### Superfici e testo
 
 | Token | Scuro | Chiaro | Uso |
 | --- | --- | --- | --- |
-| `$bg-0` | `#0E0D0C` | `#F7F4F0` | Sfondo dell'app |
-| `$bg-1` | `#161412` | `#FFFFFF` | Barra laterale, pannelli, barra del titolo |
-| `$bg-2` | `#1F1C19` | `#FBF9F6` | Card, campi |
-| `$bg-3` | `#2A2622` | `#EFEAE4` | Hover, elementi selezionati |
-| `$line` | `#34302B` | `#E3DDD5` | Bordi e separatori da 1 px |
-| `$text-1` | `#F4EFE9` | `#1A1714` | Testo principale |
-| `$text-2` | `#B3AA9F` | `#5E564D` | Testo secondario |
-| `$text-3` | `#7D756C` | `#736A61` | Etichette, testo disattivato |
+| `$bg-0` | `#0B0D11` | `#F4F6F9` | Sfondo dell'app |
+| `$bg-1` | `#12151B` | `#FFFFFF` | Barra laterale, pannelli, barra del titolo |
+| `$bg-2` | `#1A1E26` | `#FAFBFD` | Card, campi |
+| `$bg-3` | `#242A34` | `#E9EDF2` | Hover, elementi selezionati |
+| `$line` | `#2E3540` | `#DCE2EA` | Bordi e separatori da 1 px |
+| `$text-1` | `#EEF1F5` | `#12161C` | Testo principale (17,2:1) |
+| `$text-2` | `#A7B0BD` | `#4E5967` | Testo secondario (8,9:1 / 6,6:1) |
+| `$text-3` | `#8A93A0` | `#66707D` | Etichette, testo disattivato (6,3:1 / 4,6:1) |
 
-### Brace (accento)
+### Cielo (accento)
 
 | Token | Scuro | Chiaro | Uso |
 | --- | --- | --- | --- |
-| `$ember-500` | `#FF6A2B` | `#E8561C` | Azione primaria, sezione attiva, stato vivo |
-| `$ember-400` | `#FF8A4C` | `#F06B32` | Hover |
-| `$ember-600` | `#E2541A` | `#C9460F` | Premuto |
-| `$ember-glow` | `rgba(255,106,43,.35)` | `rgba(232,86,28,.28)` | Alone degli stati vivi |
-| `$on-ember` | `#0E0D0C` | `#0E0D0C` | Testo e icone sopra la brace |
-
-Contrasto del testo sulla brace: circa 6,8:1 in tema scuro, circa 5,3:1 in tema chiaro.
+| `$accent-500` | `#4CA6FF` | `#1F7FE0` | Azione primaria, sezione attiva, stato vivo |
+| `$accent-400` | `#79BCFF` | `#3A93F0` | Hover |
+| `$accent-600` | `#2B86E3` | `#1767BD` | Premuto |
+| `$accent-glow` | `rgba(76,166,255,.35)` | `rgba(31,127,224,.28)` | Alone degli stati vivi |
+| `$on-accent` | `#0B0D11` | `#0B0D11` | Testo e icone sopra l'accento (7,6:1 / 4,8:1) |
+| `$eye` | `#F5A524` | `#D9890B` | Ambra dell'occhio: solo marchio e illustrazioni |
 
 ### Stati
 
@@ -65,11 +82,11 @@ Contrasto del testo sulla brace: circa 6,8:1 in tema scuro, circa 5,3:1 in tema 
 | `$danger` | `#FF4D5E` | `#D93848` | Errori, espulsione, ping alto |
 | `$scrim` | `rgba(0,0,0,.55)` | `rgba(26,23,20,.35)` | Velo dietro modali e cassetti |
 
-Le varianti chiare di `$bg-2`, `$text-3`, brace hover/premuto, stati e `$scrim` non erano nella specifica: sono proposte di questa implementazione, da approvare (vedi [Questioni aperte](#questioni-aperte)).
+Tutte le coppie testo/sfondo superano WCAG AA in entrambi i temi (rapporti tra parentesi).
 
 ### Regole d'uso
 
-- La brace compare **al massimo una volta come riempimento** per schermata (l'azione primaria). Altrove solo come bordo, indicatore o alone.
+- Il Cielo compare **al massimo una volta come riempimento** per schermata (l'azione primaria). Altrove solo come bordo, indicatore o alone.
 - Verde, ambra e rosso sono riservati agli stati: mai usarli per decorare.
 - Il colore `accent` di un amico (derivato dall'hash del suo ID) serve solo al suo monogramma.
 
@@ -104,7 +121,7 @@ Con `prefers-reduced-motion: reduce` le tre durate diventano 0 ms: basta usare i
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
-│ FALÒ                                    (barra del titolo 40) │
+│ FALCO                                    (barra del titolo 40) │
 ├──────┬───────────────────────────────────────┬───────────────┤
 │  72  │ Area centrale                         │ Dettaglio 320 │
 │ nav  │ padding 32/40 (24 sotto sm)           │ (cassetto     │
@@ -125,7 +142,7 @@ Con `prefers-reduced-motion: reduce` le tre durate diventano 0 ms: basta usare i
 
 | Componente | File | Varianti e regole |
 | --- | --- | --- |
-| Pulsante | `UiButton.vue` | `primary` (brace), `secondary` (superficie), `ghost`, `danger`; altezze 32, 40, 48; `icon` per pulsanti quadrati |
+| Pulsante | `UiButton.vue` | `primary` (accento), `secondary` (superficie), `ghost`, `danger`; altezze 32, 40, 48; `icon` per pulsanti quadrati |
 | Avatar | `UiAvatar.vue` | 24, 32, 40, 56, 96 px; anello di stato da 2 px con 2 px di stacco; monogramma sul colore `accent` se manca l'immagine; `playing` aggiunge l'alone |
 | Interruttore | `UiSwitch.vue` | `role="switch"`, etichetta e suggerimento opzionale; altezza minima 40 |
 | Scelta segmentata | `UiSegmented.vue` | `radiogroup` con frecce sinistra/destra; per 2–4 opzioni (tema, lingua, stato) |
@@ -133,43 +150,42 @@ Con `prefers-reduced-motion: reduce` le tre durate diventano 0 ms: basta usare i
 | Riga diagnostica | `DiagnosticRow.vue` | Semaforo con icona, titolo, valore misurato o livello a parole, azione suggerita |
 | Pillola ping | `PingPill.vue` | Verde < 30 ms, ambra 30–60 ms, rosso > 60 ms; etichetta «diretto» o «relay» |
 | Barra del titolo | `TitleBar.vue` | Trascinabile, controlli finestra solo su Windows |
-| Barra laterale | `SideBar.vue` | Icone 22 px, sezione attiva con fondo `$bg-3` e barretta brace |
+| Barra laterale | `SideBar.vue` | Icone 22 px, sezione attiva con fondo `$bg-3` e barretta accento |
 | Errore core | `CoreOffline.vue` | Errore in tre parti, bordo `$danger`, `role="alert"` |
 
 Da costruire nelle prossime milestone, con le regole già fissate dalla specifica:
 
 | Componente | Regole |
 | --- | --- |
-| Scheda amico | Avatar, nome, attività, azioni visibili all'hover (sempre visibili sotto `sm`); bordo e alone brace quando l'amico è in gioco. Esempio SCSS nel §12 della specifica |
+| Scheda amico | Avatar, nome, attività, azioni visibili all'hover (sempre visibili sotto `sm`); bordo e alone accento quando l'amico è in gioco. Esempio SCSS nel §12 della specifica |
 | Chip ruolo | Icona + nome del ruolo, colore neutro; tooltip con i permessi a parole |
-| Campo, menu, slider | Altezza 40, raggio `$r-field`, focus con anello brace da 2 px |
+| Campo, menu, slider | Altezza 40, raggio `$r-field`, focus con anello accento da 2 px |
 | Toast | In basso a destra, massimo 2 visibili, 4 s, azione opzionale |
-| Notifica aggiornamento | Toast persistente con «Aggiorna ora» (primario) e «Più tardi» (fantasma); badge brace su Impostazioni → Info |
+| Notifica aggiornamento | Toast persistente con «Aggiorna ora» (primario) e «Più tardi» (fantasma); badge accento su Impostazioni → Info |
 | Modale | Raggio `$r-modal`, velo `$scrim`, entrata in `$t-modal` |
 
 ### Stati interattivi
 
 | Stato | Resa |
 | --- | --- |
-| Hover | Fondo `$bg-3` oppure brace più chiara (`$ember-400`) |
-| Premuto | `scale(.98)`; brace `$ember-600` |
-| Focus da tastiera | Anello brace da 2 px con 2 px di stacco (`focus-ring`), solo con `:focus-visible` |
+| Hover | Fondo `$bg-3` oppure accento più chiara (`$accent-400`) |
+| Premuto | `scale(.98)`; accento `$accent-600` |
+| Focus da tastiera | Anello accento da 2 px con 2 px di stacco (`focus-ring`), solo con `:focus-visible` |
 | Disattivato | Opacità 0,45, nessun evento |
-| Vivo (in gioco, disponibile) | Bordo interno 1 px `$ember-500` e/o alone `glow` |
+| Vivo (in gioco, disponibile) | Bordo interno 1 px `$accent-500` e/o alone `glow` |
 
 ## Icone e illustrazioni
 
 - Icone [Lucide](https://lucide.dev) da `lucide-vue-next`, importate una per una (`import { Users } from 'lucide-vue-next'`), tratto **1,75**, dimensioni 16, 18, 20 o 22.
 - Le icone decorative hanno `aria-hidden="true"`; i pulsanti di sola icona hanno un'etichetta (`aria-label` o testo `sr-only`).
-- Illustrazioni originali a tratto (vedi `CampfireArt.vue`): brace per la fiamma, `$text-2` per la legna, alone `$ember-glow` tenue.
-- Marchio: [`assets/brand/falo-mark.svg`](assets/brand/falo-mark.svg), fiamma brace su fondo `$bg-1`. Le icone dell'app si rigenerano con `npx tauri icon ../../assets/brand/falo-mark.svg -o src-tauri/icons` da `apps/ui`.
+- Illustrazioni originali a tratto (vedi `FalconArt.vue`): falco in planata, tratto Cielo da 2,5, occhio ambra `$eye`, scie in `$text-3`, alone `$accent-glow` tenue.
 - Nessun asset di Parsec, Moonlight o Sunshine.
 
 ## Testi e tono
 
 - Tono informale, con il tu, frasi brevi. Nessun termine tecnico nelle schermate di base; i termini tecnici stanno nelle impostazioni avanzate.
 - Ogni testo passa da una chiave i18n in [`apps/ui/src/i18n/locales`](apps/ui/src/i18n/locales), in italiano e in inglese. Un test verifica che le due lingue abbiano le stesse chiavi.
-- **Errori sempre in tre parti**: cosa è successo, perché probabilmente, cosa fare. Esempio: «Non riesco a raggiungere Marco. Il suo Tailscale sembra spento. Chiedigli di aprire Falò.»
+- **Errori sempre in tre parti**: cosa è successo, perché probabilmente, cosa fare. Esempio: «Non riesco a raggiungere Marco. Il suo Tailscale sembra spento. Chiedigli di aprire Falco.»
 - Pulsanti con verbi all'imperativo e oggetto chiaro: «Invita il primo», «Ripeti il test», «Aggiorna ora».
 
 ## Accessibilità
@@ -194,7 +210,7 @@ Da costruire nelle prossime milestone, con le regole già fissate dalla specific
 | --- | --- |
 | `mq($bp)` | Media query per larghezza finestra sotto `sm`, `md` o `lg` |
 | `surface($level)` | Fondo `$bg-1/2/3` con bordo `$line` da 1 px |
-| `focus-ring` | Anello brace su `:focus-visible` |
+| `focus-ring` | Anello accento su `:focus-visible` |
 | `truncate` | Testo su una riga con puntini |
 | `glow($color)` | Alone per gli stati vivi |
 | `avatar($size)` | Cerchio di dimensione fissa |
@@ -227,12 +243,12 @@ Da costruire nelle prossime milestone, con le regole già fissate dalla specific
       opacity: 1;
     }
 
-    // In gioco: bordo brace e alone sull'avatar
+    // In gioco: bordo accento e alone sull'avatar
     &.playing {
-      box-shadow: inset 0 0 0 1px $ember-500;
+      box-shadow: inset 0 0 0 1px $accent-500;
 
       .avatar {
-        @include glow($ember-glow);
+        @include glow($accent-glow);
       }
     }
   }
@@ -241,8 +257,6 @@ Da costruire nelle prossime milestone, con le regole già fissate dalla specific
 
 ## Questioni aperte
 
-Da approvare prima di rifinire le schermate (§18 della specifica, «Quando fermarsi e chiedere»):
-
-- **Contrasto di `$text-3` in tema scuro**: `#7D756C` su `#0E0D0C` vale circa 4,3:1, sotto la soglia AA (4,5:1) per testo piccolo come le Etichette. Proposta: `#8A8279` (circa 5,1:1), oppure usare `$text-3` solo per testo disattivato, che WCAG esenta.
-- **Valori del tema chiaro non presenti nella specifica**: `$bg-2`, `$text-3`, brace hover/premuto, colori di stato e `$scrim` (tabelle sopra).
-- **Testo sulla brace in tema chiaro**: si usa `#0E0D0C` (circa 5,3:1); il `$text-1` chiaro `#1A1714` darebbe circa 4,3:1, sotto AA.
+- Approvazione del nuovo marchio e della palette «Volo notturno» (rinomina da Falò a Falco del 2026-11-18).
+- Verifica che «Falco» non sia un marchio registrato nel settore del software di gioco.
+- Rifinitura grafica delle schermate: prevista in una fase dedicata.

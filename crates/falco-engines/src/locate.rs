@@ -1,4 +1,4 @@
-//! Dove trovare i motori: variabile d'ambiente, pacchetto di Falò, installazione ufficiale.
+//! Dove trovare i motori: variabile d'ambiente, pacchetto di Falco, installazione ufficiale.
 //! In produzione i motori sono sempre nel pacchetto (ADR 0012).
 
 use std::path::{Path, PathBuf};
@@ -12,14 +12,14 @@ fn first_existing(candidates: impl IntoIterator<Item = PathBuf>) -> Option<PathB
 }
 
 pub fn sunshine() -> Option<PathBuf> {
-    if let Some(p) = std::env::var_os("FALO_SUNSHINE_BIN") {
+    if let Some(p) = std::env::var_os("FALCO_SUNSHINE_BIN") {
         return Some(PathBuf::from(p));
     }
     let bundled = exe_dir().map(|d| {
         if cfg!(windows) {
             d.join("engines").join("sunshine").join("sunshine.exe")
         } else {
-            d.join("../Helpers/falo-sunshine")
+            d.join("../Helpers/falco-sunshine")
         }
     });
     let system: &[&str] = if cfg!(windows) {
@@ -31,7 +31,7 @@ pub fn sunshine() -> Option<PathBuf> {
 }
 
 pub fn moonlight() -> Option<PathBuf> {
-    if let Some(p) = std::env::var_os("FALO_MOONLIGHT_BIN") {
+    if let Some(p) = std::env::var_os("FALCO_MOONLIGHT_BIN") {
         return Some(PathBuf::from(p));
     }
     let bundled = exe_dir().map(|d| {

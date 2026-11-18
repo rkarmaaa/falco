@@ -3,9 +3,9 @@
 use anyhow::Context;
 
 fn entry(name: &str) -> anyhow::Result<keyring::Entry> {
-    let service = match falo_proto::endpoint::instance() {
-        Some(i) => format!("app.falo.desktop.{i}"),
-        None => "app.falo.desktop".into(),
+    let service = match falco_proto::endpoint::instance() {
+        Some(i) => format!("app.falco.desktop.{i}"),
+        None => "app.falco.desktop".into(),
     };
     keyring::Entry::new(&service, name).context("portachiavi non disponibile")
 }
@@ -29,7 +29,7 @@ pub fn get_or_create(name: &str) -> anyhow::Result<String> {
     match entry.get_password() {
         Ok(p) => Ok(p),
         Err(keyring::Error::NoEntry) => {
-            let (secret, _) = falo_proto::invite::new_token();
+            let (secret, _) = falco_proto::invite::new_token();
             entry.set_password(&secret).context("segreto non salvato nel portachiavi")?;
             Ok(secret)
         }

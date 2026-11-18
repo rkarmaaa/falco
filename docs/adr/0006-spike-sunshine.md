@@ -5,12 +5,12 @@
 
 ## Risultati
 
-- **Istanza dedicata**: Falò avvia `sunshine.exe <cartella-dati>/sunshine/sunshine.conf` come processo proprio, con file isolati tramite `file_apps`, `credentials_file`, `file_state`, `log_path`, `pkey`, `cert`. Non tocca un Sunshine già installato. `system_tray = disabled` nasconde l'icona di Sunshine.
-- **Credenziali**: `sunshine.exe <conf> --creds falo <password>`; la password è casuale e sta nel portachiavi (`app.falo.desktop` / `sunshine-web`).
+- **Istanza dedicata**: Falco avvia `sunshine.exe <cartella-dati>/sunshine/sunshine.conf` come processo proprio, con file isolati tramite `file_apps`, `credentials_file`, `file_state`, `log_path`, `pkey`, `cert`. Non tocca un Sunshine già installato. `system_tray = disabled` nasconde l'icona di Sunshine.
+- **Credenziali**: `sunshine.exe <conf> --creds falco <password>`; la password è casuale e sta nel portachiavi (`app.falco.desktop` / `sunshine-web`).
 - **Chiavi verificate**: tutte quelle del §8.1 esistono. Correzione: `min_log_level` è **numerico** (0–6), `3` = warning. Valori ammessi verificati: `amd_usage` (`ultralowlatency`…), `amd_rc` (`cbr`, `vbr_latency`, `cqp`), `amd_quality` (`speed`, `balanced`, `quality`), `gamepad` (`x360`, `ds4`, `ds5`, `auto`).
 - **Porte**: API web su porta base + 1 (`https://localhost:47990`), certificato autofirmato, autenticazione Basic.
 - **Avvio**: la prima volta Sunshine prova gli encoder (circa 15–20 s); il core attende che l'API risponda prima di segnare l'host «pronto».
-- **API usate** (`falo-engines::sunshine_api`):
+- **API usate** (`falco-engines::sunshine_api`):
   - `GET /api/pin` → richieste di pairing in attesa `{ pairings: [{ id, name, address }] }`
   - `POST /api/pin` `{ pairing_id, pin, name }` → conferma (nelle versioni recenti serve `pairing_id`)
   - `GET /api/clients/list`, `POST /api/clients/unpair` `{ uuid }`

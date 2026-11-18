@@ -1,15 +1,15 @@
-//! Protocollo di presenza Falò (FPP v1, §5): tipi e firma delle richieste.
+//! Protocollo di presenza Falco (FPP v1, §5): tipi e firma delle richieste.
 
 use data_encoding::HEXLOWER;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-use crate::identity::{FaloId, Identity};
+use crate::identity::{FalcoId, Identity};
 use crate::profile::Status;
 
-pub const HEADER_ID: &str = "x-falo-id";
-pub const HEADER_TS: &str = "x-falo-ts";
-pub const HEADER_SIG: &str = "x-falo-sig";
+pub const HEADER_ID: &str = "x-falco-id";
+pub const HEADER_TS: &str = "x-falco-ts";
+pub const HEADER_SIG: &str = "x-falco-sig";
 /// Finestra di validità del timestamp, in secondi.
 pub const MAX_SKEW_S: i64 = 60;
 
@@ -53,9 +53,9 @@ pub fn verify_request(
     path: &str,
     body: &[u8],
     now: i64,
-) -> Result<FaloId, AuthError> {
+) -> Result<FalcoId, AuthError> {
     let (Some(id), Some(ts), Some(sig)) = (id, ts, sig) else { return Err(AuthError::Missing) };
-    let id: FaloId = id.parse().map_err(|_| AuthError::Signature)?;
+    let id: FalcoId = id.parse().map_err(|_| AuthError::Signature)?;
     let ts: i64 = ts.parse().map_err(|_| AuthError::Missing)?;
     if (now - ts).abs() > MAX_SKEW_S {
         return Err(AuthError::Skew);

@@ -4,9 +4,9 @@ use std::io::Cursor;
 
 use anyhow::{Context, bail};
 use data_encoding::{BASE64, BASE64URL_NOPAD, HEXLOWER};
-use falo_proto::profile::{Device, Profile, SignedProfile, validate_name};
-use falo_proto::{Identity, Status};
-use falo_store::Db;
+use falco_proto::profile::{Device, Profile, SignedProfile, validate_name};
+use falco_proto::{Identity, Status};
+use falco_store::Db;
 use image::imageops::FilterType;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};

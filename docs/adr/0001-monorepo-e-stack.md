@@ -6,11 +6,11 @@
 
 ## Contesto
 
-Falò ha un demone sempre attivo, una UI aperta di rado e due motori C++ forkati. Il demone deve stare sotto 15 MB di RAM e non svegliarsi quasi mai.
+Falco ha un demone sempre attivo, una UI aperta di rado e due motori C++ forkati. Il demone deve stare sotto 15 MB di RAM e non svegliarsi quasi mai.
 
 ## Decisione
 
-- Workspace Cargo unico: `apps/core` (binario `falo-core`), `apps/ui/src-tauri` (binario `falo-ui`), `crates/falo-{proto,net,store,engines}`.
+- Workspace Cargo unico: `apps/core` (binario `falco-core`), `apps/ui/src-tauri` (binario `falco-ui`), `crates/falco-{proto,net,store,engines}`.
 - Il core non contiene webview: tray con `tray-icon` sul loop di `tao` nel thread principale (richiesto da macOS), logica su un runtime `tokio` *current-thread* in un secondo thread (ADR 0005).
 - UI con Tauri 2 + Vue 3 + TypeScript + Vite + SCSS; nessuna libreria di componenti.
 - Profilo di release: `lto = "fat"`, `codegen-units = 1`, `panic = "abort"`, `strip = true`.
@@ -24,5 +24,5 @@ Falò ha un demone sempre attivo, una UI aperta di rado e due motori C++ forkati
 
 ## Conseguenze
 
-- Due binari da distribuire e firmare. Il core avvia `falo-ui` dalla propria cartella.
+- Due binari da distribuire e firmare. Il core avvia `falco-ui` dalla propria cartella.
 - Peso di `tray-icon`, `tao` e `image` nel core da misurare con `cargo bloat` in M1.

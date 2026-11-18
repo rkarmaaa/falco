@@ -12,9 +12,9 @@ use crate::{NetError, NetStatus, NetworkProvider, Peer, PeerPath, TailscaleState
 
 const CLI_TIMEOUT: Duration = Duration::from_secs(5);
 
-/// Cerca la CLI: `FALO_TAILSCALE_BIN` (test), PATH, poi i percorsi d'installazione.
+/// Cerca la CLI: `FALCO_TAILSCALE_BIN` (test), PATH, poi i percorsi d'installazione.
 pub fn locate_cli() -> Option<PathBuf> {
-    if let Some(p) = std::env::var_os("FALO_TAILSCALE_BIN") {
+    if let Some(p) = std::env::var_os("FALCO_TAILSCALE_BIN") {
         return Some(PathBuf::from(p));
     }
     if let Ok(p) = which::which("tailscale") {

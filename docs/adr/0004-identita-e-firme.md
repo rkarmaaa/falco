@@ -12,7 +12,7 @@
 - JSON canonico secondo **RFC 8785** con `serde_json_canonicalizer`, indipendente dalle feature di `serde_json` attive nel workspace.
 - Firme e token in base64url senza padding.
 - Lo stato del profilo sul filo è in inglese (`online`, `busy`, `invisible`), come nel `config.toml`; il §4 della specifica è stato allineato. I ruoli restano in italiano (`spettatore`, `giocatore`, `copilota`, `fidato`), come nel payload d'invito.
-- Inviti: JSON firmato → zstd livello 19 → base64url, prefisso `falo://invite/`; decompressione limitata a 16 KB contro le «bombe» di compressione.
+- Inviti: JSON firmato → zstd livello 19 → base64url, prefisso `falco://invite/`; decompressione limitata a 16 KB contro le «bombe» di compressione.
 
 ## Conseguenze
 

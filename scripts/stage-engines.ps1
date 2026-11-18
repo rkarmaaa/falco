@@ -1,4 +1,4 @@
-# Copia i motori accanto ai binari di Falò, con lo stesso layout del pacchetto finale:
+# Copia i motori accanto ai binari di Falco, con lo stesso layout del pacchetto finale:
 #   target\<profilo>\engines\sunshine\sunshine.exe
 #   target\<profilo>\engines\moonlight\Moonlight.exe  (+ portable.dat: impostazioni separate)
 # In sviluppo la sorgente sono le installazioni ufficiali; in CI saranno i fork compilati.

@@ -95,7 +95,7 @@ export function createMockTransport(): Transport {
     'invite.create': ({ role, uses }: { role: string; uses: number }) => {
       const now = Math.floor(Date.now() / 1000);
       invites.unshift({ tokenHash: String(now), role, createdAt: now, expiresAt: now + 86400, usesLeft: uses, needsApproval: uses > 1, active: true });
-      return { link: 'falo://invite/KLUv_WBmAJUJAMZURyEA8zb8P8uPmqmBSLdemo', expiresAt: now + 86400, tailscaleShared: false };
+      return { link: 'falco://invite/KLUv_WBmAJUJAMZURyEA8zb8P8uPmqmBSLdemo', expiresAt: now + 86400, tailscaleShared: false };
     },
     'invite.revoke': ({ tokenHash }: { tokenHash: string }) => {
       const i = invites.find((x) => x.tokenHash === tokenHash);

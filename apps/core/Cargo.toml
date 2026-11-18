@@ -1,19 +1,19 @@
 [package]
-name = "falo-core"
-description = "Demone di Falò: tray, orchestrazione dei motori, IPC verso la UI"
+name = "falco-core"
+description = "Demone di Falco: tray, orchestrazione dei motori, IPC verso la UI"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [[bin]]
-name = "falo-core"
+name = "falco-core"
 path = "src/main.rs"
 
 [dependencies]
-falo-proto = { workspace = true, features = ["transport"] }
-falo-net.workspace = true
-falo-store.workspace = true
-falo-engines.workspace = true
+falco-proto = { workspace = true, features = ["transport"] }
+falco-net.workspace = true
+falco-store.workspace = true
+falco-engines.workspace = true
 anyhow.workspace = true
 serde.workspace = true
 serde_json.workspace = true

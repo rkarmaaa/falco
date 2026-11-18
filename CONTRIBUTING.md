@@ -1,12 +1,12 @@
-# Contribuire a Falò
+# Contribuire a Falco
 
-Grazie dell'interesse. Prima di tutto leggi la [specifica](docs/falo-spec.md): è la fonte di verità e il lavoro procede una milestone alla volta (§16), seguendo [TODO.md](TODO.md).
+Grazie dell'interesse. Prima di tutto leggi la [specifica](docs/falco-spec.md): è la fonte di verità e il lavoro procede una milestone alla volta (§16), seguendo [TODO.md](TODO.md).
 
 ## Ordine di lavoro
 
 1. Rileggi le sezioni della specifica coinvolte e scrivi un piano breve: file da creare, decisioni aperte, rischi.
 2. Per ogni scelta non banale scrivi un ADR di una pagina in `docs/adr/NNNN-titolo.md` partendo da [0000-modello.md](docs/adr/0000-modello.md).
-3. Implementa in quest'ordine: tipi condivisi → logica del core → IPC → UI → test → `falo bench`.
+3. Implementa in quest'ordine: tipi condivisi → logica del core → IPC → UI → test → `falco bench`.
 4. Esegui test e lint, aggiorna la specifica se qualcosa è cambiato, poi riassumi cosa resta.
 
 ## Convenzioni
@@ -27,7 +27,7 @@ Grazie dell'interesse. Prima di tutto leggi la [specifica](docs/falo-spec.md): �
 
 ## Fork dei motori
 
-- Ogni modifica a Sunshine o Moonlight sta in un branch `falo/*` del rispettivo fork, con commit piccoli e titolati, così il rebase su upstream resta fattibile.
+- Ogni modifica a Sunshine o Moonlight sta in un branch `falco/*` del rispettivo fork, con commit piccoli e titolati, così il rebase su upstream resta fattibile.
 - Prima di patchare, controlla se upstream offre già un'opzione di configurazione o una API.
 - `scripts/sync-upstream.sh` fa il rebase, compila e lancia i test di fumo.
 

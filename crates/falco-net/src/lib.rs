@@ -1,4 +1,4 @@
-//! Rete di Falò (§9). Tutta la logica Tailscale vive qui, dietro `NetworkProvider`.
+//! Rete di Falco (§9). Tutta la logica Tailscale vive qui, dietro `NetworkProvider`.
 #![cfg_attr(test, allow(clippy::unwrap_used))]
 
 pub mod doctor;
@@ -8,7 +8,7 @@ pub mod tailscale_api;
 use std::future::Future;
 use std::net::IpAddr;
 
-pub use falo_proto::ipc::TailscaleState;
+pub use falco_proto::ipc::TailscaleState;
 use serde::Serialize;
 
 #[derive(Debug, thiserror::Error)]

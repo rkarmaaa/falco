@@ -3,7 +3,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Falò",
+        "title": "Falco",
         "width": 1120,
         "height": 720,
         "minWidth": 960,
@@ -12,7 +12,7 @@
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
         "center": true,
-        "backgroundColor": "#0E0D0C"
+        "backgroundColor": "#0B0D11"
       }
     ]
   }

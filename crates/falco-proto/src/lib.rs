@@ -13,6 +13,6 @@ pub mod profile;
 #[cfg(feature = "transport")]
 pub mod transport;
 
-pub use identity::{FaloId, Identity};
+pub use identity::{FalcoId, Identity};
 pub use permissions::{Permissions, Role};
 pub use profile::{Profile, SignedProfile, Status};

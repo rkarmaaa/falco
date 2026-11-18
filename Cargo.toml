@@ -6,14 +6,14 @@ members = ["apps/core", "apps/ui/src-tauri", "crates/*"]
 version = "0.1.0"
 edition = "2024"
 license = "GPL-3.0-only"
-repository = "https://github.com/falo-app/falo"
+repository = "https://github.com/falco-app/falco"
 rust-version = "1.85"
 
 [workspace.dependencies]
-falo-proto = { path = "crates/falo-proto" }
-falo-net = { path = "crates/falo-net" }
-falo-store = { path = "crates/falo-store" }
-falo-engines = { path = "crates/falo-engines" }
+falco-proto = { path = "crates/falco-proto" }
+falco-net = { path = "crates/falco-net" }
+falco-store = { path = "crates/falco-store" }
+falco-engines = { path = "crates/falco-engines" }
 
 anyhow = "1"
 thiserror = "2"

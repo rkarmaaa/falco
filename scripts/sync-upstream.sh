@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Riallinea i fork dei motori a upstream: rebase dei branch falo/*, build, test di fumo.
+# Riallinea i fork dei motori a upstream: rebase dei branch falco/*, build, test di fumo.
 # Uso: scripts/sync-upstream.sh [sunshine|moonlight]   (senza argomenti: entrambi)
 set -euo pipefail
 

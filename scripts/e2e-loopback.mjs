@@ -1,6 +1,6 @@
 // Test end-to-end su un solo PC, solo tramite IPC (criteri M1):
 // host disponibile → pairing automatico → streaming per qualche secondo → fine sessione.
-// Uso: node scripts/e2e-loopback.mjs [porta-base] [secondi]   (con falo-core avviato)
+// Uso: node scripts/e2e-loopback.mjs [porta-base] [secondi]   (con falco-core avviato)
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
@@ -9,8 +9,8 @@ const port = Number(process.argv[2] ?? 47989);
 const seconds = Number(process.argv[3] ?? 10);
 const endpoint =
   process.platform === 'win32'
-    ? String.raw`\\.\pipe\falo-core-` + (process.env.USERNAME ?? 'user')
-    : path.join(os.homedir(), 'Library/Application Support/app.Falo.Falo/core.sock');
+    ? String.raw`\\.\pipe\falco-core-` + (process.env.USERNAME ?? 'user')
+    : path.join(os.homedir(), 'Library/Application Support/app.Falco.Falco/core.sock');
 
 const socket = net.connect(endpoint);
 const pending = new Map();

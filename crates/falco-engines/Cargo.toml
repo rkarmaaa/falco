@@ -1,6 +1,6 @@
 [package]
-name = "falo-engines"
-description = "Controllo dei motori di Falò: configurazione di Sunshine e argomenti di Moonlight"
+name = "falco-engines"
+description = "Controllo dei motori di Falco: configurazione di Sunshine e argomenti di Moonlight"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

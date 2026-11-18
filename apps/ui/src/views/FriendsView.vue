@@ -124,7 +124,7 @@ async function enter(f: Friend): Promise<void> {
     color: $text-3;
 
     &:focus-within {
-      border-color: $ember-500;
+      border-color: $accent-500;
     }
 
     input {
@@ -150,7 +150,7 @@ async function enter(f: Friend): Promise<void> {
       list-style: none;
 
       &:focus-visible {
-        color: $ember-500;
+        color: $accent-500;
       }
     }
 

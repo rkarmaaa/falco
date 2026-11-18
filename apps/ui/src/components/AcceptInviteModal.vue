@@ -53,7 +53,7 @@ onMounted(() => void check());
     <template v-if="!social.accept">
       <label class="paste">
         <span class="label">{{ $t('accept.paste') }}</span>
-        <textarea v-model="text" rows="3" spellcheck="false" placeholder="falo://invite/…" @input="check" />
+        <textarea v-model="text" rows="3" spellcheck="false" placeholder="falco://invite/…" @input="check" />
       </label>
       <div v-if="preview" class="host">
         <UiAvatar :name="preview.host.name" :accent="preview.host.accent" :size="56" />
@@ -162,7 +162,7 @@ onMounted(() => void check());
 }
 
 .spin {
-  color: $ember-500;
+  color: $accent-500;
   animation: spin 1s linear infinite;
 
   @media (prefers-reduced-motion: reduce) {

@@ -1,6 +1,6 @@
 [package]
-name = "falo-proto"
-description = "Tipi condivisi di Falò: identità, profili, permessi, inviti, schema IPC"
+name = "falco-proto"
+description = "Tipi condivisi di Falco: identità, profili, permessi, inviti, schema IPC"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

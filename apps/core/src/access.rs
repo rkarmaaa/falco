@@ -3,9 +3,9 @@
 
 use std::time::Duration;
 
-use falo_proto::Permissions;
-use falo_proto::ipc::events;
-use falo_proto::permissions::PermissionOverrides;
+use falco_proto::Permissions;
+use falco_proto::ipc::events;
+use falco_proto::permissions::PermissionOverrides;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tokio::sync::oneshot;
@@ -47,7 +47,7 @@ fn local_time() -> (u8, u16) {
 
 fn local_offset_s() -> i64 {
     // Scostamento dall'UTC letto dal sistema; 0 se non disponibile
-    std::env::var("FALO_TZ_OFFSET_MIN")
+    std::env::var("FALCO_TZ_OFFSET_MIN")
         .ok()
         .and_then(|v| v.parse::<i64>().ok())
         .map(|m| m * 60)
@@ -162,7 +162,10 @@ pub async fn knock(shared: &Shared, friend_id: &str) -> KnockAnswer {
             let mut c = shared.lock().await;
             c.knocks.insert(friend_id.to_owned(), tx);
             c.emit(events::SESSION_KNOCK, json!({ "friendId": friend_id, "name": name }));
-            c.notify_user(&format!("{name} vuole entrare"), "Apri Falò per accettare o rifiutare.");
+            c.notify_user(
+                &format!("{name} vuole entrare"),
+                "Apri Falco per accettare o rifiutare.",
+            );
         }
         let ok = matches!(
             tokio::time::timeout(Duration::from_secs(u64::from(timeout)), rx).await,

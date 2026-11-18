@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import CampfireArt from './CampfireArt.vue';
+import FalconArt from './FalconArt.vue';
 
 defineProps<{ title: string; body?: string }>();
 </script>
 
 <template>
   <section class="empty">
-    <CampfireArt :size="144" />
+    <FalconArt :size="144" />
     <h2 class="title">{{ title }}</h2>
     <p v-if="body" class="body">{{ body }}</p>
     <div v-if="$slots.default" class="actions">

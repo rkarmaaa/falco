@@ -1,6 +1,6 @@
 [package]
-name = "falo-store"
-description = "Persistenza di Falò: config.toml validato e SQLite con migrazioni"
+name = "falco-store"
+description = "Persistenza di Falco: config.toml validato e SQLite con migrazioni"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

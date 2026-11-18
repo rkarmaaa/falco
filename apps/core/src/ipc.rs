@@ -1,7 +1,7 @@
 //! Server JSON-RPC 2.0 per la UI. Una riga per messaggio; eventi in broadcast.
 
-use falo_proto::ipc::{Incoming, Request, Response, RpcError, codes, events, methods, to_line};
-use falo_proto::transport::{self, RecvHalf, SendHalf};
+use falco_proto::ipc::{Incoming, Request, Response, RpcError, codes, events, methods, to_line};
+use falco_proto::transport::{self, RecvHalf, SendHalf};
 use interprocess::local_socket::traits::tokio::Listener as _;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -86,8 +86,8 @@ fn internal(e: impl std::fmt::Display) -> RpcError {
     RpcError::new(codes::INTERNAL, e.to_string())
 }
 
-fn config_error(e: falo_store::ConfigError) -> RpcError {
-    use falo_store::ConfigError as E;
+fn config_error(e: falco_store::ConfigError) -> RpcError {
+    use falco_store::ConfigError as E;
     let data = match &e {
         E::Invalid { key, value, allowed, line } => {
             json!({ "key": key, "value": value, "allowed": allowed, "line": line })
@@ -183,7 +183,7 @@ struct CreateProfile {
 #[serde(rename_all = "camelCase")]
 struct ProfileEdit {
     name: Option<String>,
-    status: Option<falo_proto::Status>,
+    status: Option<falco_proto::Status>,
     /// Immagine in base64 (qualsiasi formato comune).
     avatar_base64: Option<String>,
     #[serde(default)]
@@ -207,8 +207,8 @@ async fn friend_target(core: &Shared, id: &str) -> Result<(String, u16), RpcErro
 #[serde(rename_all = "camelCase")]
 struct SetPermissions {
     id: String,
-    role: Option<falo_proto::Role>,
-    overrides: Option<falo_proto::permissions::PermissionOverrides>,
+    role: Option<falco_proto::Role>,
+    overrides: Option<falco_proto::permissions::PermissionOverrides>,
 }
 
 #[derive(Deserialize)]
@@ -269,8 +269,8 @@ fn desktop() -> String {
 async fn sunshine<T: Send + 'static>(
     core: &Shared,
     f: impl FnOnce(
-        &falo_engines::sunshine_api::SunshineApi,
-    ) -> Result<T, falo_engines::sunshine_api::ApiError>
+        &falco_engines::sunshine_api::SunshineApi,
+    ) -> Result<T, falco_engines::sunshine_api::ApiError>
     + Send
     + 'static,
 ) -> Result<T, RpcError> {
@@ -566,7 +566,7 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
         methods::NET_RUN_DOCTOR => {
             let status = crate::core::Core::net_status(c.net.clone()).await;
             let warn = c.config.config().network.warn_exit_node;
-            Ok(json!({ "checks": falo_net::doctor::tailscale_checks(&status, warn) }))
+            Ok(json!({ "checks": falco_net::doctor::tailscale_checks(&status, warn) }))
         }
         methods::APP_OPEN_UI => {
             c.open_ui();

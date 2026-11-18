@@ -16,3 +16,4 @@ Una decisione per file, numerate. Per un nuovo ADR copia [0000-modello.md](0000-
 | [0010](0010-spike-webview2.md) | Spike: chiusura completa di WebView2 | da verificare |
 | [0011](0011-spike-apollo.md) | Spike: permessi di Apollo su Sunshine | da verificare |
 | [0012](0012-nessuna-installazione-manuale.md) | Nessuna installazione manuale per l'utente | proposto |
+| [0013](0013-nome-e-marchio-falco.md) | Nome e marchio: Falco | accettato |

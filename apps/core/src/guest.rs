@@ -4,12 +4,12 @@ use std::net::IpAddr;
 use std::time::Duration;
 
 use anyhow::{Context, bail};
-use falo_engines::moonlight::{
+use falco_engines::moonlight::{
     self, AutoInputs, EngineEvent, NetPath, StreamRequest, VideoCodec, auto_params,
 };
-use falo_engines::process::{EngineProcess, Priority, command};
-use falo_proto::ipc::events;
-use falo_store::config::{
+use falco_engines::process::{EngineProcess, Priority, command};
+use falco_proto::ipc::events;
+use falco_store::config::{
     Audio, Auto, CaptureKeys, Codec, Config, DisplayMode, Overlay, RESOLUTIONS,
 };
 use serde_json::json;
@@ -75,8 +75,8 @@ pub fn plan(cfg: &Config, host: &str, path: NetPath, app: &str) -> StreamRequest
         Codec::Av1 => VideoCodec::Av1,
     };
     let bitrate = match s.bitrate_mode {
-        falo_store::config::BitrateMode::Fixed => s.bitrate_kbps,
-        falo_store::config::BitrateMode::Auto => auto.bitrate_kbps,
+        falco_store::config::BitrateMode::Fixed => s.bitrate_kbps,
+        falco_store::config::BitrateMode::Auto => auto.bitrate_kbps,
     };
     StreamRequest {
         host: host.to_owned(),
@@ -121,14 +121,14 @@ pub fn new_pin() -> String {
 }
 
 fn rand_bytes() -> [u8; 2] {
-    let (t, _) = falo_proto::invite::new_token();
+    let (t, _) = falco_proto::invite::new_token();
     let b = t.as_bytes();
     [b[0], b[1]]
 }
 
 /// Pairing lato ospite. Se l'host è questo PC, il core conferma anche il PIN.
 pub async fn pair(core: Shared, address: String, pin: String) -> anyhow::Result<()> {
-    let bin = falo_engines::locate::moonlight().context("motore client non trovato")?;
+    let bin = falco_engines::locate::moonlight().context("motore client non trovato")?;
     let args = moonlight::pair_args(&address, &pin);
     let mut child = command(&bin, &args, Priority::Normal).spawn().context("avvio del pairing")?;
 
@@ -187,7 +187,7 @@ pub async fn list_apps(bin: &std::path::Path, address: &str) -> Vec<String> {
 
 /// Avvia lo streaming; ritorna subito, la sessione prosegue in background.
 pub async fn join(core: Shared, address: String, app: String) -> anyhow::Result<()> {
-    let bin = falo_engines::locate::moonlight().context("motore client non trovato")?;
+    let bin = falco_engines::locate::moonlight().context("motore client non trovato")?;
     let (cfg, ts) = {
         let c = core.lock().await;
         if c.streaming {
@@ -251,7 +251,7 @@ pub async fn join(core: Shared, address: String, app: String) -> anyhow::Result<
                 });
             }
         }
-        let _ = c.db.log_session(&falo_store::db::SessionRow {
+        let _ = c.db.log_session(&falco_store::db::SessionRow {
             friend_id: address.clone(),
             role: "guest".into(),
             started_at: started,

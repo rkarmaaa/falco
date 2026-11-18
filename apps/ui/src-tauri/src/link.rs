@@ -5,8 +5,8 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Duration;
 
-use falo_proto::ipc::{Incoming, Request, RpcError, to_line};
-use falo_proto::transport::{self, SendHalf};
+use falco_proto::ipc::{Incoming, Request, RpcError, to_line};
+use falco_proto::transport::{self, SendHalf};
 use serde_json::Value;
 use tauri::{AppHandle, Emitter};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -38,7 +38,7 @@ impl CoreLink {
     pub async fn call(&self, method: &str, params: Value) -> Result<Value, RpcError> {
         let id = self.next_id.fetch_add(1, Ordering::Relaxed) + 1;
         let line = to_line(&Request::new(id, method, params))
-            .map_err(|e| RpcError::new(falo_proto::ipc::codes::INTERNAL, e.to_string()))?;
+            .map_err(|e| RpcError::new(falco_proto::ipc::codes::INTERNAL, e.to_string()))?;
         let (tx, rx) = oneshot::channel();
         self.pending.lock().await.insert(id, tx);
         {

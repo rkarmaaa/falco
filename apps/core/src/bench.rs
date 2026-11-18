@@ -1,12 +1,12 @@
-//! `falo-core bench`: misura RAM, CPU e processi di Falò già in esecuzione (§10).
-//! Uso: `falo-core bench [secondi] [etichetta-stato]` → JSON su stdout.
+//! `falco-core bench`: misura RAM, CPU e processi di Falco già in esecuzione (§10).
+//! Uso: `falco-core bench [secondi] [etichetta-stato]` → JSON su stdout.
 
 use std::time::Duration;
 
 use serde_json::json;
 use sysinfo::{ProcessRefreshKind, ProcessesToUpdate, System};
 
-const NAMES: &[&str] = &["falo-core", "falo-ui", "sunshine", "moonlight"];
+const NAMES: &[&str] = &["falco-core", "falco-ui", "sunshine", "moonlight"];
 
 fn short(name: &str) -> String {
     name.trim_end_matches(".exe").to_lowercase()
@@ -32,11 +32,11 @@ pub fn run(args: &[String]) -> anyhow::Result<()> {
         let procs = sys.processes();
         let name_of =
             |pid: &sysinfo::Pid| procs.get(pid).map(|p| short(&p.name().to_string_lossy()));
-        // WebView2 conta solo se discende da falo-ui (altre app usano la stessa webview)
+        // WebView2 conta solo se discende da falco-ui (altre app usano la stessa webview)
         let from_ui = |mut pid: Option<sysinfo::Pid>| {
             for _ in 0..4 {
                 match pid {
-                    Some(p) if name_of(&p).as_deref() == Some("falo-ui") => return true,
+                    Some(p) if name_of(&p).as_deref() == Some("falco-ui") => return true,
                     Some(p) => pid = procs.get(&p).and_then(|x| x.parent()),
                     None => return false,
                 }
@@ -53,7 +53,7 @@ pub fn run(args: &[String]) -> anyhow::Result<()> {
                 continue;
             }
             total += p.memory();
-            if name == "falo-core" {
+            if name == "falco-core" {
                 core_rss_max = core_rss_max.max(p.memory());
                 core_cpu_sum += p.cpu_usage();
             }
@@ -70,7 +70,7 @@ pub fn run(args: &[String]) -> anyhow::Result<()> {
             "rssMaxMb": mb(core_rss_max),
             "cpuAvgPercent": if samples > 0 { core_cpu_sum / samples as f32 } else { 0.0 },
         },
-        "allFaloProcessesRssMaxMb": mb(total_rss_max),
+        "allFalcoProcessesRssMaxMb": mb(total_rss_max),
         "budget": { "coreRssMb": 15, "trayCpuPercent": 0.5 },
     });
     println!("{}", serde_json::to_string_pretty(&report)?);

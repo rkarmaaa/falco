@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Campo di testo: altezza 40, focus con anello brace
+// Campo di testo: altezza 40, focus con anello d'accento
 const model = defineModel<string>({ required: true });
 defineProps<{ label: string; placeholder?: string; inputmode?: 'text' | 'numeric'; maxlength?: number }>();
 </script>
@@ -44,8 +44,8 @@ defineProps<{ label: string; placeholder?: string; inputmode?: 'text' | 'numeric
     }
 
     &:focus-visible {
-      border-color: $ember-500;
-      box-shadow: 0 0 0 2px $ember-glow;
+      border-color: $accent-500;
+      box-shadow: 0 0 0 2px $accent-glow;
     }
   }
 }

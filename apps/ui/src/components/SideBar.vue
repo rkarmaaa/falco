@@ -90,10 +90,10 @@ const items: { id: Section; icon: Component }[] = [
       color: $text-1;
     }
 
-    // Indicatore della sezione attiva: barra brace a sinistra
+    // Indicatore della sezione attiva: barra accento a sinistra
     &.active {
       background: $bg-3;
-      color: $ember-500;
+      color: $accent-500;
 
       &::before {
         content: '';
@@ -102,7 +102,7 @@ const items: { id: Section; icon: Component }[] = [
         width: 3px;
         height: 20px;
         border-radius: $r-pill;
-        background: $ember-500;
+        background: $accent-500;
       }
     }
   }

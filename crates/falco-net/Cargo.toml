@@ -1,12 +1,12 @@
 [package]
-name = "falo-net"
-description = "Provider di rete di Falò (Tailscale, LAN, Diretto, Headscale) e Dottore di rete"
+name = "falco-net"
+description = "Provider di rete di Falco (Tailscale, LAN, Diretto, Headscale) e Dottore di rete"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [dependencies]
-falo-proto.workspace = true
+falco-proto.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

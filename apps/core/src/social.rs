@@ -3,11 +3,11 @@
 use std::net::IpAddr;
 use std::time::Duration;
 
-use falo_proto::fpp::{self, DEFAULT_PRESENCE_PORT, Presence};
-use falo_proto::ipc::events;
-use falo_proto::profile::{Device, SignedProfile};
-use falo_proto::{Identity, Status};
-use falo_store::db::{DeviceRow, FriendRow, FriendState};
+use falco_proto::fpp::{self, DEFAULT_PRESENCE_PORT, Presence};
+use falco_proto::ipc::events;
+use falco_proto::profile::{Device, SignedProfile};
+use falco_proto::{Identity, Status};
+use falco_store::db::{DeviceRow, FriendRow, FriendState};
 use serde::Serialize;
 use serde_json::json;
 
@@ -90,11 +90,11 @@ pub fn fpp_call(
 }
 
 /// Dispositivi di questo PC per il profilo.
-pub fn my_devices(net: &falo_net::NetStatus) -> Vec<Device> {
+pub fn my_devices(net: &falco_net::NetStatus) -> Vec<Device> {
     let Some(id) = net.self_node_id.clone() else { return Vec::new() };
     vec![Device {
         node_id: id,
-        name: std::env::var("COMPUTERNAME").unwrap_or_else(|_| "falo".into()).to_lowercase(),
+        name: std::env::var("COMPUTERNAME").unwrap_or_else(|_| "falco".into()).to_lowercase(),
         os: if cfg!(windows) { "windows" } else { "macOS" }.into(),
         can_host: true,
     }]

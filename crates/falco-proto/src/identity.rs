@@ -1,4 +1,4 @@
-//! Identità Ed25519 (§4): la chiave pubblica è l'ID, nessun account Falò.
+//! Identità Ed25519 (§4): la chiave pubblica è l'ID, nessun account Falco.
 
 use std::fmt;
 use std::str::FromStr;
@@ -19,9 +19,9 @@ pub enum IdentityError {
 /// Chiave pubblica Ed25519, mostrata in base32 senza padding.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
-pub struct FaloId([u8; 32]);
+pub struct FalcoId([u8; 32]);
 
-impl FaloId {
+impl FalcoId {
     pub fn as_bytes(&self) -> &[u8; 32] {
         &self.0
     }
@@ -49,19 +49,19 @@ impl FaloId {
     }
 }
 
-impl fmt::Display for FaloId {
+impl fmt::Display for FalcoId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&BASE32_NOPAD.encode(&self.0))
     }
 }
 
-impl fmt::Debug for FaloId {
+impl fmt::Debug for FalcoId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "FaloId({})", self.tag())
+        write!(f, "FalcoId({})", self.tag())
     }
 }
 
-impl FromStr for FaloId {
+impl FromStr for FalcoId {
     type Err = IdentityError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let bytes = BASE32_NOPAD.decode(s.as_bytes()).map_err(|_| IdentityError::InvalidId)?;
@@ -71,15 +71,15 @@ impl FromStr for FaloId {
     }
 }
 
-impl TryFrom<String> for FaloId {
+impl TryFrom<String> for FalcoId {
     type Error = IdentityError;
     fn try_from(s: String) -> Result<Self, Self::Error> {
         s.parse()
     }
 }
 
-impl From<FaloId> for String {
-    fn from(id: FaloId) -> Self {
+impl From<FalcoId> for String {
+    fn from(id: FalcoId) -> Self {
         id.to_string()
     }
 }
@@ -103,8 +103,8 @@ impl Identity {
         self.key.to_bytes()
     }
 
-    pub fn id(&self) -> FaloId {
-        FaloId(self.key.verifying_key().to_bytes())
+    pub fn id(&self) -> FalcoId {
+        FalcoId(self.key.verifying_key().to_bytes())
     }
 
     /// Firma e restituisce la firma in base64url.
@@ -137,7 +137,7 @@ mod tests {
     fn id_roundtrip_and_tag_format() {
         let me = Identity::generate();
         let id = me.id();
-        let parsed: FaloId = id.to_string().parse().unwrap();
+        let parsed: FalcoId = id.to_string().parse().unwrap();
         assert_eq!(id, parsed);
         let tag = id.tag();
         assert_eq!(tag.len(), 10);
@@ -155,7 +155,7 @@ mod tests {
 
     #[test]
     fn rejects_garbage_ids() {
-        assert!("non-un-id".parse::<FaloId>().is_err());
-        assert!("AAAA".parse::<FaloId>().is_err());
+        assert!("non-un-id".parse::<FalcoId>().is_err());
+        assert!("AAAA".parse::<FalcoId>().is_err());
     }
 }

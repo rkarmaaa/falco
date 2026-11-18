@@ -6,14 +6,14 @@
 
 ## Contesto
 
-Requisito di Marco: l'utente finale scarica Falò e lo usa subito, senza installare altre app a mano. La specifica originale chiedeva invece di installare Tailscale a parte. Sunshine e Moonlight erano già previsti dentro il pacchetto.
+Requisito di Marco: l'utente finale scarica Falco e lo usa subito, senza installare altre app a mano. La specifica originale chiedeva invece di installare Tailscale a parte. Sunshine e Moonlight erano già previsti dentro il pacchetto.
 
 ## Decisione
 
 | Componente | Come arriva all'utente |
 | --- | --- |
-| `falo-sunshine`, `falo-moonlight` | Dentro il pacchetto di Falò (fork compilati in CI) |
-| Driver dei controller virtuali (Windows) | Installato in silenzio dall'installer di Falò, come fa Sunshine |
+| `falco-sunshine`, `falco-moonlight` | Dentro il pacchetto di Falco (fork compilati in CI) |
+| Driver dei controller virtuali (Windows) | Installato in silenzio dall'installer di Falco, come fa Sunshine |
 | WebView2 (Windows) | Già presente in Windows 11; in mancanza, bootstrapper incluso nell'installer NSIS di Tauri |
 | Tailscale | **Da decidere**, vedi sotto |
 
@@ -22,12 +22,12 @@ L'utente può dover solo confermare: la richiesta UAC dell'installer, i permessi
 ## Opzioni per Tailscale
 
 **A · Installazione silenziosa del client ufficiale (consigliata per la v1)**
-Falò scarica l'MSI o il pacchetto ufficiale, ne verifica la firma e lo installa in silenzio (`msiexec /qn` su Windows; su macOS la versione Standalone, con l'approvazione dell'estensione di rete che il sistema richiede comunque).
-- Pro: è la rete WireGuard a livello kernel prevista dalla specifica, la latenza migliore. Il codice esistente (`falo-net`, CLI `--json`) resta valido.
+Falco scarica l'MSI o il pacchetto ufficiale, ne verifica la firma e lo installa in silenzio (`msiexec /qn` su Windows; su macOS la versione Standalone, con l'approvazione dell'estensione di rete che il sistema richiede comunque).
+- Pro: è la rete WireGuard a livello kernel prevista dalla specifica, la latenza migliore. Il codice esistente (`falco-net`, CLI `--json`) resta valido.
 - Contro: resta un'app Tailscale visibile nel sistema. Se l'utente ne ha già una, va riusata e non duplicata.
 
-**B · `tsnet` incorporato in Falò**
-La libreria Go ufficiale di Tailscale (BSD-3) gira dentro un processo di Falò, senza installare nulla.
+**B · `tsnet` incorporato in Falco**
+La libreria Go ufficiale di Tailscale (BSD-3) gira dentro un processo di Falco, senza installare nulla.
 - Pro: un solo pacchetto, nessuna app esterna, nessun conflitto con un Tailscale già installato.
 - Contro: WireGuard in user space: più CPU e latenza da misurare con lo streaming a 50 Mbps. Serve un processo helper in Go che esponga il traffico a Sunshine e Moonlight (proxy locale o TUN). La specifica (§3) scelse apposta il livello kernel.
 

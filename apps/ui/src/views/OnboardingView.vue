@@ -3,7 +3,7 @@
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { ImagePlus } from 'lucide-vue-next';
-import CampfireArt from '@/components/CampfireArt.vue';
+import FalconArt from '@/components/FalconArt.vue';
 import UiButton from '@/components/UiButton.vue';
 import UiField from '@/components/UiField.vue';
 import UiAvatar from '@/components/UiAvatar.vue';
@@ -45,8 +45,9 @@ async function finish(): Promise<void> {
 <template>
   <section class="onboarding">
     <div v-if="step === 'welcome'" class="card">
-      <CampfireArt :size="160" />
+      <FalconArt :size="160" />
       <h1 class="display">{{ $t('onboarding.welcome') }}</h1>
+      <p class="tagline">{{ $t('app.tagline') }}</p>
       <p class="body">{{ $t('onboarding.intro') }}</p>
       <UiButton variant="primary" :size="48" @click="step = 'profile'">{{ $t('onboarding.continue') }}</UiButton>
     </div>
@@ -94,6 +95,12 @@ async function finish(): Promise<void> {
       font-weight: 650;
     }
 
+    .tagline {
+      color: $accent-400;
+      font-weight: 600;
+      margin-top: -$sp-2;
+    }
+
     .body,
     .hint {
       color: $text-2;
@@ -126,7 +133,7 @@ async function finish(): Promise<void> {
       }
 
       &:focus-within .pick {
-        color: $ember-500;
+        color: $accent-500;
       }
     }
 

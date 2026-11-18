@@ -1,5 +1,5 @@
 // Prova end-to-end di M2 + M3 con due istanze sullo stesso PC:
-//   A = istanza predefinita (host «Marco»), B = FALO_INSTANCE=b (ospite «Luca»).
+//   A = istanza predefinita (host «Marco»), B = FALCO_INSTANCE=b (ospite «Luca»).
 // Prerequisiti: entrambi i core avviati, Tailscale collegato.
 // Uso: node scripts/e2e-friends.mjs [porta-sunshine-A]
 import { connect, sleep } from './lib/ipc.mjs';

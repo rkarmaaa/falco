@@ -1,4 +1,4 @@
-// Token del design system (DESIGN_SYSTEM.md). Le variabili SCSS puntano
+// Token del design system di Falco (DESIGN_SYSTEM.md). Le variabili SCSS puntano
 // a custom property CSS: il tema cambia con data-theme su <html>.
 @use 'sass:map';
 
@@ -11,11 +11,13 @@ $line: var(--line);
 $text-1: var(--text-1);
 $text-2: var(--text-2);
 $text-3: var(--text-3);
-$ember-400: var(--ember-400);
-$ember-500: var(--ember-500);
-$ember-600: var(--ember-600);
-$ember-glow: var(--ember-glow);
-$on-ember: var(--on-ember);
+$accent-400: var(--accent-400);
+$accent-500: var(--accent-500);
+$accent-600: var(--accent-600);
+$accent-glow: var(--accent-glow);
+$on-accent: var(--on-accent);
+// Ambra dell'occhio del falco: solo nel marchio e nelle illustrazioni
+$eye: var(--eye);
 $ok: var(--ok);
 $busy: var(--busy);
 $danger: var(--danger);
@@ -24,42 +26,44 @@ $scrim: var(--scrim);
 // Valori grezzi per tema, usati solo da _base.scss
 $themes: (
   dark: (
-    bg-0: #0e0d0c,
-    bg-1: #161412,
-    bg-2: #1f1c19,
-    bg-3: #2a2622,
-    line: #34302b,
-    text-1: #f4efe9,
-    text-2: #b3aa9f,
-    text-3: #7d756c,
-    ember-400: #ff8a4c,
-    ember-500: #ff6a2b,
-    ember-600: #e2541a,
-    ember-glow: rgba(255, 106, 43, 0.35),
-    on-ember: #0e0d0c,
+    bg-0: #0b0d11,
+    bg-1: #12151b,
+    bg-2: #1a1e26,
+    bg-3: #242a34,
+    line: #2e3540,
+    text-1: #eef1f5,
+    text-2: #a7b0bd,
+    text-3: #8a93a0,
+    accent-400: #79bcff,
+    accent-500: #4ca6ff,
+    accent-600: #2b86e3,
+    accent-glow: rgba(76, 166, 255, 0.35),
+    on-accent: #0b0d11,
+    eye: #f5a524,
     ok: #3ddc84,
     busy: #f5b83d,
     danger: #ff4d5e,
     scrim: rgba(0, 0, 0, 0.55),
   ),
   light: (
-    bg-0: #f7f4f0,
+    bg-0: #f4f6f9,
     bg-1: #ffffff,
-    bg-2: #fbf9f6,
-    bg-3: #efeae4,
-    line: #e3ddd5,
-    text-1: #1a1714,
-    text-2: #5e564d,
-    text-3: #736a61,
-    ember-400: #f06b32,
-    ember-500: #e8561c,
-    ember-600: #c9460f,
-    ember-glow: rgba(232, 86, 28, 0.28),
-    on-ember: #0e0d0c,
+    bg-2: #fafbfd,
+    bg-3: #e9edf2,
+    line: #dce2ea,
+    text-1: #12161c,
+    text-2: #4e5967,
+    text-3: #66707d,
+    accent-400: #3a93f0,
+    accent-500: #1f7fe0,
+    accent-600: #1767bd,
+    accent-glow: rgba(31, 127, 224, 0.28),
+    on-accent: #0b0d11,
+    eye: #d9890b,
     ok: #1e9e5a,
     busy: #b7791f,
     danger: #d93848,
-    scrim: rgba(26, 23, 20, 0.35),
+    scrim: rgba(18, 22, 28, 0.35),
   ),
 );
 

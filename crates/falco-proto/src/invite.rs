@@ -5,15 +5,15 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::canonical::to_canonical_json;
-use crate::identity::{FaloId, Identity};
+use crate::identity::{FalcoId, Identity};
 use crate::permissions::Role;
 
-pub const SCHEME_PREFIX: &str = "falo://invite/";
+pub const SCHEME_PREFIX: &str = "falco://invite/";
 const MAX_DECODED: usize = 16 * 1024;
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum InviteError {
-    #[error("non è un invito di Falò")]
+    #[error("non è un invito di Falco")]
     Malformed,
     #[error("versione dell'invito non supportata")]
     Version,
@@ -25,7 +25,7 @@ pub enum InviteError {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct InviteHost {
-    pub id: FaloId,
+    pub id: FalcoId,
     pub name: String,
     pub tag: String,
 }
@@ -70,7 +70,7 @@ pub fn token_hash(token: &str) -> String {
     HEXLOWER.encode(&Sha256::digest(token.as_bytes()))
 }
 
-/// Firma e codifica il payload come link `falo://invite/…`.
+/// Firma e codifica il payload come link `falco://invite/…`.
 pub fn encode(payload: InvitePayload, host: &Identity) -> Result<String, InviteError> {
     let bytes = to_canonical_json(&payload).map_err(|_| InviteError::Malformed)?;
     let signed = SignedInvite { sig: host.sign(&bytes), payload };
@@ -142,7 +142,7 @@ mod tests {
         let host = Identity::generate();
         let link = encode(sample(&host, 1_000), &host).unwrap();
         assert_eq!(decode(&link, 1_000), Err(InviteError::Expired));
-        assert_eq!(decode("falo://invite/AAAA", 0), Err(InviteError::Malformed));
+        assert_eq!(decode("falco://invite/AAAA", 0), Err(InviteError::Malformed));
 
         // Payload firmato da un'altra chiave: host.id non corrisponde
         let mallory = Identity::generate();
@@ -154,8 +154,8 @@ mod tests {
 
     #[test]
     fn finds_link_in_chat_text() {
-        let text = "ehi entra qui: falo://invite/abcDEF_-12 dai!";
-        assert_eq!(find_in_text(text), Some("falo://invite/abcDEF_-12"));
+        let text = "ehi entra qui: falco://invite/abcDEF_-12 dai!";
+        assert_eq!(find_in_text(text), Some("falco://invite/abcDEF_-12"));
         assert_eq!(find_in_text("niente qui"), None);
     }
 

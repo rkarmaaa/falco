@@ -46,7 +46,7 @@ function openAccept(link: string | null = null): void {
   modal.value = 'accept';
 }
 
-// Molte chat non rendono cliccabile falo://: il percorso principale sono gli appunti (§6)
+// Molte chat non rendono cliccabile falco://: il percorso principale sono gli appunti (§6)
 async function checkClipboard(): Promise<void> {
   if (!isTauri() || !social.profile.exists || modal.value) return;
   try {
@@ -170,7 +170,7 @@ onMounted(async () => {
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 
       &.request {
-        box-shadow: inset 0 0 0 1px $ember-500, 0 8px 24px rgba(0, 0, 0, 0.25);
+        box-shadow: inset 0 0 0 1px $accent-500, 0 8px 24px rgba(0, 0, 0, 0.25);
       }
 
       .tag {

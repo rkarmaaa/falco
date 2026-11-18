@@ -3,10 +3,10 @@ import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 
-export function endpoint(instance = process.env.FALO_INSTANCE) {
+export function endpoint(instance = process.env.FALCO_INSTANCE) {
   const suffix = instance ? `-${instance}` : '';
-  if (process.platform === 'win32') return String.raw`\\.\pipe\falo-core-` + (process.env.USERNAME ?? 'user') + suffix;
-  const dir = instance ? `app.Falo.Falo-${instance}` : 'app.Falo.Falo';
+  if (process.platform === 'win32') return String.raw`\\.\pipe\falco-core-` + (process.env.USERNAME ?? 'user') + suffix;
+  const dir = instance ? `app.Falco.Falco-${instance}` : 'app.Falco.Falco';
   return path.join(os.homedir(), 'Library/Application Support', dir, 'core.sock');
 }
 

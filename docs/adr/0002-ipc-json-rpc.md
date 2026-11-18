@@ -10,12 +10,12 @@ La UI deve leggere e modificare lo stato senza parlare con Tailscale o i motori,
 
 ## Decisione
 
-- JSON-RPC 2.0, **un messaggio JSON per riga**, sulla named pipe `falo-core-<utente>` (Windows) o sul socket `core.sock` nella cartella dati locale (macOS), tramite `interprocess`.
+- JSON-RPC 2.0, **un messaggio JSON per riga**, sulla named pipe `falco-core-<utente>` (Windows) o sul socket `core.sock` nella cartella dati locale (macOS), tramite `interprocess`.
 - Windows: descrittore SDDL `D:P(A;;GA;;;SY)(A;;GA;;;OW)`, cioè accesso solo a SYSTEM e al proprietario. macOS: permessi `0600`.
-- Il trasporto vive in `falo-proto` (feature `transport`), condiviso da core e UI.
+- Il trasporto vive in `falco-proto` (feature `transport`), condiviso da core e UI.
 - Eventi come notifiche JSON-RPC in broadcast a tutti i client. In aggiunta alla specifica: `config.changed`.
 - Metodi previsti ma non ancora implementati rispondono con il codice `-32001` e `data.milestone`.
-- La seconda istanza di `falo-core` invia `app.openUi` al core esistente ed esce.
+- La seconda istanza di `falco-core` invia `app.openUi` al core esistente ed esce.
 - Contratto completo in [docs/ipc.md](../ipc.md).
 
 ## Conseguenze

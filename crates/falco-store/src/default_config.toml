@@ -1,4 +1,4 @@
-# config.toml di Falò, gestito dal core
+# config.toml di Falco, gestito dal core
 schema = 1
 
 [general]

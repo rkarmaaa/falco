@@ -1,6 +1,6 @@
 //! Testi del tray. La UI ha il proprio modulo i18n; qui bastano poche voci.
 
-use falo_store::config::Language;
+use falco_store::config::Language;
 
 pub struct TrayText {
     pub tooltip: &'static str,
@@ -16,23 +16,23 @@ pub struct TrayText {
 pub fn tray(lang: Language) -> TrayText {
     match lang {
         Language::It => TrayText {
-            tooltip: "Falò",
+            tooltip: "Falco",
             status: "Stato",
             online: "Online",
             busy: "Occupato",
             invisible: "Invisibile",
             available: "Disponibile per gli amici",
-            open: "Apri Falò",
+            open: "Apri Falco",
             quit: "Esci",
         },
         Language::En => TrayText {
-            tooltip: "Falò",
+            tooltip: "Falco",
             status: "Status",
             online: "Online",
             busy: "Busy",
             invisible: "Invisible",
             available: "Available to friends",
-            open: "Open Falò",
+            open: "Open Falco",
             quit: "Quit",
         },
     }

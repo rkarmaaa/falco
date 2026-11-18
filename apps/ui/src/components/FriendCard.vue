@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Card amico: stato, attività, azioni rapide. In gioco: bordo brace e alone (§12)
+// Card amico: stato, attività, azioni rapide. In gioco: bordo d'accento e alone (§12)
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Play, Star } from 'lucide-vue-next';
@@ -104,12 +104,12 @@ function ago(ts: number): string {
     background: $bg-3;
   }
 
-  // In gioco: bordo brace
+  // In gioco: bordo d'accento
   &.playing {
-    box-shadow: inset 0 0 0 1px $ember-500;
+    box-shadow: inset 0 0 0 1px $accent-500;
 
     .activity {
-      color: $ember-400;
+      color: $accent-400;
     }
   }
 

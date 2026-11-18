@@ -1,4 +1,4 @@
-//! Host: un'istanza di Sunshine dedicata a Falò, viva solo quando si è «Disponibile» (§8.1).
+//! Host: un'istanza di Sunshine dedicata a Falco, viva solo quando si è «Disponibile» (§8.1).
 
 use std::net::TcpListener;
 use std::path::{Path, PathBuf};
@@ -6,14 +6,14 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{Context, bail};
-use falo_engines::process::{Priority, command};
-use falo_engines::sunshine::{self, GpuVendor, HostSettings, Platform};
-use falo_engines::sunshine_api::SunshineApi;
-use falo_store::config::{Config, Encoder};
+use falco_engines::process::{Priority, command};
+use falco_engines::sunshine::{self, GpuVendor, HostSettings, Platform};
+use falco_engines::sunshine_api::SunshineApi;
+use falco_store::config::{Config, Encoder};
 use serde::Serialize;
 use tokio::process::Child;
 
-pub const API_USER: &str = "falo";
+pub const API_USER: &str = "falco";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase", tag = "state", content = "message")]
@@ -46,7 +46,7 @@ fn encoder_pref(e: Encoder) -> &'static str {
 fn device_name() -> String {
     std::env::var("COMPUTERNAME")
         .or_else(|_| std::env::var("HOSTNAME"))
-        .unwrap_or_else(|_| "falo-host".into())
+        .unwrap_or_else(|_| "falco-host".into())
         .to_lowercase()
 }
 
@@ -94,7 +94,7 @@ impl Host {
         if self.child.is_some() {
             return Ok(());
         }
-        let bin = falo_engines::locate::sunshine().context("motore host non trovato")?;
+        let bin = falco_engines::locate::sunshine().context("motore host non trovato")?;
         let s = self.settings(cfg);
         if TcpListener::bind(("0.0.0.0", s.base_port)).is_err() {
             bail!("la porta {} è già usata da un altro programma", s.base_port);

@@ -127,7 +127,7 @@ export const friendApi = {
 
 /** Cerca un link di invito in un testo (appunti, messaggio incollato). */
 export function findInviteLink(text: string): string | null {
-  const m = /falo:\/\/invite\/[A-Za-z0-9_-]+/.exec(text);
+  const m = /falco:\/\/invite\/[A-Za-z0-9_-]+/.exec(text);
   return m ? m[0] : null;
 }
 

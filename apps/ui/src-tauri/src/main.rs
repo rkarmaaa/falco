@@ -1,4 +1,4 @@
-//! falo-ui: finestra Tauri. Non parla mai con Tailscale o i motori:
+//! falco-ui: finestra Tauri. Non parla mai con Tailscale o i motori:
 //! inoltra le chiamate JSON-RPC al core e ripubblica i suoi eventi.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
@@ -16,7 +16,7 @@ async fn rpc(
     link: State<'_, Arc<CoreLink>>,
     method: String,
     params: Option<Value>,
-) -> Result<Value, falo_proto::ipc::RpcError> {
+) -> Result<Value, falco_proto::ipc::RpcError> {
     link.call(&method, params.unwrap_or(Value::Null)).await
 }
 
@@ -38,7 +38,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![rpc, core_connected])
         .run(tauri::generate_context!());
     if let Err(e) = result {
-        eprintln!("falo-ui: {e}");
+        eprintln!("falco-ui: {e}");
         std::process::exit(1);
     }
 }

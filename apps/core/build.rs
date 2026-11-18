@@ -4,7 +4,7 @@ use embed_manifest::{embed_manifest, new_manifest};
 
 fn main() {
     if std::env::var_os("CARGO_CFG_WINDOWS").is_some() {
-        let manifest = new_manifest("Falo.Core")
+        let manifest = new_manifest("Falco.Core")
             .active_code_page(ActiveCodePage::Utf8)
             .dpi_awareness(DpiAwareness::PerMonitorV2)
             .long_path_aware(Setting::Enabled);

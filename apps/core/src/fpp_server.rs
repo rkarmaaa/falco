@@ -11,10 +11,10 @@ use axum::extract::{ConnectInfo, Path, State};
 use axum::http::{HeaderMap, Method, StatusCode, Uri, header};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
-use falo_proto::FaloId;
-use falo_proto::fpp::{self, HandshakeRequest, HandshakeResponse};
-use falo_proto::ipc::events;
-use falo_store::db::{DeviceRow, FriendRow, FriendState};
+use falco_proto::FalcoId;
+use falco_proto::fpp::{self, HandshakeRequest, HandshakeResponse};
+use falco_proto::ipc::events;
+use falco_store::db::{DeviceRow, FriendRow, FriendState};
 use serde_json::json;
 use sha2::Digest;
 use tokio::sync::Mutex;
@@ -74,7 +74,7 @@ impl Srv {
         headers: &HeaderMap,
         body: &[u8],
         friends_only: bool,
-    ) -> Result<FaloId, Denied> {
+    ) -> Result<FalcoId, Denied> {
         if !self.rate_ok(peer.ip()).await {
             return Err((StatusCode::TOO_MANY_REQUESTS, "troppe richieste".into()));
         }
@@ -228,7 +228,7 @@ async fn handshake(
     if s.node_of(peer.ip()).await.as_deref() != Some(req.node_id.as_str()) {
         return err(StatusCode::FORBIDDEN, "dispositivo non riconosciuto da Tailscale");
     }
-    let hash = falo_proto::invite::token_hash(&req.token);
+    let hash = falco_proto::invite::token_hash(&req.token);
     let consumed = s.core.lock().await.db.consume_invite(&hash, now()).ok().flatten();
     let Some((role, needs_approval)) = consumed else {
         return err(StatusCode::GONE, "invito già usato, revocato o scaduto");
@@ -339,7 +339,7 @@ async fn notify(
     let c = s.core.lock().await;
     let name = c.db.friend(&id.to_string()).ok().flatten().map(|f| f.name).unwrap_or_default();
     c.emit(events::PLAY_INVITE, json!({ "friendId": id.to_string(), "name": name }));
-    c.notify_user(&format!("{name} ti invita a giocare"), "Apri Falò e premi «Entra».");
+    c.notify_user(&format!("{name} ti invita a giocare"), "Apri Falco e premi «Entra».");
     StatusCode::NO_CONTENT.into_response()
 }
 

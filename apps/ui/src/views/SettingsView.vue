@@ -251,7 +251,7 @@ function openTab(next: Tab): void {
 
       &.active {
         color: $text-1;
-        border-bottom-color: $ember-500;
+        border-bottom-color: $accent-500;
       }
     }
   }
@@ -308,7 +308,7 @@ function openTab(next: Tab): void {
         }
 
         &:focus-within .link {
-          color: $ember-500;
+          color: $accent-500;
         }
       }
 

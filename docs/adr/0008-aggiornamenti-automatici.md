@@ -14,9 +14,9 @@ Richiesta di Marco: avvisare quando c'è una nuova versione, con un pulsante ded
 - **Libreria**: formato del manifest e firme minisign dell'updater di Tauri (`tauri-plugin-updater`), così manifest e firme si generano con gli strumenti di build di Tauri. Il core usa la stessa verifica senza webview.
 - **Modalità** da `general.updates`:
   - `auto` (default): download in background, installazione silenziosa quando non c'è una sessione attiva o alla chiusura, poi riavvio di core e tray.
-  - `notify`: notifica di sistema e toast «È disponibile Falò X.Y» con «Aggiorna ora» e «Più tardi».
+  - `notify`: notifica di sistema e toast «È disponibile Falco X.Y» con «Aggiorna ora» e «Più tardi».
   - `off`: solo controllo manuale da Impostazioni → Info.
-- **Interfaccia**: voce «Aggiorna a X.Y» nel menu del tray, badge brace su Impostazioni → Info, evento IPC `update.available`, metodi `update.check` e `update.install`.
+- **Interfaccia**: voce «Aggiorna a X.Y» nel menu del tray, badge d'accento su Impostazioni → Info, evento IPC `update.available`, metodi `update.check` e `update.install`.
 - **Pacchetti**: Windows con installer NSIS in modalità silenziosa; macOS sostituendo il bundle `.app` firmato e notarizzato.
 - Un aggiornamento comprende core, UI e motori, sempre allineati. Se fallisce resta la versione precedente e la notifica spiega cosa fare.
 

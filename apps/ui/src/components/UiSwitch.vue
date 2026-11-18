@@ -72,12 +72,12 @@ defineProps<{ label: string; hint?: string; disabled?: boolean }>();
     }
 
     &.on {
-      background: $ember-500;
-      border-color: $ember-500;
+      background: $accent-500;
+      border-color: $accent-500;
 
       .thumb {
         transform: translateX(20px);
-        background: $on-ember;
+        background: $on-accent;
       }
     }
   }

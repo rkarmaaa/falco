@@ -1,15 +1,15 @@
-# Falò — Documento di sviluppo
+# Falco — Documento di sviluppo
 
 Nov 17, 2026 · @Marco · fonte di verità del progetto (§18)
 
 ## 1. Visione e obiettivi
 
-Falò è un'app desktop per Windows 11 e macOS per giocare in streaming con gli amici come su Parsec, senza server gestiti da noi. Unisce in una sola interfaccia leggera Sunshine come host, Moonlight come client e Tailscale come rete privata. Sopra questi tre pezzi aggiunge profili, amici, inviti e permessi parziali.
+Falco è un'app desktop per Windows 11 e macOS per giocare in streaming con gli amici come su Parsec, senza server gestiti da noi. Unisce in una sola interfaccia leggera Sunshine come host, Moonlight come client e Tailscale come rete privata. Sopra questi tre pezzi aggiunge profili, amici, inviti e permessi parziali.
 
 **Obiettivi**
 
 - **Un'unica app:** installi, crei il profilo, inviti un amico e giocate. L'utente non configura mai a mano Sunshine, Moonlight o Tailscale.
-- **Nessuna installazione manuale:** l'utente scarica solo Falò. Motori, driver e rete arrivano con il pacchetto o vengono installati da Falò in automatico; l'utente al massimo conferma con un clic (UAC, permessi di sistema, login). Vincolo deciso il 2026-11-18, vedi ADR 0012.
+- **Nessuna installazione manuale:** l'utente scarica solo Falco. Motori, driver e rete arrivano con il pacchetto o vengono installati da Falco in automatico; l'utente al massimo conferma con un clic (UAC, permessi di sistema, login). Vincolo deciso il 2026-11-18, vedi ADR 0012.
 - **Prestazioni prima di tutto:** l'app non aggiunge latenza e, mentre si gioca, non consuma risorse in modo misurabile.
 - **Rete automatica ma configurabile:** default automatici, un pannello avanzato con ogni parametro e una diagnostica che dice cosa non va e come risolverlo.
 - **Identità sociale leggera:** nome, immagine profilo, lista amici, inviti con permessi parziali.
@@ -39,46 +39,46 @@ Falò è un'app desktop per Windows 11 e macOS per giocare in streaming con gli 
 | Sessione | Uno streaming attivo da un host verso uno o più ospiti |
 | Tailnet | La rete privata Tailscale di un utente |
 | DERP | Relay di Tailscale, usato quando la connessione diretta fallisce (latenza più alta) |
-| Core | Il demone Rust di Falò che orchestra tutto |
+| Core | Il demone Rust di Falco che orchestra tutto |
 
 ## 2. Architettura
 
-Falò è un orchestratore: due processi propri, core e UI, configurano e avviano due motori esistenti, Sunshine e Moonlight, e usano Tailscale come rete. Nessun byte di gioco passa dal codice di Falò.
+Falco è un orchestratore: due processi propri, core e UI, configurano e avviano due motori esistenti, Sunshine e Moonlight, e usano Tailscale come rete. Nessun byte di gioco passa dal codice di Falco.
 
 ```mermaid
 flowchart LR
   subgraph A["PC host"]
     direction TB
-    UIA["falo-ui<br/>(solo a finestra aperta)"]:::ephemeral --> CA["falo-core"]:::falo
-    CA --> SA["falo-sunshine"]
+    UIA["falco-ui<br/>(solo a finestra aperta)"]:::ephemeral --> CA["falco-core"]:::falco
+    CA --> SA["falco-sunshine"]
     CA --> TA["Client Tailscale"]
   end
   subgraph B["PC ospite"]
     direction TB
-    UIB["falo-ui<br/>(solo a finestra aperta)"]:::ephemeral --> CB["falo-core"]:::falo
-    CB --> MB["falo-moonlight"]
+    UIB["falco-ui<br/>(solo a finestra aperta)"]:::ephemeral --> CB["falco-core"]:::falco
+    CB --> MB["falco-moonlight"]
     CB --> TB["Client Tailscale"]
   end
   CA <-. "presenza FPP (tailnet)" .-> CB
   SA <== "stream (tailnet)" ==> MB
   TA <-. "coordinamento" .-> TS[("Servizi Tailscale")]:::external
   TB <-. "coordinamento" .-> TS
-  classDef falo stroke:#FF6A2B,stroke-width:2px
+  classDef falco stroke:#4CA6FF,stroke-width:2px
   classDef ephemeral stroke-dasharray:4 3
   classDef external stroke-dasharray:4 3
 ```
 
-Il colore d'accento segna il codice nuovo di Falò; i bordi tratteggiati indicano ciò che esiste solo a tratti (la UI) o che non è nostro (i servizi Tailscale). Presenza e stream passano entrambi dentro la tailnet.
+Il colore d'accento segna il codice nuovo di Falco; i bordi tratteggiati indicano ciò che esiste solo a tratti (la UI) o che non è nostro (i servizi Tailscale). Presenza e stream passano entrambi dentro la tailnet.
 
 **Componenti**
 
 | Componente | Responsabilità | Quando è attivo |
 | --- | --- | --- |
-| `falo-core` | Tray, identità, amici, inviti, permessi, rete, server di presenza, controllo dei motori | Sempre, avviato con il sistema |
-| `falo-ui` | Finestra Tauri: legge e modifica lo stato tramite il core | Solo quando la finestra è aperta |
-| `falo-sunshine` | Cattura schermo e audio, codifica hardware, ricezione input, applicazione permessi | Solo quando l'host è «Disponibile» |
-| `falo-moonlight` | Decodifica hardware, finestra dello stream, invio input | Solo durante una sessione da ospite |
-| Client Tailscale | Rete WireGuard, indirizzi `100.x`, attraversamento NAT | Installato e aggiornato da Falò in automatico (ADR 0012) |
+| `falco-core` | Tray, identità, amici, inviti, permessi, rete, server di presenza, controllo dei motori | Sempre, avviato con il sistema |
+| `falco-ui` | Finestra Tauri: legge e modifica lo stato tramite il core | Solo quando la finestra è aperta |
+| `falco-sunshine` | Cattura schermo e audio, codifica hardware, ricezione input, applicazione permessi | Solo quando l'host è «Disponibile» |
+| `falco-moonlight` | Decodifica hardware, finestra dello stream, invio input | Solo durante una sessione da ospite |
+| Client Tailscale | Rete WireGuard, indirizzi `100.x`, attraversamento NAT | Installato e aggiornato da Falco in automatico (ADR 0012) |
 
 **Contratto IPC tra core e UI**
 
@@ -93,13 +93,13 @@ JSON-RPC 2.0 sulla pipe locale. La UI chiama metodi e riceve eventi; non parla m
 
 1. L'ospite preme «Entra»; la UI chiama `session.join`.
 2. Il core dell'ospite bussa all'host via FPP; l'host approva, o lo fa da solo se il ruolo ha `autoJoin`.
-3. Il core dell'ospite chiude la UI, lancia `falo-moonlight stream` e legge lo stato JSON da stdout.
+3. Il core dell'ospite chiude la UI, lancia `falco-moonlight stream` e legge lo stato JSON da stdout.
 4. Durante lo stream il core sospende il polling e inoltra solo `session.stats` se la UI viene riaperta.
 5. Alla fine il core registra la sessione in SQLite e riapre la UI con il riepilogo, se l'utente lo ha scelto.
 
 ## 3. Stack, licenze e struttura del repository
 
-Falò è scritto in Rust per il core, Vue 3 dentro Tauri 2 per l'interfaccia e C++ per i due motori di streaming, che sono fork. Tutto il progetto è rilasciato in GPL-3.0, perché Sunshine e Moonlight lo richiedono.
+Falco è scritto in Rust per il core, Vue 3 dentro Tauri 2 per l'interfaccia e C++ per i due motori di streaming, che sono fork. Tutto il progetto è rilasciato in GPL-3.0, perché Sunshine e Moonlight lo richiedono.
 
 | Livello | Tecnologia | Perché |
 | --- | --- | --- |
@@ -116,26 +116,26 @@ Falò è scritto in Rust per il core, Vue 3 dentro Tauri 2 per l'interfaccia e C
 
 **Licenze**
 
-- Sunshine, moonlight-qt e Apollo sono GPL-3.0: i fork e Falò restano GPL-3.0, con sorgenti pubblici a ogni rilascio.
-- Tailscale non viene ricompilato dentro Falò: Falò scarica e installa in automatico il client ufficiale (o usa la libreria `tsnet`, da decidere nell'ADR 0012); l'utente usa il proprio account e non installa nulla a mano.
-- Il piano gratuito Personal di Tailscale è pensato per uso non commerciale ([prezzi Tailscale](https://tailscale.com/docs/account/manage-plans/free-plans-discounts)). Per un uso tra amici va bene; se Falò diventasse un prodotto a pagamento, ogni utente resta comunque sul proprio account.
+- Sunshine, moonlight-qt e Apollo sono GPL-3.0: i fork e Falco restano GPL-3.0, con sorgenti pubblici a ogni rilascio.
+- Tailscale non viene ricompilato dentro Falco: Falco scarica e installa in automatico il client ufficiale (o usa la libreria `tsnet`, da decidere nell'ADR 0012); l'utente usa il proprio account e non installa nulla a mano.
+- Il piano gratuito Personal di Tailscale è pensato per uso non commerciale ([prezzi Tailscale](https://tailscale.com/docs/account/manage-plans/free-plans-discounts)). Per un uso tra amici va bene; se Falco diventasse un prodotto a pagamento, ogni utente resta comunque sul proprio account.
 - Nome, logo e icone devono essere originali: nessun asset di Parsec, Moonlight o Sunshine.
 
 **Struttura del monorepo**
 
 ```text
-falo/
+falco/
   apps/
     core/            # demone Rust: tray, orchestrazione, presenza, rete
     ui/              # Tauri 2 + Vue 3 + SCSS, avviata su richiesta
   crates/
-    falo-proto/      # tipi condivisi, schema IPC, firme Ed25519
-    falo-net/        # provider di rete e diagnostica
-    falo-store/      # SQLite, migrazioni, config
-    falo-engines/    # controllo processi Sunshine e Moonlight
+    falco-proto/      # tipi condivisi, schema IPC, firme Ed25519
+    falco-net/        # provider di rete e diagnostica
+    falco-store/      # SQLite, migrazioni, config
+    falco-engines/    # controllo processi Sunshine e Moonlight
   engines/
-    sunshine/        # submodule → fork falo-sunshine
-    moonlight/       # submodule → fork falo-moonlight
+    sunshine/        # submodule → fork falco-sunshine
+    moonlight/       # submodule → fork falco-moonlight
   packaging/
     windows/         # installer NSIS, regole firewall, driver gamepad
     macos/           # bundle .app universal, entitlements, notarizzazione
@@ -145,13 +145,13 @@ falo/
 
 **Regole sui fork**
 
-- Ogni modifica a Sunshine o Moonlight sta in un branch `falo/*` con commit piccoli e titolati, così il rebase su upstream resta fattibile.
+- Ogni modifica a Sunshine o Moonlight sta in un branch `falco/*` con commit piccoli e titolati, così il rebase su upstream resta fattibile.
 - Prima di patchare, controllare se upstream offre già un'opzione di configurazione o una API.
 - Uno script `scripts/sync-upstream` fa il rebase, compila e lancia i test di fumo.
 
 ## 4. Profili e identità
 
-Ogni utente è una coppia di chiavi Ed25519 generata al primo avvio: la chiave pubblica è il suo ID, mentre nome e immagine profilo sono dati firmati che gli amici verificano. Non serve nessun account Falò.
+Ogni utente è una coppia di chiavi Ed25519 generata al primo avvio: la chiave pubblica è il suo ID, mentre nome e immagine profilo sono dati firmati che gli amici verificano. Non serve nessun account Falco.
 
 **Dati del profilo**
 
@@ -180,7 +180,7 @@ Marco può usare la stessa identità sul PC Windows e sul MacBook. Dal primo dis
 
 **Esportazione e ripristino**
 
-Dalle impostazioni si esporta un file `.falo-id` cifrato con una passphrase (Argon2id + XChaCha20-Poly1305). Senza quel file, reinstallare l'app significa creare un'identità nuova e ricevere di nuovo gli inviti.
+Dalle impostazioni si esporta un file `.falco-id` cifrato con una passphrase (Argon2id + XChaCha20-Poly1305). Senza quel file, reinstallare l'app significa creare un'identità nuova e ricevere di nuovo gli inviti.
 
 ## 5. Amici e presenza
 
@@ -188,7 +188,7 @@ Un'amicizia è una condivisione reciproca di dispositivi su Tailscale più un re
 
 **Perché la condivisione deve essere reciproca**
 
-Tailscale mette in quarantena i dispositivi condivisi: possono ricevere connessioni ma non avviarle, a meno che entrambe le parti si condividano i dispositivi a vicenda ([documentazione sharing](https://tailscale.com/docs/features/sharing)). Per questo ogni amicizia condivide in entrambe le direzioni il dispositivo su cui gira Falò. Così ognuno può vedere lo stato dell'altro e ospitarlo.
+Tailscale mette in quarantena i dispositivi condivisi: possono ricevere connessioni ma non avviarle, a meno che entrambe le parti si condividano i dispositivi a vicenda ([documentazione sharing](https://tailscale.com/docs/features/sharing)). Per questo ogni amicizia condivide in entrambe le direzioni il dispositivo su cui gira Falco. Così ognuno può vedere lo stato dell'altro e ospitarlo.
 
 **Stati di un amico**
 
@@ -217,7 +217,7 @@ Il core espone un piccolo server HTTP sulla porta 47900 (configurabile), legato 
 
 **Autenticazione di ogni richiesta**
 
-- Header `X-Falo-Id`, `X-Falo-Ts` e `X-Falo-Sig`. La firma copre metodo, percorso, timestamp e SHA-256 del corpo.
+- Header `X-Falco-Id`, `X-Falco-Ts` e `X-Falco-Sig`. La firma copre metodo, percorso, timestamp e SHA-256 del corpo.
 - Il server rifiuta un timestamp fuori di ±60 s e qualsiasi ID non presente tra gli amici, tranne su `/v1/handshake`.
 - Doppio vincolo: l'IP sorgente, risolto con `tailscale whois`, deve appartenere a un nodo registrato per quell'amico.
 - Limite di 20 richieste al minuto per IP, oltre il quale si risponde 429.
@@ -263,15 +263,15 @@ Un invito è un link firmato che l'host incolla su Discord o WhatsApp: l'amico l
 
 Per creare inviti in automatico il core usa la Tailscale API. L'onboarding guida l'host a creare un OAuth client nella pagina Trust credentials della console Tailscale, con gli scope `devices:core:read` e `device_invites`. Gli OAuth client non scadono ([Tailscale API](https://github.com/tailscale/tailscale/blob/main/api.md)), quindi l'operazione si fa una volta sola. Client ID e secret vanno nel portachiavi.
 
-Modalità manuale, senza OAuth: Falò apre la finestra Share del dispositivo nella console, l'host copia il link di condivisione e lo incolla nel modulo dell'invito. Costa due clic in più.
+Modalità manuale, senza OAuth: Falco apre la finestra Share del dispositivo nella console, l'host copia il link di condivisione e lo incolla nel modulo dell'invito. Costa due clic in più.
 
 **Creazione dell'invito (host)**
 
 1. L'host preme «Invita» e sceglie un ruolo (§7), la validità (1 ora, 24 ore, 7 giorni) e gli usi (1 di default, fino a 10).
 2. Il core genera un token casuale di 32 byte e salva solo il suo SHA-256.
-3. Il core chiama `POST /api/v2/device/{deviceId}/device-invites` con `multiUse` e `allowExitNode: false`, e riceve `inviteUrl`. I link Tailscale non usati scadono dopo 30 giorni; Falò applica comunque la sua scadenza, più breve.
+3. Il core chiama `POST /api/v2/device/{deviceId}/device-invites` con `multiUse` e `allowExitNode: false`, e riceve `inviteUrl`. I link Tailscale non usati scadono dopo 30 giorni; Falco applica comunque la sua scadenza, più breve.
 4. Il core costruisce il payload, lo firma con la chiave dell'host, lo comprime (zstd) e lo codifica in base64url.
-5. La UI mostra il link `falo://invite/…` con «Copia» e un'anteprima di cosa vedrà l'amico.
+5. La UI mostra il link `falco://invite/…` con «Copia» e un'anteprima di cosa vedrà l'amico.
 
 ```json
 {
@@ -287,10 +287,10 @@ Modalità manuale, senza OAuth: Falò apre la finestra Share del dispositivo nel
 
 **Accettazione (ospite)**
 
-1. L'invito arriva in tre modi: clic sul link `falo://`, incolla nel campo «Ho un invito», oppure rilevamento automatico negli appunti quando la finestra prende il focus («Hai un invito di Marco negli appunti»). Molte chat non rendono cliccabili gli schemi personalizzati, quindi il rilevamento negli appunti è il percorso principale.
+1. L'invito arriva in tre modi: clic sul link `falco://`, incolla nel campo «Ho un invito», oppure rilevamento automatico negli appunti quando la finestra prende il focus («Hai un invito di Marco negli appunti»). Molte chat non rendono cliccabili gli schemi personalizzati, quindi il rilevamento negli appunti è il percorso principale.
 2. Il core verifica firma e scadenza, poi mostra una scheda con nome, tag e permessi descritti a parole.
-3. Se Tailscale manca, Falò lo installa da solo; se non è collegato, apre il login nel browser.
-4. Falò apre `inviteUrl` nel browser: l'ospite accetta la condivisione su Tailscale. Il core controlla `tailscale status --json` ogni 2 s, fino a 5 minuti, finché il nodo dell'host compare.
+3. Se Tailscale manca, Falco lo installa da solo; se non è collegato, apre il login nel browser.
+4. Falco apre `inviteUrl` nel browser: l'ospite accetta la condivisione su Tailscale. Il core controlla `tailscale status --json` ogni 2 s, fino a 5 minuti, finché il nodo dell'host compare.
 5. Il core chiama `POST /v1/handshake` sull'host, inviando il token, il proprio profilo firmato e il proprio ID nodo.
 6. L'host verifica token, scadenza e usi rimasti, e controlla con `tailscale whois` che l'IP sorgente sia un nodo condiviso. Se l'invito richiede approvazione, l'host vede una notifica «Luca vuole unirsi».
 7. L'host salva l'amico con il ruolo dell'invito e risponde con un PIN di 4 cifre generato al momento.
@@ -311,11 +311,11 @@ sequenceDiagram
   participant T as Tailscale
   participant O as Ospite (core)
   H->>T: 1. crea device invite (API)
-  H-->>O: 2. link falo://invite (Discord, WhatsApp)
+  H-->>O: 2. link falco://invite (Discord, WhatsApp)
   O->>T: 3. accetta la condivisione (browser)
   O->>H: 4. POST /v1/handshake (token, profilo, nodo)
   H->>O: 5. amico salvato, PIN di 4 cifre
-  rect rgba(255,106,43,.15)
+  rect rgba(76,166,255,.15)
   O->>H: 6. pairing Moonlight ↔ Sunshine con il PIN
   end
   H--)T: 7. accetta l'invito inverso (non blocca il gioco)
@@ -358,7 +358,7 @@ Ogni amico ha un ruolo preimpostato che l'host può rifinire permesso per permes
 
 **Dove si applicano**
 
-- Il fork di Sunshine mantiene una mappa in memoria «impronta certificato client → permessi», aggiornata dal core tramite un nuovo endpoint locale `PUT /api/falo/clients/{uuid}/permissions`.
+- Il fork di Sunshine mantiene una mappa in memoria «impronta certificato client → permessi», aggiornata dal core tramite un nuovo endpoint locale `PUT /api/falco/clients/{uuid}/permissions`.
 - Il controllo avviene in quattro punti: avvio della sessione (`view`, `autoJoin`, `schedule`), negoziazione dello stream (limiti di qualità), gestore degli input (`gamepads`, `keyboard`, `mouse`) e avvio delle app (`launchApps`).
 - Un cambio di permessi durante la sessione ha effetto entro 100 ms, senza riconnessione.
 - Base di partenza: il sistema di permessi per client di [Apollo](https://github.com/ClassicOldSong/Apollo), un fork di Sunshine sotto GPLv3. Si porta la logica, non l'interfaccia. Il default è «nega tutto tranne vedere», come in Apollo, dove i nuovi client ricevono solo la visione dello stream e l'elenco delle app.
@@ -375,9 +375,9 @@ Se `autoJoin` è falso, l'ospite preme «Entra» e l'host riceve una notifica di
 
 Il core non tocca mai i pacchetti video: genera la configurazione di Sunshine, lancia Moonlight con i parametri giusti e legge il loro stato. Tutta la latenza resta nel codice C++ maturo dei due motori.
 
-### 8.1 Host: falo-sunshine
+### 8.1 Host: falco-sunshine
 
-- Il core genera `sunshine.conf` e `apps.json` nella cartella dati di Falò e avvia Sunshine passando quel file. L'utente non vede mai l'interfaccia web di Sunshine.
+- Il core genera `sunshine.conf` e `apps.json` nella cartella dati di Falco e avvia Sunshine passando quel file. L'utente non vede mai l'interfaccia web di Sunshine.
 - Credenziali dell'interfaccia web casuali, impostate all'installazione con `sunshine --creds`, salvate nel portachiavi; `origin_web_ui_allowed = pc`.
 - Sunshine gira solo quando l'host è «Disponibile». Da «Non disponibile» il processo viene fermato, non messo in pausa.
 - Su Windows Sunshine gira come servizio: serve per catturare le richieste UAC e la schermata di blocco. Il core lo avvia e lo arresta tramite Service Control Manager.
@@ -385,7 +385,7 @@ Il core non tocca mai i pacchetti video: genera la configurazione di Sunshine, l
 
 **Configurazione generata (valori di default)**
 
-| Chiave Sunshine | Default Falò | Note |
+| Chiave Sunshine | Default Falco | Note |
 | --- | --- | --- |
 | `encoder` | auto | `amdvce` su GPU AMD, `nvenc` su NVIDIA, `quicksync` su Intel, `videotoolbox` su Mac |
 | `channels` | 3 | Ospiti contemporanei; ogni ospite costa una codifica in più |
@@ -408,12 +408,12 @@ Sunshine supporta più client in streaming insieme, e ognuno riceve la propria c
 
 Servono i permessi Registrazione schermo e Accessibilità. Le versioni recenti di Sunshine catturano l'audio su macOS con la Tap API ([GamingOnLinux](https://www.gamingonlinux.com/2026/05/sunshine-game-streaming-tool-adds-vulkan-encoding-plus-xdg-pipewire-and-kwin-direct-screencast-capture/page=1/)). L'emulazione di gamepad su un host macOS non è supportata ([tabella di compatibilità di Sunshine](https://gitee.com/zypdos/Sunshine)), quindi su Mac la UI nasconde i permessi controller.
 
-### 8.2 Client: falo-moonlight
+### 8.2 Client: falco-moonlight
 
 Il core avvia Moonlight dalla riga di comando, per esempio:
 
 ```bash
-falo-moonlight stream 100.101.102.103 "Desktop" \
+falco-moonlight stream 100.101.102.103 "Desktop" \
   --resolution 1920x1080 --fps 60 --bitrate 30000 \
   --video-codec HEVC --display-mode borderless \
   --frame-pacing --quit-after
@@ -426,7 +426,7 @@ I nomi dei flag vanno verificati con `moonlight stream --help` sulla versione fo
 1. Flag `--pin` per il pairing, se manca nella versione di base.
 2. Modalità senza finestra principale: si apre solo la finestra dello stream.
 3. Stato leggibile dalla macchina su stdout, in JSON lines: `connecting`, `connected`, `stats` ogni 2 s, `ended` con il motivo.
-4. Overlay statistiche Falò: ping, fps, bitrate, percorso diretto o relay.
+4. Overlay statistiche Falco: ping, fps, bitrate, percorso diretto o relay.
 5. Cartella di configurazione separata, per non scontrarsi con un Moonlight già installato.
 6. Lettura dei permessi ricevuti, per disattivare in UI gli input non concessi con un messaggio chiaro.
 
@@ -443,7 +443,7 @@ Su Mac il decoder AV1 hardware è disponibile solo da M3 in poi ([note di Moonli
 
 ## 9. Rete configurabile e diagnostica
 
-Di default la rete è Tailscale e funziona da sola. Per i casi difficili Falò offre quattro provider intercambiabili, un «Dottore di rete» che spiega cosa non va, e ogni parametro esposto nelle impostazioni avanzate.
+Di default la rete è Tailscale e funziona da sola. Per i casi difficili Falco offre quattro provider intercambiabili, un «Dottore di rete» che spiega cosa non va, e ogni parametro esposto nelle impostazioni avanzate.
 
 **Provider di rete**
 
@@ -452,11 +452,11 @@ Ogni provider implementa lo stesso trait Rust `NetworkProvider`: trovare i peer,
 | Provider | Quando usarlo | Cosa cambia |
 | --- | --- | --- |
 | Tailscale (default) | Sempre, salvo casi particolari | Rete WireGuard cifrata, attraversamento NAT automatico, relay DERP come ultima risorsa |
-| LAN | Host e ospite nella stessa rete locale | Scoperta mDNS (`_falo._tcp`), nessun Tailscale necessario, latenza minima |
+| LAN | Host e ospite nella stessa rete locale | Scoperta mDNS (`_falco._tcp`), nessun Tailscale necessario, latenza minima |
 | Diretto | Utenti esperti con port forwarding o IPv6 pubblico | UPnP, NAT-PMP o PCP automatici, oppure porte aperte a mano; cifratura di Sunshine obbligatoria |
 | Headscale | Chi vuole un proprio server di coordinamento | Stesso flusso di Tailscale, ma con URL di controllo personalizzato (`--login-server`) |
 
-Con il provider LAN attivo, Falò preferisce la LAN a Tailscale quando entrambi i dispositivi sono nella stessa rete.
+Con il provider LAN attivo, Falco preferisce la LAN a Tailscale quando entrambi i dispositivi sono nella stessa rete.
 
 **Dottore di rete**
 
@@ -473,21 +473,21 @@ Si apre da Impostazioni → Rete, parte da solo al primo avvio da host e dopo og
 
 **Problemi tipici e soluzioni**
 
-| Sintomo | Causa probabile | Falò fa da solo | Indicazione all'utente |
+| Sintomo | Causa probabile | Falco fa da solo | Indicazione all'utente |
 | --- | --- | --- | --- |
 | Connessione via relay DERP, ping alto | NAT difficile su entrambi i lati o UDP bloccato | Avviso in sessione, bitrate ridotto | Attiva UPnP sul router, oppure inoltra la porta UDP 41641 al PC host |
 | Scatti periodici | Wi-Fi con scansioni in background o banda 2,4 GHz | Rileva la banda Wi-Fi | Usa il cavo o la rete 5/6 GHz |
 | Immagine a blocchi | Perdita di pacchetti | Alza la FEC al 30%, abbassa il bitrate | Chiudi download e streaming in corso |
-| L'amico risulta offline | Tailscale disconnesso sul suo PC | Mostra «Tailscale di Luca è spento» | Chiedi a Luca di aprire Falò |
+| L'amico risulta offline | Tailscale disconnesso sul suo PC | Mostra «Tailscale di Luca è spento» | Chiedi a Luca di aprire Falco |
 | Connessione rifiutata | Regola firewall mancante o cambiata | Ricrea la regola, chiedendo l'autorizzazione | Nessuna |
 | Latenza alta solo in gioco | Un'altra VPN o un exit node attivo | Rileva l'exit node e lo segnala | Disattiva l'altra VPN durante il gioco |
 | Rete dell'operatore con CGNAT | Nessun IPv4 pubblico | Preferisce IPv6 se disponibile | Nessuna: Tailscale gestisce il caso |
 
 **Firewall**
 
-- Windows: l'installer crea regole per `falo-sunshine.exe` limitate agli indirizzi remoti Tailscale (`100.64.0.0/10` e `fd7a:115c:a1e0::/48`), più la LAN se il provider LAN è attivo.
+- Windows: l'installer crea regole per `falco-sunshine.exe` limitate agli indirizzi remoti Tailscale (`100.64.0.0/10` e `fd7a:115c:a1e0::/48`), più la LAN se il provider LAN è attivo.
 - Porte predefinite di Sunshine: TCP 47984, 47989, 48010 e UDP 47998–48000; l'interfaccia web 47990 resta solo locale. Da verificare sulla versione del fork.
-- macOS: il firewall applicativo chiede il permesso al primo avvio; Falò lo spiega prima, nell'onboarding.
+- macOS: il firewall applicativo chiede il permesso al primo avvio; Falco lo spiega prima, nell'onboarding.
 
 **Parametri di rete esposti**
 
@@ -509,11 +509,11 @@ Si apre da Impostazioni → Rete, parte da solo al primo avvio da host e dopo og
 
 ## 10. Prestazioni e ottimizzazione
 
-Falò non sta mai nel percorso dei pacchetti di gioco, quindi la latenza aggiunta deve essere zero rispetto a Sunshine e Moonlight originali. Il resto del lavoro è non consumare nulla quando non serve. I numeri qui sotto sono obiettivi da misurare in CI, non stime.
+Falco non sta mai nel percorso dei pacchetti di gioco, quindi la latenza aggiunta deve essere zero rispetto a Sunshine e Moonlight originali. Il resto del lavoro è non consumare nulla quando non serve. I numeri qui sotto sono obiettivi da misurare in CI, non stime.
 
 **Budget per stato**
 
-| Stato | RAM del core | CPU media del core | Processi Falò attivi |
+| Stato | RAM del core | CPU media del core | Processi Falco attivi |
 | --- | --- | --- | --- |
 | In tray, non disponibile | ≤ 15 MB | \~0%, al massimo 1 risveglio al minuto | Solo il core |
 | In tray, disponibile come host | ≤ 15 MB | < 0,5% | Core + Sunshine inattivo |
@@ -537,7 +537,7 @@ Falò non sta mai nel percorso dei pacchetti di gioco, quindi la latenza aggiunt
 
 **UI**
 
-- Processo separato (`falo-ui`): chiudere la finestra termina il processo e libera la webview. Alla riapertura la UI chiede al core uno snapshot dello stato e si idrata in meno di 50 ms.
+- Processo separato (`falco-ui`): chiudere la finestra termina il processo e libera la webview. Alla riapertura la UI chiede al core uno snapshot dello stato e si idrata in meno di 50 ms.
 - Vue 3 con `<script setup>`, nessuna libreria di componenti pesante, nessun CSS-in-JS a runtime.
 - Animazioni solo su `transform` e `opacity`, rispetto di `prefers-reduced-motion`.
 - Lista amici virtualizzata oltre 50 elementi, avatar con `loading="lazy"` e dimensioni fisse.
@@ -551,13 +551,13 @@ Falò non sta mai nel percorso dei pacchetti di gioco, quindi la latenza aggiunt
 
 **Come si misura**
 
-- Un comando `falo bench` registra RAM, CPU e risvegli del core per 10 minuti in ciascuno dei quattro stati, e produce un JSON.
+- Un comando `falco bench` registra RAM, CPU e risvegli del core per 10 minuti in ciascuno dei quattro stati, e produce un JSON.
 - La CI fallisce se la dimensione del pacchetto o l'avvio a freddo superano il budget del 10%.
-- Il confronto di latenza si fa a mano a ogni milestone: telecamera a 240 fps che riprende schermo host e schermo ospite, stessa scena con e senza Falò.
+- Il confronto di latenza si fa a mano a ogni milestone: telecamera a 240 fps che riprende schermo host e schermo ospite, stessa scena con e senza Falco.
 
 ## 11. Sicurezza
 
-Di default nessuna porta di Falò o di Sunshine è raggiungibile da Internet: tutto passa nella tailnet cifrata con WireGuard, e ogni azione tra amici è firmata. I permessi si applicano sull'host, quindi un client modificato non guadagna nulla.
+Di default nessuna porta di Falco o di Sunshine è raggiungibile da Internet: tutto passa nella tailnet cifrata con WireGuard, e ogni azione tra amici è firmata. I permessi si applicano sull'host, quindi un client modificato non guadagna nulla.
 
 **Minacce e contromisure**
 
@@ -594,35 +594,36 @@ Il traffico è già cifrato da WireGuard dentro la tailnet. La cifratura di Suns
 
 ## 12. Design system
 
-Lo stile è «notte attorno al fuoco»: superfici scure e calde, un solo colore d'accento color brace usato con parsimonia, tipografia compatta e decisa. Il colore indica sempre uno stato o un'azione, mai una decorazione.
+Lo stile è «volo notturno»: superfici grafite fredde, un solo colore d'accento (Cielo) usato con parsimonia, tipografia compatta e decisa. Il marchio è la testa di un falco pellegrino di profilo; la guida completa è in `DESIGN_SYSTEM.md`. Il colore indica sempre uno stato o un'azione, mai una decorazione.
 
 **Principi visivi**
 
-- Una sola azione primaria per schermata, sempre in brace con testo scuro.
+- Una sola azione primaria per schermata, sempre in accento con testo scuro.
 - Gerarchia data da spazio e peso del testo, non da riquadri: bordi da 1 px, nessuna ombra pesante.
-- L'alone brace si usa solo per ciò che è «vivo»: un amico in gioco, una sessione attiva.
+- L'alone accento si usa solo per ciò che è «vivo»: un amico in gioco, una sessione attiva.
 - Tema scuro di default, tema chiaro che segue il sistema; entrambi rispettano il contrasto WCAG AA.
 
 **Colori (tema scuro)**
 
 | Token | Valore | Uso |
 | --- | --- | --- |
-| `$bg-0` | `#0E0D0C` | Sfondo dell'app |
-| `$bg-1` | `#161412` | Barra laterale, pannelli |
-| `$bg-2` | `#1F1C19` | Card, campi |
-| `$bg-3` | `#2A2622` | Hover, elementi selezionati |
-| `$line` | `#34302B` | Bordi e separatori da 1 px |
-| `$text-1` | `#F4EFE9` | Testo principale |
-| `$text-2` | `#B3AA9F` | Testo secondario |
-| `$text-3` | `#7D756C` | Etichette, testo disattivato |
-| `$ember-500` | `#FF6A2B` | Accento, azione primaria (testo sopra: `$bg-0`, contrasto circa 6,8:1) |
-| `$ember-400` / `$ember-600` | `#FF8A4C` / `#E2541A` | Hover / premuto |
-| `$ember-glow` | `rgba(255, 106, 43, .35)` | Alone degli stati vivi |
+| `$bg-0` | `#0B0D11` | Sfondo dell'app |
+| `$bg-1` | `#12151B` | Barra laterale, pannelli |
+| `$bg-2` | `#1A1E26` | Card, campi |
+| `$bg-3` | `#242A34` | Hover, elementi selezionati |
+| `$line` | `#2E3540` | Bordi e separatori da 1 px |
+| `$text-1` | `#EEF1F5` | Testo principale |
+| `$text-2` | `#A7B0BD` | Testo secondario |
+| `$text-3` | `#8A93A0` | Etichette, testo disattivato |
+| `$accent-500` | `#4CA6FF` | Accento «Cielo», azione primaria (testo sopra: `$bg-0`, contrasto circa 7,6:1) |
+| `$accent-400` / `$accent-600` | `#79BCFF` / `#2B86E3` | Hover / premuto |
+| `$accent-glow` | `rgba(76, 166, 255, .35)` | Alone degli stati vivi |
+| `$eye` | `#F5A524` | Ambra dell'occhio del falco: solo marchio e illustrazioni |
 | `$ok` | `#3DDC84` | Online, connessione diretta, ping buono |
 | `$busy` | `#F5B83D` | Occupato, relay DERP, ping medio |
 | `$danger` | `#FF4D5E` | Errori, espulsione, ping alto |
 
-Tema chiaro: `$bg-0 #F7F4F0`, `$bg-1 #FFFFFF`, `$bg-3 #EFEAE4`, `$line #E3DDD5`, `$text-1 #1A1714`, `$text-2 #5E564D`, `$ember-500 #E8561C`. I token SCSS puntano a custom property CSS, e il tema cambia con `data-theme` su `<html>`.
+Tema chiaro: `$bg-0 #F4F6F9`, `$bg-1 #FFFFFF`, `$bg-2 #FAFBFD`, `$bg-3 #E9EDF2`, `$line #DCE2EA`, `$text-1 #12161C`, `$text-2 #4E5967`, `$text-3 #66707D`, `$accent-500 #1F7FE0`. I token SCSS puntano a custom property CSS, e il tema cambia con `data-theme` su `<html>`.
 
 **Tipografia**
 
@@ -652,13 +653,13 @@ Un solo font variabile, [Geist](https://vercel.com/font) (licenza OFL), con sott
 
 | Componente | Varianti e regole |
 | --- | --- |
-| Pulsante | Primario brace, secondario superficie, fantasma, pericolo; altezze 32, 40, 48 |
+| Pulsante | Primario accento, secondario superficie, fantasma, pericolo; altezze 32, 40, 48 |
 | Avatar | 24, 32, 40, 56, 96 px; anello di stato da 2 px con 2 px di stacco; monogramma su colore `accent` se manca l'immagine |
-| Scheda amico | Avatar, nome, attività, azioni visibili all'hover; bordo e alone brace quando l'amico è in gioco |
+| Scheda amico | Avatar, nome, attività, azioni visibili all'hover; bordo e alone accento quando l'amico è in gioco |
 | Chip ruolo | Icona + nome del ruolo, colore neutro; tooltip con i permessi a parole |
 | Pillola ping | Verde sotto 30 ms, ambra 30–60 ms, rosso sopra 60 ms; etichetta «diretto» o «relay» |
 | Riga diagnostica | Semaforo, titolo, valore misurato, azione |
-| Interruttore, campo, menu, slider | Altezza 40, focus visibile con anello brace da 2 px |
+| Interruttore, campo, menu, slider | Altezza 40, focus visibile con anello accento da 2 px |
 | Toast | In basso a destra, massimo 2 visibili, 4 s, azione opzionale |
 | Icone | [Lucide](https://lucide.dev) importate una per una, tratto 1,75 |
 
@@ -727,12 +728,12 @@ Un solo font variabile, [Geist](https://vercel.com/font) (licenza OFL), con sott
       }
     }
 
-    // In gioco: bordo brace e alone sull'avatar
+    // In gioco: bordo accento e alone sull'avatar
     &.playing {
-      box-shadow: inset 0 0 0 1px $ember-500;
+      box-shadow: inset 0 0 0 1px $accent-500;
 
       .avatar {
-        @include glow($ember-glow);
+        @include glow($accent-glow);
       }
     }
   }
@@ -754,7 +755,7 @@ L'app ha una sola schermata principale, gli Amici, e tutto il resto si raggiunge
 
 | Schermata | Contenuto | Azione primaria |
 | --- | --- | --- |
-| Onboarding | Benvenuto, profilo (nome e avatar), Tailscale (installato da Falò in automatico, l'utente fa solo il login), «Voglio anche ospitare?»; se sì: permessi di sistema, OAuth Tailscale guidato, Dottore di rete rapido | «Continua», obiettivo sotto i 3 minuti |
+| Onboarding | Benvenuto, profilo (nome e avatar), Tailscale (installato da Falco in automatico, l'utente fa solo il login), «Voglio anche ospitare?»; se sì: permessi di sistema, OAuth Tailscale guidato, Dottore di rete rapido | «Continua», obiettivo sotto i 3 minuti |
 | Amici | Ricerca, gruppi «In gioco ora» (card grandi con gioco, posti liberi, avatar degli ospiti), «Online», «Offline» (chiuso di default) | «Entra» sulla card di chi gioca, «Invita» in alto |
 | Dettaglio amico (pannello) | Avatar 96 px, nome, tag, dispositivi, chip del ruolo, permessi modificabili, ultime sessioni, rimuovi e blocca | «Chiedi di entrare» o «Invitalo a giocare» |
 | Invita (modale) | Ruolo con riepilogo dei permessi, validità, usi, approvazione; poi link, «Copia», anteprima di ciò che vedrà l'amico | «Crea link» |
@@ -768,11 +769,11 @@ L'app ha una sola schermata principale, gli Amici, e tutto il resto si raggiunge
 
 | Elemento | Contenuto |
 | --- | --- |
-| Menu del tray | Stato personale, «Disponibile», amici in gioco con «Entra», «Apri Falò», «Esci» |
+| Menu del tray | Stato personale, «Disponibile», amici in gioco con «Entra», «Apri Falco», «Esci» |
 | Notifiche di sistema | Richiesta di ingresso con «Accetta» e «Rifiuta», amico che inizia a giocare (solo preferiti), invito accettato |
 | Overlay dello stream (ospite) | Pillola in alto a destra con ping, fps e percorso; si nasconde dopo 3 s |
 | Barra rapida (host) | Chip per ogni ospite con interruttori di input ed «Espelli», aperta con la scorciatoia del §7 |
-| Aggiornamenti | Notifica «È disponibile Falò X.Y» con pulsante «Aggiorna»; voce nel menu del tray; badge su Impostazioni → Info (vedi «Aggiornamenti automatici») |
+| Aggiornamenti | Notifica «È disponibile Falco X.Y» con pulsante «Aggiorna»; voce nel menu del tray; badge su Impostazioni → Info (vedi «Aggiornamenti automatici») |
 
 **Aggiornamenti automatici**
 
@@ -785,15 +786,15 @@ L'app ha una sola schermata principale, gli Amici, e tutto il resto si raggiunge
 
 **Flusso principale: entrare a giocare**
 
-1. Luca apre Falò (o il menu del tray) e vede Marco in «In gioco ora», con 2 posti liberi.
+1. Luca apre Falco (o il menu del tray) e vede Marco in «In gioco ora», con 2 posti liberi.
 2. Preme «Entra». Se il suo ruolo ha `autoJoin`, lo stream parte; altrimenti Marco riceve la richiesta e la accetta.
-3. La finestra di Falò si chiude da sola, si apre lo stream a schermo intero, e l'overlay mostra il percorso diretto con il ping.
-4. Alla fine, Luca torna su Falò con un riepilogo: durata, ping medio, e un suggerimento se la qualità è stata scarsa.
+3. La finestra di Falco si chiude da sola, si apre lo stream a schermo intero, e l'overlay mostra il percorso diretto con il ping.
+4. Alla fine, Luca torna su Falco con un riepilogo: durata, ping medio, e un suggerimento se la qualità è stata scarsa.
 
 **Stati vuoti ed errori**
 
-- Nessun amico: illustrazione originale (un falò stilizzato a tratto), titolo «Qui saranno i tuoi amici», pulsante «Invita il primo».
-- Errori sempre in tre parti: cosa è successo, perché probabilmente, cosa fare. Esempio: «Non riesco a raggiungere Marco. Il suo Tailscale sembra spento. Chiedigli di aprire Falò.»
+- Nessun amico: illustrazione originale (un falco in planata a tratto), titolo «Qui saranno i tuoi amici», pulsante «Invita il primo».
+- Errori sempre in tre parti: cosa è successo, perché probabilmente, cosa fare. Esempio: «Non riesco a raggiungere Marco. Il suo Tailscale sembra spento. Chiedigli di aprire Falco.»
 
 **Testi e lingue**
 
@@ -818,8 +819,8 @@ Windows 11 è la piattaforma host completa; macOS è un client completo e un hos
 | Encoder | AMF (AMD), NVENC (NVIDIA), Quick Sync (Intel) | VideoToolbox |
 | Controller virtuali | Sì, Xbox 360 tramite il driver installato con Sunshine | No: limite della piattaforma |
 | Permessi di sistema | Regole firewall create dall'installer | Registrazione schermo, Accessibilità, Rete locale, Notifiche: ognuno spiegato prima della richiesta |
-| Tailscale | MSI ufficiale installato in silenzio da Falò; CLI `tailscale.exe` | Versione Standalone installata da Falò; il core cerca la CLI dentro `Tailscale.app` |
-| Link `falo://` | Plugin deep-link di Tauri, registrato nel registro | `CFBundleURLTypes` nell'`Info.plist` |
+| Tailscale | MSI ufficiale installato in silenzio da Falco; CLI `tailscale.exe` | Versione Standalone installata da Falco; il core cerca la CLI dentro `Tailscale.app` |
+| Link `falco://` | Plugin deep-link di Tauri, registrato nel registro | `CFBundleURLTypes` nell'`Info.plist` |
 | Avvio con il sistema | Plugin autostart, avvio nel tray | `SMAppService` come elemento di login |
 | Firma del codice | Certificato di firma del codice (per esempio Azure Trusted Signing); senza, SmartScreen avvisa | Apple Developer Program, Hardened Runtime, notarizzazione di ogni binario annidato |
 | Moonlight nel pacchetto | Cartella `engines\moonlight` accanto all'eseguibile | App di supporto in `Contents/Helpers`, firmata a parte |
@@ -841,7 +842,7 @@ Windows 11 è la piattaforma host completa; macOS è un client completo e un hos
 Tutte le impostazioni vivono in un unico `config.toml` gestito dal core: la UI è solo un editor di questo file. Un utente esperto può modificarlo a mano, e il core lo rilegge e lo valida a ogni salvataggio.
 
 ```toml
-# config.toml di Falò, gestito dal core
+# config.toml di Falco, gestito dal core
 schema = 1
 
 [general]
@@ -921,7 +922,7 @@ flowchart LR
   M0["M0 · Fondamenta<br/>monorepo, CI, spike"] --> M1["M1 · Streaming<br/>latenza = motori originali"]:::key
   M1 --> M2["M2 · Identità e amici"] --> M3["M3 · Inviti<br/>link → amici in &lt; 3 min"]
   M3 --> M4["M4 · Permessi<br/>e più ospiti"] --> M5["M5 · Rete<br/>e diagnostica"] --> M6["M6 · Rilascio 1.0"]
-  classDef key stroke:#FF6A2B,stroke-width:3px
+  classDef key stroke:#4CA6FF,stroke-width:3px
 ```
 
 Il blocco in evidenza è il primo traguardo che conta: se a M1 la latenza non è uguale a quella di Sunshine e Moonlight originali, ci si ferma e si corregge prima di costruire il resto.
@@ -991,7 +992,7 @@ La CI gira senza rete reale grazie a finti Tailscale e Sunshine; la qualità del
 | Integrazione | Binario finto `tailscale` con risposte JSON registrate, finta API di Sunshine con `wiremock` | Flusso inviti completo, pairing, rimozione amico, errori di rete |
 | UI | Vitest + Vue Test Utils | Componenti, stati vuoti, errori |
 | Regressione visiva | Playwright sulla build Vite con IPC simulato | Schermate principali in tema scuro e chiaro, a 960 e 1440 px |
-| Prestazioni | `falo bench` in CI su Windows e macOS | Budget del §10 |
+| Prestazioni | `falco bench` in CI su Windows e macOS | Budget del §10 |
 
 **Matrice manuale (a ogni milestone)**
 
@@ -1008,17 +1009,17 @@ La CI gira senza rete reale grazie a finti Tailscale e Sunshine; la qualità del
 
 **Misura della latenza**
 
-Telecamera a 240 fps che inquadra insieme lo schermo dell'host e quello dell'ospite, con un cronometro a millisecondi sullo schermo host. Si confrontano 20 campioni con Falò e 20 con Sunshine e Moonlight originali, a parità di impostazioni.
+Telecamera a 240 fps che inquadra insieme lo schermo dell'host e quello dell'ospite, con un cronometro a millisecondi sullo schermo host. Si confrontano 20 campioni con Falco e 20 con Sunshine e Moonlight originali, a parità di impostazioni.
 
 ## 18. Istruzioni operative per Opus 5.5
 
-Questo documento va salvato nel repository come `docs/falo-spec.md` ed è la fonte di verità. Opus lavora una milestone alla volta (§16), e passa alla successiva solo quando tutti i criteri di accettazione sono spuntati.
+Questo documento va salvato nel repository come `docs/falco-spec.md` ed è la fonte di verità. Opus lavora una milestone alla volta (§16), e passa alla successiva solo quando tutti i criteri di accettazione sono spuntati.
 
 **Ordine di lavoro dentro ogni milestone**
 
 1. Rileggere le sezioni coinvolte e scrivere un piano breve: file da creare, decisioni aperte, rischi.
 2. Per ogni scelta non banale, scrivere un ADR di una pagina in `docs/adr/NNNN-titolo.md`.
-3. Implementare in quest'ordine: tipi condivisi → logica del core → IPC → UI → test → `falo bench`.
+3. Implementare in quest'ordine: tipi condivisi → logica del core → IPC → UI → test → `falco bench`.
 4. Eseguire test e lint, aggiornare questo documento se qualcosa è cambiato, poi riassumere cosa resta.
 
 **Punti da verificare prima di scrivere codice (spike di M0)**
@@ -1026,7 +1027,7 @@ Questo documento va salvato nel repository come `docs/falo-spec.md` ed è la fon
 - Nomi esatti delle chiavi di `sunshine.conf` e degli endpoint REST nella versione di Sunshine scelta.
 - Flag della CLI di moonlight-qt, compreso `--pin` per il pairing.
 - Creazione di inviti con un OAuth client Tailscale e scope minimi; accettazione automatica via API.
-- Chiusura completa dei processi WebView2 quando `falo-ui` termina.
+- Chiusura completa dei processi WebView2 quando `falco-ui` termina.
 - Portabilità del sistema di permessi di Apollo su Sunshine upstream, contro l'uso diretto di Apollo come base.
 
 **Convenzioni**
@@ -1036,7 +1037,7 @@ Questo documento va salvato nel repository come `docs/falo-spec.md` ed è la fon
 - TypeScript in modalità `strict`; componenti Vue con `<script setup>`; SCSS secondo il §12.
 - Nomi di variabili, funzioni e file in inglese; commenti brevi in italiano, massimo due righe.
 - Commit in stile Conventional Commits, piccoli e con un solo scopo.
-- Fork dei motori toccati solo nei branch `falo/*`, con patch minime.
+- Fork dei motori toccati solo nei branch `falco/*`, con patch minime.
 - Ogni testo dell'interfaccia passa da chiavi i18n, in italiano e in inglese.
 - Se esiste un file Figma delle schermate, è la fonte del layout; i token del §12 restano la fonte di colori, spazi e tipografia.
 
@@ -1059,9 +1060,9 @@ Questo documento va salvato nel repository come `docs/falo-spec.md` ed è la fon
 **Prompt di avvio per ogni milestone**
 
 ```text
-Leggi docs/falo-spec.md. Lavora solo sulla milestone M<N>.
+Leggi docs/falco-spec.md. Lavora solo sulla milestone M<N>.
 Prima elenca file da creare, decisioni aperte e punti da verificare.
-Poi implementa seguendo le convenzioni del §18, esegui test e falo bench,
+Poi implementa seguendo le convenzioni del §18, esegui test e falco bench,
 aggiorna il documento se serve e chiudi con i criteri di accettazione spuntati
 o con l'elenco preciso di cosa manca.
 ```
@@ -1072,7 +1073,7 @@ Il rischio più grande non è tecnico: è la dipendenza da Tailscale per account
 
 | Rischio | Impatto | Mitigazione |
 | --- | --- | --- |
-| Tailscale cambia API, prezzi o condizioni; il piano Personal è per uso non commerciale | Alto | Trait `NetworkProvider`, provider Headscale e Diretto, nessuna logica Tailscale fuori da `falo-net` |
+| Tailscale cambia API, prezzi o condizioni; il piano Personal è per uso non commerciale | Alto | Trait `NetworkProvider`, provider Headscale e Diretto, nessuna logica Tailscale fuori da `falco-net` |
 | Ogni amico deve creare un account Tailscale | Medio | Login guidato con Google, Microsoft o GitHub; spiegazione chiara in una schermata |
 | Accettare la condivisione richiede un clic nel browser | Basso | Rilevamento automatico del completamento; prova di accettazione via API in M0 |
 | Driver dei controller virtuali non più sviluppato | Medio | Seguire le scelte di Sunshine upstream, test a ogni aggiornamento di Windows |
@@ -1084,7 +1085,7 @@ Il rischio più grande non è tecnico: è la dipendenza da Tailscale per account
 
 **Decisioni aperte**
 
-- [x] Nome definitivo dell'app: **Falò** (resta da verificare che non sia un marchio registrato nel settore)
+- [x] Nome definitivo dell'app: **Falco** (rinomina da Falò del 2026-11-18; resta da verificare il marchio nel settore)
 - [ ] Base dell'host: Sunshine con i permessi portati da Apollo, oppure Apollo direttamente
 - [ ] Revoca via API di una condivisione Tailscale già accettata
 - [ ] Accettazione automatica dell'invito inverso con un OAuth client

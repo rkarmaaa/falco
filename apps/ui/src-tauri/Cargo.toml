@@ -1,19 +1,19 @@
 [package]
-name = "falo-ui"
-description = "Finestra di Falò (Tauri 2), avviata su richiesta dal core"
+name = "falco-ui"
+description = "Finestra di Falco (Tauri 2), avviata su richiesta dal core"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [[bin]]
-name = "falo-ui"
+name = "falco-ui"
 path = "src/main.rs"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-falo-proto = { workspace = true, features = ["transport"] }
+falco-proto = { workspace = true, features = ["transport"] }
 tauri = { version = "2", features = [] }
 tauri-plugin-clipboard-manager = "2"
 serde.workspace = true
