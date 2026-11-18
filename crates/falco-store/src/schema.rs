@@ -71,6 +71,7 @@ pub fn fields() -> Vec<Field> {
         ("host.profile", e(config::HostProfile::ALL)),
         ("host.max_bitrate_kbps", i(0, 150_000)),
         ("host.encoder_quality", e(config::EncoderQuality::ALL)),
+        ("host.audio_capture", e(config::AudioCapture::ALL)),
         ("network.provider", e(config::Provider::ALL)),
         ("network.presence_port", i(1024, 65535)),
         ("network.sunshine_base_port", i(1024, 65000)),

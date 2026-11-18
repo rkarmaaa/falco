@@ -39,7 +39,15 @@ Account personale `rkarmaaa`, repository `rkarmaaa/falco` (nessuna organizzazion
 2. Crea il tag e fai push: `git tag v1.0.0 && git push origin v1.0.0`.
 3. `release.yml` costruisce i pacchetti, li firma per l'updater e pubblica `latest.json`.
 
-Prova locale dell'installer Windows: `powershell -File scripts/package.ps1`.
+Prova locale dell'installer Windows:
+
+1. Sunshine di Falco (patch in `engines/patches/sunshine`, [ADR 0016](adr/0016-audio-solo-a-schermo.md)). Serve [MSYS2](https://www.msys2.org) in `C:\msys64`; lo script installa da solo le dipendenze. La prima volta richiede circa 20 minuti.
+
+   ```bash
+   C:/msys64/msys2_shell.cmd -defterm -here -no-start -ucrt64 -c scripts/build-sunshine.sh
+   ```
+
+2. Installer: `powershell -File scripts/package.ps1`. Se manca `target/sunshine/sunshine.exe` il pacchetto usa il Sunshine ufficiale e lo segnala: in quel caso l'audio è quello di tutto il PC.
 
 ## Senza firma del codice
 

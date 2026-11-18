@@ -11,6 +11,11 @@ Formato [Keep a Changelog](https://keepachangelog.com/it/1.1.0/), versioni [SemV
 - Ospiti collegati nella barra con tastiera, mouse e controller che si illuminano quando ricevono input; tasto destro per concedere i singoli dispositivi. Di default si può solo guardare.
 - Qualità della condivisione: Bassa latenza, Bilanciato, Connessione lenta, Massima qualità, Personalizzato, e «Trova le impostazioni migliori».
 - Ogni errore ha un messaggio chiaro con «Copia» e «Debug» (informazioni dettagliate copiabili).
+- Audio condiviso «Solo ciò che è a schermo» (predefinito, Windows): gli ospiti sentono solo le app visibili sullo schermo condiviso, mai Discord e le altre chat vocali.
+
+### Corretto
+
+- Chiudere la finestra con la X mostrava l'errore «window|destroy not allowed by ACL».
 
 ### Rimosso
 

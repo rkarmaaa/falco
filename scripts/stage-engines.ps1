@@ -25,3 +25,13 @@ foreach ($pair in @(@($SunshineDir, "sunshine", "sunshine.exe"), @($MoonlightDir
 # Moonlight portable: impostazioni nella sua cartella, non nel profilo utente
 New-Item -ItemType File -Force (Join-Path $dest "moonlight\portable.dat") | Out-Null
 Write-Host "ok  moonlight in modalità portable"
+
+# Sunshine di Falco (patch in engines/patches/sunshine, scripts/build-sunshine.sh): sostituisce
+# l'eseguibile ufficiale. Senza, l'audio «solo ciò che è a schermo» non è disponibile (ADR 0016).
+$fork = Join-Path $root "target\sunshine\sunshine.exe"
+if (Test-Path $fork) {
+  Copy-Item $fork (Join-Path $dest "sunshine\sunshine.exe") -Force
+  Write-Host "ok  sunshine di Falco ($fork)"
+} else {
+  Write-Warning "target\sunshine\sunshine.exe assente: uso Sunshine ufficiale, l'audio sarà quello di tutto il PC. Compila con scripts/build-sunshine.sh"
+}

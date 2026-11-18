@@ -48,6 +48,8 @@ pub struct HostSettings {
     pub encoder_quality: String,
     /// Dispositivi che almeno un amico può usare: gli altri sono spenti in Sunshine.
     pub inputs: Inputs,
+    /// Solo l'audio delle app visibili sullo schermo condiviso (fork di Sunshine, ADR 0016).
+    pub audio_onscreen: bool,
 }
 
 /// Input accettati da Sunshine (interruttori globali, finché il fork non li porta per client).
@@ -182,7 +184,12 @@ pub fn generate_conf(s: &HostSettings, gpu: GpuVendor, platform: Platform) -> St
     }
     match platform {
         Platform::MacOs => put("vt_realtime", "enabled".into()),
-        Platform::Windows => put("gamepad", "x360".into()),
+        Platform::Windows => {
+            put("gamepad", "x360".into());
+            if s.audio_onscreen {
+                put("audio_capture", "onscreen".into());
+            }
+        }
     }
     for (k, v) in &s.overrides {
         kv.insert(k.clone(), v.clone());
@@ -233,6 +240,7 @@ mod tests {
             overrides: BTreeMap::new(),
             max_bitrate_kbps: 0,
             encoder_quality: "speed".into(),
+            audio_onscreen: true,
             inputs: Inputs::default(),
         }
     }
@@ -256,6 +264,7 @@ mod tests {
             assert!(conf.lines().any(|l| l == line), "manca «{line}»\n{conf}");
         }
         assert!(!conf.contains("vt_realtime"));
+        assert!(conf.lines().any(|l| l == "audio_capture = onscreen"));
     }
 
     #[test]
@@ -301,6 +310,7 @@ nvidia geforce rtx 4070"
         assert!(conf.contains("encoder = videotoolbox"));
         assert!(conf.contains("vt_realtime = enabled"));
         assert!(!conf.contains("gamepad"));
+        assert!(!conf.contains("audio_capture"));
         assert!(!conf.contains("amd_"));
     }
 

@@ -93,6 +93,7 @@ impl Host {
         HostSettings {
             max_bitrate_kbps: cap,
             encoder_quality: quality,
+            audio_onscreen: cfg.host.audio_capture == falco_store::config::AudioCapture::Onscreen,
             inputs,
             encoder: encoder_pref(cfg.host.encoder).into(),
             max_guests: cfg.host.max_guests,

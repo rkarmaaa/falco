@@ -644,6 +644,13 @@
       "framesDropped": "Frames were lost in the last session.",
       "noFriend": "No reachable friend to measure: keeping the most responsive profile.",
       "fastNetwork": "Fast, steady network: you can use the lowest latency."
+    },
+    "audio": {
+      "label": "Shared audio",
+      "onscreen": "Only what's on screen",
+      "all": "Whole PC",
+      "onscreenHint": "Guests only hear apps with a window visible on the shared screen. Discord and other voice chats never come through, so nobody hears their own voice echoed back.",
+      "allHint": "Guests hear all of the PC's audio, including Discord, notifications and background music."
     }
   }
 }

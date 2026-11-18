@@ -34,6 +34,7 @@ apps_autodetect = true
 profile = "latency"          # latency | balanced | slow | quality | custom
 max_bitrate_kbps = 0         # tetto per tutti gli ospiti, 0 = nessuno (solo con custom)
 encoder_quality = "speed"    # speed | balanced | quality (solo con custom)
+audio_capture = "onscreen"   # onscreen (solo le app a schermo, mai le chat vocali) | all
 
 [network]
 provider = "tailscale"       # tailscale | lan | direct | headscale

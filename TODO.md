@@ -97,6 +97,15 @@ Fatto in anticipo, utile alle milestone successive:
 - [ ] Permessi di input per singolo ospite dentro Sunshine (fork): oggi i dispositivi accesi sono l'unione dei permessi
 - [ ] macOS: incorporare lo stream e rilevare gli input (oggi finestra separata, icone spente)
 
+## M8 · Audio solo a schermo (ADR 0016)
+
+- [x] Patch a Sunshine: `audio_capture = onscreen` registra solo le app con una finestra visibile sul display condiviso, mai Discord e le altre chat vocali
+- [x] Impostazione «Audio condiviso» (solo ciò che è a schermo / tutto il PC), default a schermo
+- [x] `scripts/build-sunshine.sh` e Sunshine di Falco nel pacchetto
+- [ ] **Marco**: prova con un amico su Discord: non deve sentire né Discord né la propria voce
+- [ ] Build del Sunshine di Falco in CI (`release.yml` usa ancora quello ufficiale)
+- [ ] Repository del fork `falco-sunshine` (account di Marco), poi patch come submodule
+
 ## Decisioni da prendere (Marco)
 
 - [ ] **Come arriva Tailscale senza installazione manuale**: installazione silenziosa del client ufficiale oppure `tsnet` dentro Falco ([ADR 0012](docs/adr/0012-nessuna-installazione-manuale.md))

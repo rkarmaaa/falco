@@ -81,6 +81,7 @@ str_enum!(Audio { Stereo = "stereo", Surround51 = "5.1", Surround71 = "7.1" } de
 str_enum!(CaptureKeys { Never = "never", Fullscreen = "fullscreen", Always = "always" } default Fullscreen);
 str_enum!(Overlay { Auto = "auto", Always = "always", Never = "never" } default Auto);
 str_enum!(HostProfile { Latency = "latency", Balanced = "balanced", Slow = "slow", Quality = "quality", Custom = "custom" } default Latency);
+str_enum!(AudioCapture { Onscreen = "onscreen", All = "all" } default Onscreen);
 str_enum!(EncoderQuality { Speed = "speed", Balanced = "balanced", Quality = "quality" } default Speed);
 str_enum!(Encoder { Auto = "auto", Amf = "amf", Nvenc = "nvenc", QuickSync = "quicksync", VideoToolbox = "videotoolbox", Software = "software" } default Auto);
 str_enum!(Provider { Tailscale = "tailscale", Lan = "lan", Direct = "direct", Headscale = "headscale" } default Tailscale);
@@ -153,6 +154,8 @@ pub struct Host {
     /// Tetto del bitrate per tutti gli ospiti (0 = nessun tetto). Solo con profilo «custom».
     pub max_bitrate_kbps: u32,
     pub encoder_quality: EncoderQuality,
+    /// Audio condiviso: solo le app visibili sullo schermo condiviso (le chat vocali mai) o tutto il PC.
+    pub audio_capture: AudioCapture,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -247,6 +250,7 @@ impl Default for Host {
             profile: HostProfile::Latency,
             max_bitrate_kbps: 0,
             encoder_quality: EncoderQuality::Speed,
+            audio_capture: AudioCapture::Onscreen,
         }
     }
 }

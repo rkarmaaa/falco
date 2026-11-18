@@ -3,7 +3,7 @@
 // «Trova le impostazioni migliori», che misura la rete e consiglia il profilo.
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { Gauge, Scale, Snail, Sparkles, SlidersHorizontal, Wand2, Check } from 'lucide-vue-next';
+import { Gauge, Scale, Snail, Sparkles, SlidersHorizontal, Wand2, Check, Volume2 } from 'lucide-vue-next';
 import UiButton from './UiButton.vue';
 import UiSegmented from './UiSegmented.vue';
 import { core, hostApi, setConfig } from '@/stores/core';
@@ -20,6 +20,12 @@ const advice = ref<Recommendation | null>(null);
 const cards = computed(() => [...PROFILES, 'custom' as const]);
 const cap = computed(() => Number(core.config?.host.max_bitrate_kbps ?? 0));
 const fec = computed(() => Number(core.config?.network.fec_percent ?? 20));
+// Audio condiviso: solo le app a schermo (mai le chat vocali) o tutto il PC. Solo Windows (ADR 0016).
+const showAudio = !navigator.userAgent.includes('Mac');
+const audio = computed({
+  get: () => String(core.config?.host.audio_capture ?? 'onscreen') as 'onscreen' | 'all',
+  set: (v) => void save('host.audio_capture', v),
+});
 const quality = computed({
   get: () => String(core.config?.host.encoder_quality ?? 'speed') as 'speed' | 'balanced' | 'quality',
   set: (v) => void save('host.encoder_quality', v),
@@ -105,6 +111,19 @@ const mbps = (kbps: number) => (kbps === 0 ? t('share.noCap') : `${Math.round(kb
         :label="t('share.encoder')"
         :options="(['speed', 'balanced', 'quality'] as const).map((v) => ({ value: v, label: t(`share.quality.${v}`) }))"
       />
+    </div>
+
+    <div v-if="showAudio" class="audio">
+      <span class="icon"><Volume2 :size="18" :stroke-width="1.8" aria-hidden="true" /></span>
+      <div class="what">
+        <span class="title">{{ t('share.audio.label') }}</span>
+        <UiSegmented
+          v-model="audio"
+          :label="t('share.audio.label')"
+          :options="(['onscreen', 'all'] as const).map((v) => ({ value: v, label: t(`share.audio.${v}`) }))"
+        />
+        <span class="hint">{{ t(`share.audio.${audio}Hint`) }}</span>
+      </div>
     </div>
 
     <p v-if="note" class="note" role="status">{{ note }}</p>
@@ -291,6 +310,42 @@ const mbps = (kbps: number) => (kbps === 0 ? t('share.noCap') : `${Math.round(kb
       input {
         accent-color: #6e7eff;
       }
+    }
+  }
+
+  .audio {
+    display: flex;
+    align-items: flex-start;
+    gap: $sp-4;
+    padding: $sp-4 $sp-5;
+    border: 1px solid $line;
+    border-radius: $r-card;
+    background: $bg-2;
+
+    .icon {
+      display: grid;
+      flex: none;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border-radius: $r-button;
+      background: $bg-4;
+      color: $accent-fg;
+    }
+
+    .what {
+      display: grid;
+      flex: 1;
+      gap: $sp-2;
+    }
+
+    .title {
+      font-weight: 650;
+    }
+
+    .hint {
+      color: $text-3;
+      font-size: 12px;
     }
   }
 

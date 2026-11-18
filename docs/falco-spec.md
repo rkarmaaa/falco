@@ -396,6 +396,7 @@ Il core non tocca mai i pacchetti video: genera la configurazione di Sunshine, l
 | `vt_realtime` | enabled | VideoToolbox in modalità tempo reale |
 | `hevc_mode` / `av1_mode` | auto | Decide la capacità del client |
 | `gamepad` | `x360` | Solo Windows |
+| `audio_capture` | `onscreen` | Solo Windows, patch del fork: registra solo le app visibili sullo schermo condiviso, mai le chat vocali ([ADR 0016](adr/0016-audio-solo-a-schermo.md)) |
 | `min_log_level` | warning | Meno scritture su disco |
 
 I nomi delle chiavi vanno verificati sulla versione di Sunshine scelta. Ogni chiave è esposta anche nelle impostazioni avanzate (§15).
@@ -876,6 +877,7 @@ encoder = "auto"             # auto | amf | nvenc | quicksync | videotoolbox | s
 default_role = "spettatore"  # spettatore | giocatore | copilota | fidato
 knock_timeout_s = 30
 apps_autodetect = true
+audio_capture = "onscreen"   # onscreen (solo le app a schermo, mai le chat vocali) | all
 
 [network]
 provider = "tailscale"       # tailscale | lan | direct | headscale

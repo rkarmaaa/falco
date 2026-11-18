@@ -644,6 +644,13 @@
       "framesDropped": "Nell'ultima sessione si sono persi dei frame.",
       "noFriend": "Nessun amico raggiungibile per misurare: resta il profilo più reattivo.",
       "fastNetwork": "Rete veloce e stabile: puoi usare la latenza più bassa."
+    },
+    "audio": {
+      "label": "Audio condiviso",
+      "onscreen": "Solo ciò che è a schermo",
+      "all": "Tutto il PC",
+      "onscreenHint": "Gli ospiti sentono solo le app con una finestra visibile sullo schermo condiviso. Discord e le altre chat vocali non passano mai, così nessuno sente la propria voce tornare indietro.",
+      "allHint": "Gli ospiti sentono tutto l'audio del PC, compresi Discord, le notifiche e la musica in sottofondo."
     }
   }
 }

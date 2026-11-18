@@ -29,7 +29,7 @@ export function createMockTransport(): Transport {
     general: { language: 'it', updates: 'auto', start_with_system: true, start_minimized: true, close_to_tray: true },
     profile: { status: 'online' },
     stream: {},
-    host: { max_guests: 3, encoder: 'auto', default_role: 'spettatore', profile: 'latency', max_bitrate_kbps: 0, encoder_quality: 'speed' },
+    host: { max_guests: 3, encoder: 'auto', default_role: 'spettatore', profile: 'latency', max_bitrate_kbps: 0, encoder_quality: 'speed', audio_capture: 'onscreen' },
     network: { provider: 'tailscale', presence_port: 47900, fec_percent: 20 },
     performance: {},
     advanced: {},

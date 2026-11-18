@@ -24,4 +24,5 @@ git submodule add -b falco/main https://github.com/ORG/falco-moonlight engines/m
 - Ogni modifica sta in un branch `falco/*` con commit piccoli e titolati.
 - Prima di patchare, controllare se upstream offre già un'opzione o una API.
 - `scripts/sync-upstream.sh` fa il rebase su upstream, compila e lancia i test di fumo.
+- Patch già pronte, finché non esiste il repository del fork: `patches/sunshine/` ([ADR 0016](../docs/adr/0016-audio-solo-a-schermo.md), audio solo a schermo). Si compilano con `scripts/build-sunshine.sh`.
 - Patch previste: [ADR 0006](../docs/adr/0006-spike-sunshine.md) (Sunshine, permessi del §7) e [ADR 0007](../docs/adr/0007-spike-moonlight-cli.md) (Moonlight, §8.2).
