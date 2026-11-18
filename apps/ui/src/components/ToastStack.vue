@@ -56,7 +56,7 @@ function join(id: string, name: string): void {
     </div>
 
     <TransitionGroup name="toast">
-      <ErrorNotice v-for="e in errors.toasts" :key="e.id" class="toast error" :error="e" dismissible @dismiss="dismiss(e.id)" />
+      <ErrorNotice v-for="e in errors.toasts" :key="e.id" floating :error="e" dismissible @dismiss="dismiss(e.id)" />
       <div v-if="toast" key="msg" class="toast">
         <span class="text">{{ toast.text }}</span>
         <UiButton
@@ -101,17 +101,13 @@ function join(id: string, name: string): void {
     gap: $sp-3;
     width: 100%;
     padding: $sp-3 $sp-3 $sp-3 $sp-4;
-    border: 1px solid $line-strong;
-    border-radius: $r-card;
-    background: rgba(25, 29, 49, 0.95);
-    box-shadow: $shadow-3;
-    backdrop-filter: blur(14px);
-    pointer-events: auto;
+    @include floating-card;
 
     .text {
       flex: 1;
       min-width: 0;
       font-size: $fs-small;
+      line-height: $lh-small;
     }
 
     .tag {
@@ -131,13 +127,6 @@ function join(id: string, name: string): void {
       .acts {
         margin-left: auto;
       }
-    }
-
-    &.error {
-      padding: 0;
-      border: 0;
-      background: none;
-      box-shadow: $shadow-3;
     }
   }
 }

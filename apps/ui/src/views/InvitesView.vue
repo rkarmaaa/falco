@@ -3,9 +3,10 @@ import { computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import EmptyState from '@/components/EmptyState.vue';
 import UiButton from '@/components/UiButton.vue';
+import UiPage from '@/components/UiPage.vue';
 import { loadInvites, revokeInvite, social } from '@/stores/social';
+import { openModal } from '@/stores/ui';
 
-const emit = defineEmits<{ invite: [] }>();
 const { t, d } = useI18n();
 const active = computed(() => social.invites.filter((i) => i.active));
 const history = computed(() => social.invites.filter((i) => !i.active));
@@ -15,11 +16,10 @@ onMounted(() => void loadInvites());
 </script>
 
 <template>
-  <section class="invites">
-    <header class="head">
-      <h1 class="title">{{ $t('invites.title') }}</h1>
-      <UiButton variant="primary" @click="emit('invite')">{{ $t('friends.invite') }}</UiButton>
-    </header>
+  <UiPage class="invites" :title="$t('invites.title')" narrow>
+    <template #actions>
+      <UiButton variant="primary" @click="openModal('share')">{{ $t('stream.share') }}</UiButton>
+    </template>
 
     <EmptyState v-if="social.invites.length === 0" :title="$t('invites.emptyTitle')" :body="$t('invites.emptyBody')" />
 
@@ -49,27 +49,11 @@ onMounted(() => void loadInvites());
         </li>
       </ul>
     </template>
-  </section>
+  </UiPage>
 </template>
 
 <style lang="scss" scoped>
 .invites {
-  display: grid;
-  gap: $sp-4;
-  max-width: 760px;
-
-  .head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    .title {
-      font-size: $fs-h1;
-      line-height: 30px;
-      font-weight: 650;
-    }
-  }
-
   .label {
     @include label;
     margin-top: $sp-3;

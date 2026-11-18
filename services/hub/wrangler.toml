@@ -1,0 +1,19 @@
+# Falco Hub (ADR 0017). Indirizzo: https://falco-hub.<sottodominio>.workers.dev
+name = "falco-hub"
+main = "src/index.ts"
+compatibility_date = "2025-10-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "falco-hub"
+# Creato con `wrangler d1 create falco-hub`
+database_id = "2f44cb94-05ab-4e66-bd5a-988c875b8d6c"
+
+[triggers]
+# Pulizia oraria di link e richieste scaduti
+crons = ["17 * * * *"]
+
+# Segreti (wrangler secret put): TS_OAUTH_ID, TS_OAUTH_SECRET — rete Falco su Tailscale
+[vars]
+TS_TAG = "tag:falco"
+DOWNLOAD_URL = "https://github.com/rkarmaaa/falco/releases"

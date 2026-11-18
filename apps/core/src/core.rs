@@ -127,6 +127,23 @@ pub struct Core {
     notify_tray: Notify,
 }
 
+/// Una volta sola: il vecchio default «tailscale» senza OAuth passa alla rete Falco (ADR 0017),
+/// che non chiede chiavi né account. Chi ha configurato l'OAuth resta sulla propria tailnet.
+fn migrate_provider(config: &mut ConfigFile, db: &Db) {
+    const KEY: &str = "migrated-falco-provider";
+    if db.meta(KEY).ok().flatten().is_some() {
+        return;
+    }
+    let old = config.config().network.provider == falco_store::config::Provider::Tailscale;
+    if old && !crate::invites::oauth_configured() {
+        match config.set("network.provider", &serde_json::json!("falco")) {
+            Ok(_) => tracing::info!("provider di rete: tailscale → falco"),
+            Err(e) => tracing::warn!("provider non migrato: {e}"),
+        }
+    }
+    let _ = db.set_meta(KEY, "1");
+}
+
 impl Core {
     pub fn new(
         config: ConfigFile,
@@ -135,6 +152,8 @@ impl Core {
         notify_tray: Notify,
     ) -> anyhow::Result<Self> {
         let db = Db::open(db_path)?;
+        let mut config = config;
+        migrate_provider(&mut config, &db);
         let me = crate::identity::Me::load(&db).unwrap_or_else(|e| {
             tracing::error!("identità non caricata: {e:#}");
             None
@@ -401,6 +420,7 @@ pub async fn run(core: Core, mut tray_rx: mpsc::UnboundedReceiver<TrayCommand>) 
     // Eventi di Tailscale (LocalAPI): aggiornano subito la presenza invece di aspettare il timer
     let lan = tokio::spawn(crate::netmodes::lan_task(shared.clone()));
     let updates = tokio::spawn(crate::updater::run(shared.clone()));
+    let hub = tokio::spawn(crate::hub::run(shared.clone()));
     let ipn = {
         let (ts, poke) = {
             let c = shared.lock().await;
@@ -465,4 +485,5 @@ pub async fn run(core: Core, mut tray_rx: mpsc::UnboundedReceiver<TrayCommand>) 
     ipn.abort();
     lan.abort();
     updates.abort();
+    hub.abort();
 }

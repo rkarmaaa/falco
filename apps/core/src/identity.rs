@@ -33,27 +33,24 @@ pub struct Me {
 impl Me {
     /// Carica l'identità; `None` se l'utente non ha ancora fatto l'onboarding.
     pub fn load(db: &Db) -> anyhow::Result<Option<Self>> {
-        let Some(secret) = crate::secrets::get(KEY_SECRET)? else { return Ok(None) };
-        let bytes: [u8; 32] = BASE64URL_NOPAD
-            .decode(secret.as_bytes())
-            .ok()
-            .and_then(|b| b.try_into().ok())
-            .context("chiave dell'identità danneggiata")?;
+        let Some(identity) = load_key()? else { return Ok(None) };
         let Some(json) = db.meta(META_PROFILE)? else { return Ok(None) };
-        Ok(Some(Self {
-            identity: Identity::from_secret_bytes(bytes),
-            stored: serde_json::from_str(&json)?,
-        }))
+        Ok(Some(Self { identity, stored: serde_json::from_str(&json)? }))
     }
 
-    /// Prima configurazione: nuova chiave, nome validato.
+    /// Prima configurazione, nome validato. Una chiave già nel portachiavi si riusa:
+    /// rigenerarla cambierebbe l'ID e gli amici non ci riconoscerebbero più.
     pub fn create(db: &Db, name: &str, now: i64) -> anyhow::Result<Self> {
-        let identity = Identity::generate();
-        crate::secrets::set(KEY_SECRET, &BASE64URL_NOPAD.encode(&identity.secret_bytes()))?;
-        let me = Self {
-            identity,
-            stored: Stored { name: validate_name(name)?, avatar: None, updated_at: now },
+        let name = validate_name(name)?;
+        let identity = match load_key()? {
+            Some(identity) => identity,
+            None => {
+                let identity = Identity::generate();
+                crate::secrets::set(KEY_SECRET, &BASE64URL_NOPAD.encode(&identity.secret_bytes()))?;
+                identity
+            }
         };
+        let me = Self { identity, stored: Stored { name, avatar: None, updated_at: now } };
         me.save(db)?;
         Ok(me)
     }
@@ -113,6 +110,16 @@ impl Me {
         };
         Ok(profile.sign(&self.identity)?)
     }
+}
+
+fn load_key() -> anyhow::Result<Option<Identity>> {
+    let Some(secret) = crate::secrets::get(KEY_SECRET)? else { return Ok(None) };
+    let bytes: [u8; 32] = BASE64URL_NOPAD
+        .decode(secret.as_bytes())
+        .ok()
+        .and_then(|b| b.try_into().ok())
+        .context("chiave dell'identità danneggiata")?;
+    Ok(Some(Identity::from_secret_bytes(bytes)))
 }
 
 /// Ritaglio centrale, ridimensionamento e WebP con qualità decrescente fino a stare nel limite.

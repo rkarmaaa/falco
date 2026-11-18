@@ -12,8 +12,8 @@ import {
   Maximize2,
   Power,
   Radio,
+  Share2,
   SlidersHorizontal,
-  UserPlus,
 } from 'lucide-vue-next';
 import UserCard from './UserCard.vue';
 import GuestChip from './GuestChip.vue';
@@ -24,11 +24,12 @@ import ContextMenu from './ContextMenu.vue';
 import { core, hostApi, leaveSession, setHostAvailable } from '@/stores/core';
 import { social } from '@/stores/social';
 import { attempt } from '@/stores/errors';
+import { openModal } from '@/stores/ui';
 import { setFullscreen, stage, toggleStats } from '@/stores/stage';
 import { PROFILES, applyProfile, currentProfile } from '@/stores/share';
 import type { HostProfile } from '@/ipc';
 
-const emit = defineEmits<{ invite: []; navigate: [string] }>();
+const emit = defineEmits<{ navigate: [string] }>();
 const { t } = useI18n();
 const profileMenu = ref<{ x: number; y: number } | null>(null);
 const profileNote = ref<string | null>(null);
@@ -68,7 +69,6 @@ async function pickProfile(p: HostProfile): Promise<void> {
   setTimeout(() => (profileNote.value = null), 5000);
 }
 
-const share = () => attempt(t('errors.context.share'), () => setHostAvailable(true));
 const stop = () => attempt(t('errors.context.stopShare'), () => setHostAvailable(false));
 const leave = () => attempt(t('errors.context.leave'), () => leaveSession());
 const applyInputs = () => attempt(t('errors.context.applyInputs'), () => hostApi.applyInputs());
@@ -147,17 +147,14 @@ const applyInputs = () => attempt(t('errors.context.applyInputs'), () => hostApi
           {{ t(`share.profiles.${currentProfile}.name`) }}
           <ChevronUp :size="14" :stroke-width="2" aria-hidden="true" />
         </UiButton>
-        <UiButton variant="secondary" :size="40" @click="emit('invite')">
-          <UserPlus :size="17" :stroke-width="1.9" aria-hidden="true" />
-          {{ t('friends.invite') }}
+        <!-- Un solo pulsante: crea il link e avvia la condivisione; poi resta per ricopiarlo -->
+        <UiButton :variant="hosting || starting ? 'secondary' : 'primary'" :size="40" class="share" @click="openModal('share')">
+          <Share2 :size="17" :stroke-width="1.9" aria-hidden="true" />
+          {{ t('stream.share') }}
         </UiButton>
         <UiButton v-if="hosting || starting" variant="danger" :size="40" :disabled="starting" @click="stop">
           <Power :size="17" :stroke-width="2" aria-hidden="true" />
           {{ t('bar.stop') }}
-        </UiButton>
-        <UiButton v-else variant="primary" :size="40" class="share" @click="share">
-          <Radio :size="17" :stroke-width="2" aria-hidden="true" />
-          {{ t('bar.share') }}
         </UiButton>
       </template>
     </div>

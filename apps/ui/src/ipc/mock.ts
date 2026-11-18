@@ -7,7 +7,7 @@ export function createMockTransport(): Transport {
   const emit = (method: string, params: unknown) => listeners.forEach((cb) => cb({ method, params }));
 
   const state: StateSnapshot = {
-    version: '1.0.0-rc.1',
+    version: '1.0.0-rc.2',
     milestone: 'M6',
     host: { state: 'stopped' },
     status: 'online',
@@ -88,6 +88,11 @@ export function createMockTransport(): Transport {
     emit('session.ended', { host: '100.64.0.2', durationS: 42, reason, latencyMs: 12.4 });
   }
 
+  let hubRequests = {
+    incoming: [{ id: 'r1', user: { id: 'G', name: 'Giulia', code: 'GQ4M2ZTA' }, createdAt: Math.floor(Date.now() / 1000) - 600 }],
+    outgoing: [] as { id: string; user: { id: string; name: string; code: string }; createdAt: number }[],
+  };
+
   const handlers: Record<string, (p: any) => unknown> = {
     'state.snapshot': () => structuredClone(state),
     'config.get': () => ({ config: structuredClone(config) }),
@@ -100,7 +105,7 @@ export function createMockTransport(): Transport {
     ],
     'config.export': () => ({ text: 'schema = 1' }),
     'config.import': () => null,
-    'update.check': () => ({ available: { version: '1.0.0', notes: 'Prima versione stabile.' }, current: '1.0.0-rc.1', enabled: true }),
+    'update.check': () => ({ available: { version: '1.0.0', notes: 'Prima versione stabile.' }, current: '1.0.0-rc.2', enabled: true }),
     'update.install': () => null,
     'tailscale.install': () => null,
     'config.set': ({ key, value }: { key: string; value: unknown }) => {
@@ -181,6 +186,27 @@ export function createMockTransport(): Transport {
       profile.name = name;
       return null;
     },
+    'hub.info': () => ({ configured: true, code: 'K7QM-2XPA', friendLink: 'https://hub.falco.test/a/K7QM2XPA', network: true }),
+    'hub.requests': () => structuredClone(hubRequests),
+    'hub.addFriend': ({ text }: { text: string }) => {
+      if (!/[A-Z2-7]{4}-?[A-Z2-7]{4}/i.test(text)) throw { code: -32602, message: 'codice amico non valido: sono 8 caratteri, come K7QM-2XPA' };
+      const user = { id: 'N', name: 'Nico', code: text.toUpperCase().replace(/[^A-Z2-7]/g, '').slice(-8) };
+      hubRequests.outgoing.unshift({ id: String(Date.now()), user, createdAt: Math.floor(Date.now() / 1000) });
+      return { id: 'x', user };
+    },
+    'hub.accept': ({ id }: { id: string }) => {
+      const r = hubRequests.incoming.find((x) => x.id === id);
+      hubRequests.incoming = hubRequests.incoming.filter((x) => x.id !== id);
+      return { invite: 'falco://invite/KLUv_WBmAJUJAMZURyEA8zb8P8uPmqmBSLdemo', user: r?.user };
+    },
+    'hub.decline': ({ id }: { id: string }) => {
+      hubRequests.incoming = hubRequests.incoming.filter((x) => x.id !== id);
+      hubRequests.outgoing = hubRequests.outgoing.filter((x) => x.id !== id);
+      return null;
+    },
+    'hub.shareStream': () => ({ code: 'QW3R7YUP', url: 'https://hub.falco.test/j/QW3R7YUP', expiresAt: Math.floor(Date.now() / 1000) + 86400 }),
+    'hub.join': () => ({ invite: 'falco://invite/KLUv_WBmAJUJAMZURyEA8zb8P8uPmqmBSLdemo', user: { id: 'L', name: 'Luca', code: 'AXBR7FQZ' } }),
+    'net.joinFalco': () => null,
     'invite.list': () => structuredClone(invites),
     'invite.create': ({ role, uses }: { role: string; uses: number }) => {
       const now = Math.floor(Date.now() / 1000);

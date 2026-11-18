@@ -112,3 +112,11 @@ Fatto in anticipo, utile alle milestone successive:
 - [ ] Verifica del marchio «Falco» nel settore
 - [ ] Base dell'host: Sunshine con i permessi di Apollo, oppure Apollo direttamente
 - [ ] Supporto ARM64 per Windows in v1 o in v2
+
+## Falco Hub (ADR 0017) · beta
+
+- [x] Servizio su Cloudflare Workers + D1 (`services/hub`): codici amico, richieste d'amicizia, link di stream, chiavi monouso di Tailscale; test sul Worker vero in locale
+- [x] Core: provider «falco» (default, migrazione da «tailscale» senza OAuth), collegamento automatico alla rete senza account, richieste con notifica
+- [x] UI: «Aggiungi amico» (codice o link, lista richieste) separato da «Condividi stream» (link corto, un clic); badge BETA
+- [ ] **Marco**: account Cloudflare e tailnet di Falco con OAuth client (`services/hub/README.md`)
+- [ ] **Marco**: prova su due PC: installazione → richiesta d'amicizia → link di stream, senza account Tailscale

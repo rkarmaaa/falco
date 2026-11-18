@@ -11,6 +11,7 @@ mod doctor;
 mod fpp_server;
 mod guest;
 mod host;
+mod hub;
 mod i18n;
 mod identity;
 mod input_monitor;

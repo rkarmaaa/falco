@@ -10,7 +10,8 @@ import StreamStage from '@/components/StreamStage.vue';
 import StreamPill from '@/components/StreamPill.vue';
 import ToastStack, { type Toast } from '@/components/ToastStack.vue';
 import CoreOffline from '@/components/CoreOffline.vue';
-import InviteModal from '@/components/InviteModal.vue';
+import ShareStreamModal from '@/components/ShareStreamModal.vue';
+import AddFriendModal from '@/components/AddFriendModal.vue';
 import AcceptInviteModal from '@/components/AcceptInviteModal.vue';
 import DebugDialog from '@/components/DebugDialog.vue';
 import FriendsView from '@/views/FriendsView.vue';
@@ -22,17 +23,16 @@ import { clearLastSession, core, initCore, joinFriend, leaveSession } from '@/st
 import { findInviteLink, initSocial, previewInvite, social } from '@/stores/social';
 import { attempt, errors, initErrors } from '@/stores/errors';
 import { resetStage, setFullscreen, stage } from '@/stores/stage';
+import { closeModal, joinStream, openAccept, openLink, ui } from '@/stores/ui';
 import { setLocale } from '@/i18n';
 import { getTransport, isTauri, rpc } from '@/ipc';
 
 const { t } = useI18n();
 const section = ref<Section>('friends');
-const modal = ref<'invite' | 'accept' | null>(null);
-const acceptLink = ref<string | null>(null);
 const toast = ref<Toast | null>(null);
 const seenLinks = new Set<string>();
 
-const onboarding = computed(() => core.ready && core.connected && !social.profile.exists);
+const onboarding = computed(() => core.ready && core.connected && social.profileLoaded && !social.profile.exists);
 const inSession = computed(() => core.session.phase !== 'idle');
 const onStage = computed(() => inSession.value && section.value === 'stream');
 const hasToasts = computed(
@@ -46,11 +46,6 @@ function showToast(text: string, action?: Toast['action']): void {
   setTimeout(() => {
     if (toast.value?.text === text) toast.value = null;
   }, 7000);
-}
-
-function openAccept(link: string | null = null): void {
-  acceptLink.value = link;
-  modal.value = 'accept';
 }
 
 // Collegandosi a qualcuno si va sul palco; a fine sessione si torna dove si era
@@ -90,10 +85,17 @@ onKeyStroke('Escape', () => {
 
 // Molte chat non rendono cliccabile falco://: il percorso principale sono gli appunti (§6)
 async function checkClipboard(): Promise<void> {
-  if (!isTauri() || !social.profile.exists || modal.value || inSession.value) return;
+  if (!isTauri() || !social.profile.exists || ui.modal || inSession.value) return;
   try {
     const { readText } = await import('@tauri-apps/plugin-clipboard-manager');
-    const link = findInviteLink((await readText()) ?? '');
+    const text = (await readText()) ?? '';
+    const stream = /https?:\/\/\S+\/j\/[A-Za-z2-7]{8}|falco:\/\/join\/[A-Za-z2-7]{8}/.exec(text)?.[0];
+    if (stream && !seenLinks.has(stream)) {
+      seenLinks.add(stream);
+      showToast(t('stream.clipboard'), { label: t('stream.watch'), run: () => void joinStream(stream) });
+      return;
+    }
+    const link = findInviteLink(text);
     if (!link || seenLinks.has(link)) return;
     seenLinks.add(link);
     const p = await previewInvite(link);
@@ -112,7 +114,7 @@ onMounted(async () => {
     const s = await invoke<string | null>('initial_section').catch(() => null);
     if (s) section.value = s as Section;
     const l = await invoke<string | null>('initial_link').catch(() => null);
-    if (l) openAccept(l);
+    if (l) openLink(l);
     const { listen } = await import('@tauri-apps/api/event');
     void listen<string>('pill://action', (e) => {
       if (e.payload === 'exit') void setFullscreen(false);
@@ -131,7 +133,7 @@ onMounted(async () => {
   const transport = await getTransport();
   transport.onEvent((e) => {
     if (e.method === 'ui.navigate') section.value = (e.params as { section: Section }).section;
-    if (e.method === 'ui.openLink') openAccept((e.params as { link: string }).link);
+    if (e.method === 'ui.openLink') openLink((e.params as { link: string }).link);
     if (e.method === 'update.available') {
       const v = (e.params as { version: string }).version;
       showToast(t('update.available', { version: v }), { label: t('update.install'), run: () => void attempt(t('errors.context.update'), () => rpc('update.install')) });
@@ -146,7 +148,7 @@ onMounted(async () => {
 
 <template>
   <div class="app" :class="{ fullscreen: stage.fullscreen, onboarding }">
-    <TopBar v-if="!stage.fullscreen" v-model="section" :requests="social.requests.length" />
+    <TopBar v-if="!stage.fullscreen" v-model="section" :requests="social.requests.length" :friend-requests="social.friendRequests.incoming.length" />
 
     <main v-if="onboarding" class="content">
       <OnboardingView />
@@ -161,9 +163,9 @@ onMounted(async () => {
         <main class="content">
           <CoreOffline v-if="core.ready && !core.connected" />
           <div class="view">
-            <FriendsView v-if="section === 'friends' || (section === 'stream' && !inSession)" @invite="modal = 'invite'" @accept="openAccept()" />
-            <HostView v-else-if="section === 'host'" @invite="modal = 'invite'" />
-            <InvitesView v-else-if="section === 'invites'" @invite="modal = 'invite'" />
+            <FriendsView v-if="section === 'friends' || (section === 'stream' && !inSession)" />
+            <HostView v-else-if="section === 'host'" />
+            <InvitesView v-else-if="section === 'invites'" />
             <SettingsView v-else-if="section === 'settings'" />
           </div>
         </main>
@@ -171,15 +173,16 @@ onMounted(async () => {
       </template>
     </div>
 
-    <ActionBar v-if="!onboarding && !stage.fullscreen" @invite="modal = 'invite'" @navigate="section = $event as Section" />
+    <ActionBar v-if="!onboarding && !stage.fullscreen" @navigate="section = $event as Section" />
 
     <!-- Nel browser il pulsantino è simulato dentro la pagina -->
     <div v-if="stage.fullscreen && !isTauri()" class="pill-dev">
       <StreamPill :name="core.session.host ?? ''" :stats="core.session.stats" @exit="setFullscreen(false)" @leave="leaveSession()" />
     </div>
 
-    <InviteModal v-if="modal === 'invite'" @close="modal = null" />
-    <AcceptInviteModal v-if="modal === 'accept'" :initial-link="acceptLink" @close="modal = null" />
+    <ShareStreamModal v-if="ui.modal === 'share'" @close="closeModal" />
+    <AddFriendModal v-if="ui.modal === 'addFriend'" @close="closeModal" />
+    <AcceptInviteModal v-if="ui.modal === 'accept'" :key="ui.accept.link ?? ''" @close="closeModal" />
     <DebugDialog v-if="errors.debug" :error="errors.debug" />
     <ToastStack v-if="!onStage && !stage.fullscreen" :toast="toast" @clear="toast = null" />
   </div>
@@ -228,12 +231,12 @@ onMounted(async () => {
     overflow-y: auto;
 
     .view {
-      max-width: 1120px;
+      max-width: $page-max-w;
       margin: 0 auto;
-      padding: $sp-7 $sp-8 $sp-8;
+      padding: $page-pad-y $page-pad-x $page-pad-x;
 
       @include mq(sm) {
-        padding: $sp-6;
+        padding: $page-pad-sm;
       }
     }
   }

@@ -11,7 +11,7 @@ import { isTauri } from '@/ipc';
 export type Section = 'stream' | 'friends' | 'host' | 'invites' | 'settings';
 
 const model = defineModel<Section>({ required: true });
-const props = defineProps<{ requests?: number }>();
+const props = defineProps<{ requests?: number; friendRequests?: number }>();
 const { t } = useI18n();
 const isMac = navigator.userAgent.includes('Mac');
 const showControls = isTauri() && !isMac;
@@ -19,7 +19,7 @@ const showControls = isTauri() && !isMac;
 const tabs = computed(() =>
   (['friends', 'host', 'invites', 'settings'] as const).map((id) => ({
     id,
-    badge: id === 'invites' && (props.requests ?? 0) > 0 ? props.requests : null,
+    badge: (id === 'invites' ? props.requests : id === 'friends' ? props.friendRequests : 0) || null,
     live: id === 'host' && core.host.state === 'ready',
   })),
 );
@@ -43,6 +43,7 @@ async function win() {
     <div class="brand" data-tauri-drag-region>
       <img :src="logo" alt="" width="22" height="22" />
       <span data-tauri-drag-region>Falco</span>
+      <span class="beta" :title="t('app.betaHint')">BETA</span>
     </div>
 
     <nav class="tabs" :aria-label="t('app.name')">
@@ -112,6 +113,17 @@ async function win() {
 
     img {
       border-radius: 6px;
+    }
+
+    .beta {
+      padding: 1px $sp-2;
+      border-radius: $r-pill;
+      background: $busy-soft;
+      color: $busy;
+      font-size: $fs-label;
+      line-height: 16px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
     }
   }
 

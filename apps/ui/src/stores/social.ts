@@ -4,6 +4,10 @@ import {
   getTransport,
   rpc,
   type Friend,
+  type HubAccepted,
+  type HubInfo,
+  type HubRequests,
+  type StreamLink,
   type InvitePreview,
   type InviteRow,
   type MyProfile,
@@ -15,6 +19,11 @@ export type InviteStep = 'tailscale' | 'share' | 'handshake' | 'pairing';
 
 interface SocialStore {
   profile: MyProfile;
+  /** Il profilo è stato letto dal core almeno una volta (prima non si mostra l'onboarding). */
+  profileLoaded: boolean;
+  /** Codice amico, link e richieste d'amicizia dal Falco Hub. */
+  hub: HubInfo;
+  friendRequests: HubRequests;
   friends: Friend[];
   invites: InviteRow[];
   /** Avanzamento dell'accettazione di un invito (lato ospite). */
@@ -35,6 +44,9 @@ interface SocialStore {
 
 const state = reactive<SocialStore>({
   profile: { exists: false },
+  profileLoaded: false,
+  hub: { configured: false, code: null, friendLink: null, network: false },
+  friendRequests: { incoming: [], outgoing: [] },
   friends: [],
   invites: [],
   accept: null,
@@ -78,6 +90,7 @@ export async function watchOnly(friendId: string): Promise<void> {
 
 export async function loadProfile(): Promise<void> {
   state.profile = await rpc<MyProfile>('profile.get');
+  state.profileLoaded = true;
 }
 
 export async function loadFriends(): Promise<void> {
@@ -88,14 +101,25 @@ export async function loadInvites(): Promise<void> {
   state.invites = await rpc<InviteRow[]>('invite.list');
 }
 
+/** Tutto ciò che dipende dal core: si rilegge a ogni (ri)collegamento. */
+function reload(): Promise<void> {
+  return Promise.all([loadProfile(), loadFriends(), loadInvites(), loadHub()]).then(
+    () => {},
+    () => {},
+  );
+}
+
 export async function initSocial(): Promise<void> {
   const t = await getTransport();
+  t.onConnection((ok) => {
+    if (ok) void reload();
+  });
   t.onEvent((e) => {
     const p = e.params as Record<string, unknown>;
     if (e.method === 'presence.changed') {
       if (Array.isArray(p.friends)) state.friends = p.friends as Friend[];
       const self = p.self as Record<string, unknown> | undefined;
-      if (self && ('profile' in self || 'hasProfile' in self)) void loadProfile();
+      if (self && ('profile' in self || 'hasProfile' in self)) void loadProfile().then(loadHub);
     }
     if (e.method === 'invite.progress' && p.side === 'guest' && state.accept) {
       const step = p.step as InviteStep | 'error';
@@ -115,9 +139,10 @@ export async function initSocial(): Promise<void> {
       clearTimeout(activityTimer);
       activityTimer = setTimeout(() => (state.activity = { keyboard: false, mouse: false, controller: false }), 450);
     }
+    if (e.method === 'hub.requests') state.friendRequests = p as unknown as HubRequests;
     if (e.method === 'play.invite') state.playInvites.push(p as SocialStore['playInvites'][number]);
   });
-  await Promise.all([loadProfile(), loadFriends(), loadInvites()]).catch(() => {});
+  await reload();
 }
 
 export async function createProfile(name: string): Promise<void> {
@@ -134,9 +159,57 @@ export async function setAvatar(file: File): Promise<void> {
   await loadProfile();
 }
 
+export async function clearAvatar(): Promise<void> {
+  await rpc('profile.update', { clearAvatar: true });
+  await loadProfile();
+}
+
 export async function rename(name: string): Promise<void> {
   await rpc('profile.update', { name });
   await loadProfile();
+}
+
+export async function loadHub(): Promise<void> {
+  state.hub = await rpc<HubInfo>('hub.info');
+  if (state.hub.configured && state.profile.exists) {
+    state.friendRequests = await rpc<HubRequests>('hub.requests').catch(() => state.friendRequests);
+  }
+}
+
+/** Richiesta d'amicizia per codice (`K7QM-2XPA`) o link. */
+export async function addFriend(text: string): Promise<{ user: { name: string }; theyAsked?: boolean }> {
+  const r = await rpc<{ user: { name: string }; theyAsked?: boolean }>('hub.addFriend', { text });
+  await loadHub();
+  return r;
+}
+
+/** Accetta una richiesta: restituisce l'invito da completare con «Accetta invito». */
+export async function acceptFriend(id: string): Promise<HubAccepted> {
+  const r = await rpc<HubAccepted>('hub.accept', { id });
+  state.friendRequests.incoming = state.friendRequests.incoming.filter((x) => x.id !== id);
+  return r;
+}
+
+/** Rifiuta una richiesta ricevuta o annulla una inviata. */
+export async function declineFriend(id: string): Promise<void> {
+  await rpc('hub.decline', { id });
+  const keep = (x: { id: string }) => x.id !== id;
+  state.friendRequests = { incoming: state.friendRequests.incoming.filter(keep), outgoing: state.friendRequests.outgoing.filter(keep) };
+}
+
+/** Link corto dello stream; senza Hub, il link di invito firmato. */
+export async function shareStream(role: Role, validityHours: number, uses: number): Promise<StreamLink> {
+  const params = { role, validityHours, uses };
+  const r = state.hub.configured
+    ? await rpc<StreamLink>('hub.shareStream', params)
+    : await rpc<{ link: string; expiresAt: number }>('invite.create', params).then((x) => ({ code: '', url: x.link, expiresAt: x.expiresAt }));
+  await loadInvites();
+  return r;
+}
+
+/** Link di stream aperto: il Hub restituisce l'invito dell'host. */
+export async function redeemStream(text: string): Promise<HubAccepted> {
+  return rpc<HubAccepted>('hub.join', { text });
 }
 
 export async function createInvite(role: Role, validityHours: number, uses: number) {

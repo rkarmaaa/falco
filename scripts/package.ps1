@@ -2,11 +2,15 @@
 #   1. falco-core in release (LTO), copiato come sidecar di Tauri
 #   2. motori in target\release\engines (stage-engines.ps1; in CI i fork compilati)
 #   3. tauri build → installer NSIS in target\release\bundle\nsis
-# Uso: powershell -File scripts\package.ps1 [-SkipEngines]
-param([switch]$SkipEngines)
+# Uso: powershell -File scripts\package.ps1 [-SkipEngines] [-HubUrl https://falco-hub.<sottodominio>.workers.dev]
+param([switch]$SkipEngines, [string]$HubUrl = $env:FALCO_HUB_URL)
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
+
+# Falco Hub incluso nella build (ADR 0017); senza, amici per codice e link restano spenti
+if ($HubUrl) { $env:FALCO_HUB_URL = $HubUrl; Write-Host "==> Falco Hub: $HubUrl" }
+else { Write-Warning "FALCO_HUB_URL non impostato: build senza Falco Hub" }
 
 Write-Host "==> falco-core (release)"
 cargo build --release -p falco-core

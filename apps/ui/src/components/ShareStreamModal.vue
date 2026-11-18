@@ -1,23 +1,25 @@
 <script setup lang="ts">
-// «Invita»: ruolo con permessi, validità, usi; poi link da copiare
-import { computed, ref } from 'vue';
+// «Condividi stream»: cosa può fare chi entra, per quanto e quante persone; poi un link corto
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Copy, Check } from 'lucide-vue-next';
 import UiModal from './UiModal.vue';
 import UiButton from './UiButton.vue';
 import UiSegmented from './UiSegmented.vue';
 import PermissionList from './PermissionList.vue';
-import { createInvite } from '@/stores/social';
+import { shareStream } from '@/stores/social';
+import { core, setHostAvailable } from '@/stores/core';
+import { attempt } from '@/stores/errors';
+import { copyText } from '@/utils/clipboard';
 import { isRpcError, type Permissions, type Role } from '@/ipc';
 
 const emit = defineEmits<{ close: [] }>();
 const { t } = useI18n();
 
-const role = ref<Role>('giocatore');
+const role = ref<Role>('spettatore');
 const validity = ref<'1' | '24' | '168'>('24');
 const uses = ref(1);
 const link = ref<string | null>(null);
-const shared = ref(true);
 const copied = ref(false);
 const error = ref<string | null>(null);
 const busy = ref(false);
@@ -35,9 +37,11 @@ async function create(): Promise<void> {
   busy.value = true;
   error.value = null;
   try {
-    const r = await createInvite(role.value, Number(validity.value), uses.value);
-    link.value = r.link;
-    shared.value = r.tailscaleShared;
+    link.value = (await shareStream(role.value, Number(validity.value), uses.value)).url;
+    // Un solo clic: il link è pronto e la condivisione parte da sola
+    if (core.host.state === 'stopped' || core.host.state === 'error') {
+      void attempt(t('errors.context.share'), () => setHostAvailable(true));
+    }
   } catch (e) {
     error.value = isRpcError(e) ? e.message : t('connect.genericError');
   } finally {
@@ -45,25 +49,21 @@ async function create(): Promise<void> {
   }
 }
 
+onMounted(() => void create());
+
 async function copy(): Promise<void> {
-  if (!link.value) return;
-  try {
-    const { writeText } = await import('@tauri-apps/plugin-clipboard-manager');
-    await writeText(link.value);
-  } catch {
-    await navigator.clipboard.writeText(link.value);
-  }
+  if (!link.value || !(await copyText(link.value))) return;
   copied.value = true;
   setTimeout(() => (copied.value = false), 2000);
 }
 </script>
 
 <template>
-  <UiModal :title="$t('invite.title')" @close="emit('close')">
+  <UiModal :title="$t('stream.title')" @close="emit('close')">
     <template v-if="!link">
       <div class="field">
-        <span class="label">{{ $t('invite.role') }}</span>
-        <UiSegmented v-model="role" :label="$t('invite.role')" :options="roles" />
+        <span class="label">{{ $t('stream.role') }}</span>
+        <UiSegmented v-model="role" :label="$t('stream.role')" :options="roles" />
       </div>
       <PermissionList :permissions="presets[role]" />
       <div class="row">
@@ -80,7 +80,7 @@ async function copy(): Promise<void> {
           />
         </div>
         <label class="field">
-          <span class="label">{{ $t('invite.uses') }}</span>
+          <span class="label">{{ $t('stream.uses') }}</span>
           <input v-model.number="uses" class="number" type="number" min="1" max="10" />
         </label>
       </div>
@@ -89,7 +89,7 @@ async function copy(): Promise<void> {
     </template>
 
     <template v-else>
-      <p class="note">{{ $t('invite.share') }}</p>
+      <p class="note">{{ $t('stream.shareHint') }}</p>
       <div class="link">
         <code class="code">{{ link }}</code>
         <UiButton variant="primary" @click="copy">
@@ -98,13 +98,15 @@ async function copy(): Promise<void> {
           {{ copied ? $t('invite.copied') : $t('invite.copy') }}
         </UiButton>
       </div>
-      <p class="warn">{{ $t('invite.secret') }}</p>
-      <p v-if="!shared" class="warn">{{ $t('invite.noShare') }}</p>
+      <p class="warn">{{ $t('stream.secret') }}</p>
     </template>
 
     <template #actions>
-      <UiButton v-if="!link" variant="primary" :disabled="busy" @click="create">{{ $t('invite.create') }}</UiButton>
-      <UiButton v-else variant="secondary" @click="emit('close')">{{ $t('invite.done') }}</UiButton>
+      <UiButton v-if="!link" variant="primary" :disabled="busy" @click="create">{{ busy ? $t('stream.creating') : $t('stream.create') }}</UiButton>
+      <template v-else>
+        <UiButton variant="ghost" @click="link = null">{{ $t('stream.options') }}</UiButton>
+        <UiButton variant="secondary" @click="emit('close')">{{ $t('invite.done') }}</UiButton>
+      </template>
     </template>
   </UiModal>
 </template>
@@ -137,18 +139,15 @@ async function copy(): Promise<void> {
 }
 
 .note {
-  color: $text-2;
-  font-size: $fs-small;
+  @include message($text-2);
 }
 
 .warn {
-  color: $busy;
-  font-size: $fs-small;
+  @include message($busy);
 }
 
 .error {
-  color: $danger;
-  font-size: $fs-small;
+  @include message($danger);
 }
 
 .link {
@@ -163,6 +162,7 @@ async function copy(): Promise<void> {
     padding: $sp-2 $sp-3;
     border-radius: $r-field;
     font-size: $fs-small;
+    line-height: $lh-small;
     user-select: all;
   }
 }

@@ -37,7 +37,7 @@ encoder_quality = "speed"    # speed | balanced | quality (solo con custom)
 audio_capture = "onscreen"   # onscreen (solo le app a schermo, mai le chat vocali) | all
 
 [network]
-provider = "tailscale"       # tailscale | lan | direct | headscale
+provider = "falco"           # falco (rete Falco, nessun account) | tailscale | lan | direct | headscale
 presence_port = 47900
 sunshine_base_port = 47989
 address_family = "both"      # ipv4 | ipv6 | both
@@ -50,6 +50,7 @@ connect_timeout_s = 10
 reconnect_attempts = 3
 warn_exit_node = true
 headscale_url = ""
+hub_url = ""                 # Falco Hub; vuoto = quello incluso nell'app
 
 [performance]
 raise_priority = true

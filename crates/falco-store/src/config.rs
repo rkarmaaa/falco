@@ -84,7 +84,7 @@ str_enum!(HostProfile { Latency = "latency", Balanced = "balanced", Slow = "slow
 str_enum!(AudioCapture { Onscreen = "onscreen", All = "all" } default Onscreen);
 str_enum!(EncoderQuality { Speed = "speed", Balanced = "balanced", Quality = "quality" } default Speed);
 str_enum!(Encoder { Auto = "auto", Amf = "amf", Nvenc = "nvenc", QuickSync = "quicksync", VideoToolbox = "videotoolbox", Software = "software" } default Auto);
-str_enum!(Provider { Tailscale = "tailscale", Lan = "lan", Direct = "direct", Headscale = "headscale" } default Tailscale);
+str_enum!(Provider { Falco = "falco", Tailscale = "tailscale", Lan = "lan", Direct = "direct", Headscale = "headscale" } default Falco);
 str_enum!(AddressFamily { Ipv4 = "ipv4", Ipv6 = "ipv6", Both = "both" } default Both);
 str_enum!(FirewallScope { Tailnet = "tailnet", TailnetLan = "tailnet+lan" } default Tailnet);
 str_enum!(LogLevel { Error = "error", Warn = "warn", Info = "info", Debug = "debug" } default Warn);
@@ -174,6 +174,8 @@ pub struct Network {
     pub reconnect_attempts: u32,
     pub warn_exit_node: bool,
     pub headscale_url: String,
+    /// Falco Hub (ADR 0017); vuoto = quello incluso nella build.
+    pub hub_url: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -258,7 +260,7 @@ impl Default for Host {
 impl Default for Network {
     fn default() -> Self {
         Self {
-            provider: Provider::Tailscale,
+            provider: Provider::Falco,
             presence_port: 47900,
             sunshine_base_port: 47989,
             address_family: AddressFamily::Both,
@@ -271,6 +273,7 @@ impl Default for Network {
             reconnect_attempts: 3,
             warn_exit_node: true,
             headscale_url: String::new(),
+            hub_url: String::new(),
         }
     }
 }
@@ -356,6 +359,16 @@ impl Config {
                 key: "network.headscale_url",
                 value: format!("{:?}", n.headscale_url),
                 allowed: "URL https:// del server Headscale".into(),
+            });
+        }
+        if !n.hub_url.is_empty()
+            && !n.hub_url.starts_with("https://")
+            && !n.hub_url.starts_with("http://127.0.0.1")
+        {
+            out.push(Issue {
+                key: "network.hub_url",
+                value: format!("{:?}", n.hub_url),
+                allowed: "URL https:// del Falco Hub".into(),
             });
         }
         let p = &self.performance;

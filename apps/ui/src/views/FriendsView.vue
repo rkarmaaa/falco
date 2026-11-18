@@ -1,8 +1,10 @@
 <script setup lang="ts">
-// Schermata principale (§13): ricerca, «In gioco ora», «Online», «Offline» chiuso di default
+// Schermata principale (§13): richieste d'amicizia, ricerca, «In gioco ora», «Online», «Offline» chiuso
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Search, Ticket, UserPlus } from 'lucide-vue-next';
+import UiPage from '@/components/UiPage.vue';
+import FriendRequests from '@/components/FriendRequests.vue';
 import EmptyState from '@/components/EmptyState.vue';
 import UiButton from '@/components/UiButton.vue';
 import FriendCard from '@/components/FriendCard.vue';
@@ -10,9 +12,9 @@ import FriendDetail from '@/components/FriendDetail.vue';
 import { social } from '@/stores/social';
 import { joinFriend } from '@/stores/core';
 import { attempt } from '@/stores/errors';
+import { openAccept, openModal } from '@/stores/ui';
 import type { Friend } from '@/ipc';
 
-const emit = defineEmits<{ invite: []; accept: [] }>();
 const { t } = useI18n();
 const query = ref('');
 const selectedId = ref<string | null>(null);
@@ -34,23 +36,25 @@ function enter(f: Friend): void {
 </script>
 
 <template>
-  <section class="friends">
-    <header class="head">
-      <h1 class="title">{{ $t('friends.title') }}</h1>
-      <div class="tools">
-        <UiButton variant="ghost" @click="emit('accept')">
-          <Ticket :size="18" :stroke-width="1.75" aria-hidden="true" />
-          {{ $t('friends.haveInvite') }}
-        </UiButton>
-        <UiButton variant="primary" @click="emit('invite')">
-          <UserPlus :size="18" :stroke-width="1.75" aria-hidden="true" />
-          {{ $t('friends.invite') }}
-        </UiButton>
-      </div>
-    </header>
+  <UiPage class="friends" :title="$t('friends.title')">
+    <template #actions>
+      <UiButton variant="ghost" @click="openAccept()">
+        <Ticket :size="18" :stroke-width="1.75" aria-hidden="true" />
+        {{ $t('friends.haveInvite') }}
+      </UiButton>
+      <UiButton variant="primary" @click="openModal('addFriend')">
+        <UserPlus :size="18" :stroke-width="1.75" aria-hidden="true" />
+        {{ $t('addFriend.title') }}
+      </UiButton>
+    </template>
+
+    <section v-if="social.friendRequests.incoming.length" class="group">
+      <h2 class="label">{{ $t('addFriend.incoming') }} · {{ social.friendRequests.incoming.length }}</h2>
+      <FriendRequests :requests="social.friendRequests.incoming" />
+    </section>
 
     <EmptyState v-if="social.friends.length === 0" :title="$t('friends.emptyTitle')" :body="$t('friends.emptyBody')">
-      <UiButton variant="secondary" :size="48" @click="emit('invite')">{{ $t('friends.emptyAction') }}</UiButton>
+      <UiButton variant="secondary" :size="48" @click="openModal('addFriend')">{{ $t('friends.emptyAction') }}</UiButton>
     </EmptyState>
 
     <template v-else>
@@ -83,32 +87,11 @@ function enter(f: Friend): void {
     <Teleport to="#detail-slot" defer>
       <FriendDetail v-if="selected" :friend="selected" @close="selectedId = null" @join="enter(selected)" />
     </Teleport>
-  </section>
+  </UiPage>
 </template>
 
 <style lang="scss" scoped>
 .friends {
-  display: grid;
-  gap: $sp-5;
-
-  .head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: $sp-4;
-
-    .title {
-      font-size: $fs-h1;
-      line-height: 30px;
-      font-weight: 650;
-    }
-
-    .tools {
-      display: flex;
-      gap: $sp-2;
-    }
-  }
-
   .search {
     @include surface(2);
     display: flex;
@@ -135,7 +118,7 @@ function enter(f: Friend): void {
 
   .group {
     display: grid;
-    gap: $sp-3;
+    gap: $section-gap;
 
     .label {
       @include label;
@@ -153,7 +136,7 @@ function enter(f: Friend): void {
     .list {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: $sp-3;
+      gap: $section-gap;
       margin: 0;
       padding: 0;
       list-style: none;

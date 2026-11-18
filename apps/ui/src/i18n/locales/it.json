@@ -4,7 +4,8 @@
     "minimize": "Riduci a icona",
     "maximize": "Ingrandisci",
     "close": "Chiudi",
-    "tagline": "Gioca con gli amici. Veloce come un falco."
+    "tagline": "Gioca con gli amici. Veloce come un falco.",
+    "betaHint": "Versione di prova: segnala i problemi a Marco."
   },
   "nav": {
     "friends": "Amici",
@@ -127,10 +128,9 @@
     "version": "Versione {version} · milestone {milestone}",
     "license": "Software libero sotto licenza GPL-3.0.",
     "soon": "Arriva con la milestone {milestone}.",
-    "changeAvatar": "Cambia immagine",
     "save": "Salva",
     "oauth": {
-      "title": "Inviti automatici con Tailscale",
+      "title": "Facoltativo: usa la tua tailnet Tailscale",
       "intro": "Per creare inviti con un clic, crea un OAuth client nella console di Tailscale (Settings → Trust credentials) con gli scope devices:core:read e device_invites, poi incolla qui ID e secret. Si fa una volta sola.",
       "configured": "Configurato: gli inviti includono la condivisione su Tailscale.",
       "clientId": "Client ID",
@@ -145,7 +145,11 @@
     "import": "Importa impostazioni",
     "imported": "Impostazioni importate e verificate.",
     "headscaleLogin": "Accedi al server Headscale",
-    "headscaleStarted": "Accesso avviato: completa il login nel browser."
+    "headscaleStarted": "Accesso avviato: completa il login nel browser.",
+    "falcoJoin": "Collega alla rete Falco",
+    "falcoJoining": "Collegamento…",
+    "falcoJoinHint": "Nessun account: Falco usa una chiave monouso.",
+    "falcoJoined": "Collegato alla rete Falco."
   },
   "doctor": {
     "title": "Dottore di rete",
@@ -243,7 +247,8 @@
       "recommend": "Misurare la rete",
       "hostLists": "Caricare ospiti e dispositivi",
       "pairing": "Associare il dispositivo",
-      "device": "Gestire il dispositivo"
+      "device": "Gestire il dispositivo",
+      "joinLink": "Aprire il link di stream"
     }
   },
   "ping": {
@@ -324,8 +329,8 @@
     "accept": "Accetta",
     "browserNote": "Si aprirà il browser per confermare la condivisione su Tailscale: basta un clic.",
     "step": {
-      "tailscale": "Tailscale collegato",
-      "share": "Condivisione confermata",
+      "tailscale": "Rete collegata",
+      "share": "Amico raggiungibile",
       "handshake": "Amicizia registrata",
       "pairing": "Dispositivi associati"
     },
@@ -343,19 +348,19 @@
     "intro": "Gioca in streaming con i tuoi amici, come fossero sul divano accanto a te. Ti servono un nome e, se vuoi, una foto.",
     "continue": "Continua",
     "profileTitle": "Come ti chiami?",
-    "avatar": "Scegli un'immagine",
     "name": "Nome",
     "namePlaceholder": "Come ti vedono gli amici",
     "nameHint": "Da 2 a 24 caratteri. Puoi cambiarlo quando vuoi.",
     "done": "Inizia",
-    "tailscale": {
-      "running": "Tailscale è collegato: sei pronto.",
-      "needsLogin": "Tailscale è installato ma devi accedere. Lo farai al primo invito.",
-      "stopped": "Tailscale è spento: aprilo prima di invitare qualcuno.",
-      "missing": "Tailscale non c'è ancora: Falco lo installa per te con un clic."
+    "network": {
+      "running": "Rete pronta.",
+      "needsLogin": "Falco collegherà la rete da solo, senza account.",
+      "stopped": "La rete è spenta: Falco la riaccende quando serve.",
+      "missing": "Falco installa da solo la rete sicura (Tailscale): conferma la richiesta del sistema, nessun account da creare."
     },
-    "installTailscale": "Installa Tailscale",
-    "installing": "Installazione in corso… conferma la richiesta di Windows"
+    "preparingNetwork": "Preparo la rete… conferma la richiesta del sistema",
+    "creating": "Creo il profilo…",
+    "networkError": "Preparare la rete"
   },
   "perms": {
     "title": "Permessi",
@@ -425,7 +430,8 @@
       "connect_timeout_s": "Timeout di connessione (s)",
       "reconnect_attempts": "Tentativi di riconnessione",
       "warn_exit_node": "Avvisa se c'è un exit node",
-      "headscale_url": "URL del server Headscale"
+      "headscale_url": "URL del server Headscale",
+      "hub_url": "Server Falco Hub (vuoto = predefinito)"
     },
     "performance": {
       "raise_priority": "Alza la priorità dei motori in gioco",
@@ -469,7 +475,8 @@
       "spettatore": "Spettatore",
       "giocatore": "Giocatore",
       "copilota": "Co-pilota",
-      "fidato": "Fidato"
+      "fidato": "Fidato",
+      "falco": "Rete Falco (consigliata)"
     }
   },
   "update": {
@@ -652,5 +659,43 @@
       "onscreenHint": "Gli ospiti sentono solo le app con una finestra visibile sullo schermo condiviso. Discord e le altre chat vocali non passano mai, così nessuno sente la propria voce tornare indietro.",
       "allHint": "Gli ospiti sentono tutto l'audio del PC, compresi Discord, le notifiche e la musica in sottofondo."
     }
+  },
+  "avatar": {
+    "change": "Cambia foto",
+    "add": "Aggiungi foto",
+    "remove": "Rimuovi",
+    "hint": "JPG, PNG o WebP. Viene ritagliata al centro."
+  },
+  "stream": {
+    "share": "Condividi stream",
+    "title": "Condividi il tuo stream",
+    "shareHint": "Manda questo link: chi lo apre entra nel tuo stream, senza account né configurazione.",
+    "secret": "Chi ha il link può entrare finché non scade: mandalo solo a chi vuoi.",
+    "creating": "Creo il link…",
+    "create": "Crea il link",
+    "role": "Cosa può fare chi entra",
+    "uses": "Persone",
+    "options": "Cambia opzioni",
+    "clipboard": "Hai copiato un link di stream.",
+    "watch": "Guarda"
+  },
+  "addFriend": {
+    "title": "Aggiungi amico",
+    "yourCode": "Il tuo codice amico",
+    "copyCode": "Copia codice",
+    "copyLink": "Copia link",
+    "shareHint": "Manda il codice o il link a chi vuoi aggiungere: ti arriverà la sua richiesta.",
+    "theirCode": "Codice o link dell'amico",
+    "placeholder": "K7QM-2XPA",
+    "send": "Invia richiesta",
+    "sending": "Invio…",
+    "sent": "Richiesta inviata a {name}.",
+    "theyAsked": "{name} ti aveva già chiesto l'amicizia: accettala qui sotto.",
+    "incoming": "Richieste d'amicizia",
+    "outgoing": "Inviate",
+    "waiting": "in attesa",
+    "wants": "vuole essere tuo amico",
+    "cancel": "Annulla",
+    "noHub": "Il server di Falco non è configurato in questa versione: usa «Condividi stream» o un invito."
   }
 }

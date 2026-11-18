@@ -6,12 +6,13 @@ import { RefreshCw } from 'lucide-vue-next';
 import UiSegmented from '@/components/UiSegmented.vue';
 import UiButton from '@/components/UiButton.vue';
 import DiagnosticRow from '@/components/DiagnosticRow.vue';
-import UiAvatar from '@/components/UiAvatar.vue';
+import AvatarPicker from '@/components/AvatarPicker.vue';
 import UiField from '@/components/UiField.vue';
 import ConnectCard from '@/components/ConnectCard.vue';
 import SettingsForm from '@/components/SettingsForm.vue';
+import UiPage from '@/components/UiPage.vue';
 import { core, setConfig, setStatus } from '@/stores/core';
-import { rename, setAvatar, social } from '@/stores/social';
+import { clearAvatar, rename, setAvatar, social } from '@/stores/social';
 import { isRpcError, rpc, type DoctorCheck, type Status } from '@/ipc';
 
 type Tab = 'profile' | 'streaming' | 'network' | 'host' | 'permissions' | 'advanced' | 'about';
@@ -49,11 +50,11 @@ async function saveName(): Promise<void> {
     profileError.value = isRpcError(e) ? e.message : t('connect.genericError');
   }
 }
-async function pickAvatar(e: Event): Promise<void> {
-  const f = (e.target as HTMLInputElement).files?.[0];
-  if (!f) return;
+async function avatarAction(run: () => Promise<void>): Promise<void> {
+  profileError.value = null;
   try {
-    await setAvatar(f);
+    await run();
+    flashSaved();
   } catch (err) {
     profileError.value = isRpcError(err) ? err.message : t('connect.genericError');
   }
@@ -112,6 +113,19 @@ async function installUpdate(): Promise<void> {
   }
 }
 
+const joining = ref(false);
+async function joinFalco(): Promise<void> {
+  joining.value = true;
+  try {
+    await rpc('net.joinFalco');
+    importMsg.value = { ok: true, text: t('settings.falcoJoined') };
+  } catch (err) {
+    importMsg.value = { ok: false, text: isRpcError(err) ? err.message : t('connect.genericError') };
+  } finally {
+    joining.value = false;
+  }
+}
+
 async function headscaleLogin(): Promise<void> {
   try {
     await rpc('net.loginHeadscale');
@@ -139,11 +153,10 @@ function openTab(next: Tab): void {
 </script>
 
 <template>
-  <section class="settings">
-    <header class="head">
-      <h1 class="title">{{ $t('settings.title') }}</h1>
+  <UiPage class="settings" :title="$t('settings.title')" narrow>
+    <template #meta>
       <span class="saved" :class="{ show: saved }" aria-live="polite">{{ saved ? $t('settings.saved') : '' }}</span>
-    </header>
+    </template>
 
     <div class="tabs" role="tablist">
       <button
@@ -162,20 +175,20 @@ function openTab(next: Tab): void {
 
     <div class="panel" role="tabpanel">
       <template v-if="tab === 'profile'">
-        <div class="me">
-          <label class="avatar-pick">
-            <UiAvatar :name="social.profile.name ?? '?'" :src="social.profile.avatarUrl" :accent="social.profile.accent" :size="56" />
-            <span class="link">{{ $t('settings.changeAvatar') }}</span>
-            <input class="sr-only" type="file" accept="image/*" @change="pickAvatar" />
-          </label>
-          <form class="rename" @submit.prevent="saveName">
-            <UiField v-model="name" :label="$t('onboarding.name')" :maxlength="24" />
-            <UiButton variant="secondary" type="submit">{{ $t('settings.save') }}</UiButton>
-          </form>
+        <AvatarPicker
+          :name="social.profile.name ?? '?'"
+          :src="social.profile.avatarUrl"
+          :accent="social.profile.accent"
+          @pick="(f) => avatarAction(() => setAvatar(f))"
+          @clear="avatarAction(clearAvatar)"
+        />
+        <form class="rename" @submit.prevent="saveName">
+          <UiField v-model="name" :label="$t('onboarding.name')" :maxlength="24" />
+          <UiButton variant="secondary" type="submit">{{ $t('settings.save') }}</UiButton>
           <span class="tag">{{ social.profile.tag }}</span>
-        </div>
+        </form>
         <p v-if="profileError" class="error" role="alert">{{ profileError }}</p>
-        <div class="field">
+        <div class="setting">
           <span class="label">{{ $t('settings.status') }}</span>
           <UiSegmented
             v-model="status"
@@ -183,7 +196,7 @@ function openTab(next: Tab): void {
             :options="(['online', 'busy', 'invisible'] as const).map((v) => ({ value: v, label: t(`status.${v}`) }))"
           />
         </div>
-        <div class="field">
+        <div class="setting">
           <span class="label">{{ $t('settings.language') }}</span>
           <UiSegmented
             v-model="language"
@@ -209,6 +222,26 @@ function openTab(next: Tab): void {
         </ul>
         <h2 class="subtitle">{{ $t('settings.networkParams') }}</h2>
         <SettingsForm :sections="['network']" @saved="flashSaved" />
+        <div v-if="core.config?.network.provider === 'falco'" class="io">
+          <UiButton variant="secondary" :size="32" :disabled="joining" @click="joinFalco">
+            {{ joining ? $t('settings.falcoJoining') : $t('settings.falcoJoin') }}
+          </UiButton>
+          <span class="muted">{{ $t('settings.falcoJoinHint') }}</span>
+        </div>
+        <p v-if="importMsg" :class="importMsg.ok ? 'ok' : 'error'" role="status">{{ importMsg.text }}</p>
+        <details v-if="core.config?.network.provider === 'tailscale'" class="advanced-net">
+          <summary class="subtitle">{{ $t('settings.oauth.title') }}</summary>
+          <p class="muted">{{ core.snapshot?.oauthConfigured ? $t('settings.oauth.configured') : $t('settings.oauth.intro') }}</p>
+          <form class="oauth" @submit.prevent="saveOAuth">
+            <UiField v-model="oauthId" :label="$t('settings.oauth.clientId')" />
+            <label class="field">
+              <span class="label">{{ $t('settings.oauth.secret') }}</span>
+              <input v-model="oauthSecret" class="secret" type="password" autocomplete="off" />
+            </label>
+            <UiButton variant="secondary" type="submit" :disabled="!oauthId || !oauthSecret">{{ $t('settings.save') }}</UiButton>
+          </form>
+          <p v-if="oauthMsg" :class="oauthMsg.ok ? 'ok' : 'error'" role="status">{{ oauthMsg.text }}</p>
+        </details>
         <UiButton
           v-if="core.config?.network.provider === 'headscale'"
           variant="secondary"
@@ -224,17 +257,6 @@ function openTab(next: Tab): void {
       </template>
 
       <template v-else-if="tab === 'host'">
-        <h2 class="subtitle">{{ $t('settings.oauth.title') }}</h2>
-        <p class="muted">{{ core.snapshot?.oauthConfigured ? $t('settings.oauth.configured') : $t('settings.oauth.intro') }}</p>
-        <form class="oauth" @submit.prevent="saveOAuth">
-          <UiField v-model="oauthId" :label="$t('settings.oauth.clientId')" />
-          <label class="field">
-            <span class="label">{{ $t('settings.oauth.secret') }}</span>
-            <input v-model="oauthSecret" class="secret" type="password" autocomplete="off" />
-          </label>
-          <UiButton variant="secondary" type="submit" :disabled="!oauthId || !oauthSecret">{{ $t('settings.save') }}</UiButton>
-        </form>
-        <p v-if="oauthMsg" :class="oauthMsg.ok ? 'ok' : 'error'" role="status">{{ oauthMsg.text }}</p>
         <h2 class="subtitle">{{ $t('settings.hostParams') }}</h2>
         <SettingsForm :sections="['host']" @saved="flashSaved" />
       </template>
@@ -274,35 +296,18 @@ function openTab(next: Tab): void {
 
       <p v-else class="muted">{{ $t('settings.soon', { milestone: soon[tab] ?? 'M6' }) }}</p>
     </div>
-  </section>
+  </UiPage>
 </template>
 
 <style lang="scss" scoped>
 .settings {
-  display: grid;
-  gap: $sp-5;
-  max-width: 760px;
+  .saved {
+    @include message($ok);
+    opacity: 0;
+    transition: opacity $t-fast $ease;
 
-  .head {
-    display: flex;
-    align-items: baseline;
-    gap: $sp-4;
-
-    .title {
-      font-size: $fs-h1;
-      line-height: 30px;
-      font-weight: 650;
-    }
-
-    .saved {
-      font-size: $fs-small;
-      color: $ok;
-      opacity: 0;
-      transition: opacity $t-fast $ease;
-
-      &.show {
-        opacity: 1;
-      }
+    &.show {
+      opacity: 1;
     }
   }
 
@@ -336,16 +341,16 @@ function openTab(next: Tab): void {
 
   .panel {
     display: grid;
-    gap: $sp-5;
+    gap: $page-gap;
 
-    .field {
+    .setting {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: $sp-4;
 
       .label {
-        font-weight: 600;
+        font-weight: $fw-strong;
       }
     }
 
@@ -375,50 +380,25 @@ function openTab(next: Tab): void {
     }
 
     .error {
-      color: $danger;
-      font-size: $fs-small;
+      @include message($danger);
     }
 
     .ok {
-      color: $ok;
-      font-size: $fs-small;
+      @include message($ok);
     }
 
     .subtitle {
-      font-size: $fs-h2;
-      line-height: 24px;
-      font-weight: 600;
+      @include title-h2;
     }
 
-    .me {
+    .rename {
       display: flex;
       align-items: flex-end;
-      gap: $sp-5;
-
-      .avatar-pick {
-        display: grid;
-        justify-items: center;
-        gap: $sp-1;
-        cursor: pointer;
-
-        .link {
-          font-size: $fs-small;
-          color: $text-2;
-        }
-
-        &:focus-within .link {
-          color: $accent-fg;
-        }
-      }
-
-      .rename {
-        display: flex;
-        align-items: flex-end;
-        gap: $sp-2;
-      }
+      gap: $sp-2;
 
       .tag {
-        margin-bottom: $sp-2;
+        align-self: center;
+        margin-left: auto;
         color: $text-3;
         font-variant-numeric: tabular-nums;
       }
@@ -455,10 +435,14 @@ function openTab(next: Tab): void {
       align-items: center;
       justify-content: space-between;
 
-      .subtitle {
-        font-size: $fs-h2;
-        line-height: 24px;
-        font-weight: 600;
+    }
+
+    .advanced-net {
+      display: grid;
+      gap: $section-gap;
+
+      summary {
+        cursor: pointer;
       }
     }
 

@@ -1,15 +1,16 @@
 <script setup lang="ts">
-// Onboarding (§13): benvenuto, nome e avatar, controllo di Tailscale. Obiettivo < 3 minuti.
+// Onboarding (§13): benvenuto, nome e avatar. La rete (Tailscale sulla rete Falco) si prepara da sola,
+// senza account: al massimo una conferma di Windows o macOS per l'installazione.
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { ImagePlus } from 'lucide-vue-next';
 import logo from '@/assets/falco-256.png';
 import UiButton from '@/components/UiButton.vue';
 import UiField from '@/components/UiField.vue';
-import UiAvatar from '@/components/UiAvatar.vue';
+import AvatarPicker from '@/components/AvatarPicker.vue';
 import { createProfile, setAvatar } from '@/stores/social';
 import { core } from '@/stores/core';
 import { isRpcError, rpc } from '@/ipc';
+import { attempt } from '@/stores/errors';
 
 const { t } = useI18n();
 const step = ref<'welcome' | 'profile'>('welcome');
@@ -21,36 +22,38 @@ const busy = ref(false);
 const valid = computed(() => [...name.value.trim()].length >= 2 && [...name.value.trim()].length <= 24);
 const tailscale = computed(() => core.snapshot?.network.tailscale ?? 'missing');
 
-function pick(e: Event): void {
-  const f = (e.target as HTMLInputElement).files?.[0];
-  if (!f) return;
+function pick(f: File): void {
+  if (preview.value) URL.revokeObjectURL(preview.value);
   file.value = f;
   preview.value = URL.createObjectURL(f);
 }
 
-const installing = ref(false);
-async function installTailscale(): Promise<void> {
-  installing.value = true;
-  error.value = null;
-  try {
-    await rpc('tailscale.install');
-  } catch (e) {
-    error.value = isRpcError(e) ? e.message : t('connect.genericError');
-  } finally {
-    installing.value = false;
-  }
+function unpick(): void {
+  if (preview.value) URL.revokeObjectURL(preview.value);
+  file.value = null;
+  preview.value = null;
 }
+
+const phase = ref<'idle' | 'network' | 'profile'>('idle');
 
 async function finish(): Promise<void> {
   busy.value = true;
   error.value = null;
   try {
+    // Prima la rete: dopo il profilo questa schermata sparisce. Un errore qui non blocca:
+    // resta un avviso e si riprova da Impostazioni → Rete.
+    if (tailscale.value === 'missing') {
+      phase.value = 'network';
+      await attempt(t('onboarding.networkError'), () => rpc('tailscale.install'));
+    }
+    phase.value = 'profile';
     await createProfile(name.value.trim());
     if (file.value) await setAvatar(file.value);
   } catch (e) {
     error.value = isRpcError(e) ? e.message : t('connect.genericError');
   } finally {
     busy.value = false;
+    phase.value = 'idle';
   }
 }
 </script>
@@ -67,19 +70,14 @@ async function finish(): Promise<void> {
 
     <form v-else class="card" @submit.prevent="valid && finish()">
       <h1 class="title">{{ $t('onboarding.profileTitle') }}</h1>
-      <label class="avatar-pick">
-        <UiAvatar :name="name || '?'" :src="preview" :size="96" />
-        <span class="pick"><ImagePlus :size="16" :stroke-width="1.75" aria-hidden="true" /> {{ $t('onboarding.avatar') }}</span>
-        <input class="sr-only" type="file" accept="image/*" @change="pick" />
-      </label>
+      <AvatarPicker :name="name" :src="preview" stacked @pick="pick" @clear="unpick" />
       <UiField v-model="name" :label="$t('onboarding.name')" :placeholder="$t('onboarding.namePlaceholder')" :maxlength="24" />
       <p class="hint">{{ $t('onboarding.nameHint') }}</p>
-      <p class="ts" :class="tailscale">{{ $t(`onboarding.tailscale.${tailscale}`) }}</p>
-      <UiButton v-if="tailscale === 'missing'" variant="secondary" :disabled="installing" @click="installTailscale">
-        {{ installing ? $t('onboarding.installing') : $t('onboarding.installTailscale') }}
-      </UiButton>
+      <p class="ts">{{ $t(`onboarding.network.${tailscale}`) }}</p>
       <p v-if="error" class="error" role="alert">{{ error }}</p>
-      <UiButton variant="primary" :size="48" type="submit" :disabled="!valid || busy">{{ $t('onboarding.done') }}</UiButton>
+      <UiButton variant="primary" :size="48" type="submit" :disabled="!valid || busy">
+        {{ phase === 'network' ? $t('onboarding.preparingNetwork') : phase === 'profile' ? $t('onboarding.creating') : $t('onboarding.done') }}
+      </UiButton>
     </form>
   </section>
 </template>
@@ -139,37 +137,12 @@ async function finish(): Promise<void> {
       text-align: left;
     }
 
-    .avatar-pick {
-      display: grid;
-      justify-items: center;
-      gap: $sp-2;
-      cursor: pointer;
-
-      .pick {
-        display: inline-flex;
-        align-items: center;
-        gap: $sp-1;
-        color: $text-2;
-        font-size: $fs-small;
-      }
-
-      &:focus-within .pick {
-        color: $accent-fg;
-      }
-    }
-
     .ts {
-      font-size: $fs-small;
-      color: $busy;
-
-      &.running {
-        color: $ok;
-      }
+      @include message;
     }
 
     .error {
-      color: $danger;
-      font-size: $fs-small;
+      @include message($danger);
     }
   }
 }

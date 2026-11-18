@@ -4,7 +4,8 @@
     "minimize": "Minimize",
     "maximize": "Maximize",
     "close": "Close",
-    "tagline": "Play with friends. Fast as a falcon."
+    "tagline": "Play with friends. Fast as a falcon.",
+    "betaHint": "Preview build: report problems to Marco."
   },
   "nav": {
     "friends": "Friends",
@@ -127,10 +128,9 @@
     "version": "Version {version} · milestone {milestone}",
     "license": "Free software under the GPL-3.0 license.",
     "soon": "Coming with milestone {milestone}.",
-    "changeAvatar": "Change picture",
     "save": "Save",
     "oauth": {
-      "title": "Automatic invites with Tailscale",
+      "title": "Optional: use your own Tailscale tailnet",
       "intro": "To create invites in one click, create an OAuth client in the Tailscale console (Settings → Trust credentials) with the scopes devices:core:read and device_invites, then paste its ID and secret here. You only do this once.",
       "configured": "Set up: invites include Tailscale sharing.",
       "clientId": "Client ID",
@@ -145,7 +145,11 @@
     "import": "Import settings",
     "imported": "Settings imported and verified.",
     "headscaleLogin": "Sign in to the Headscale server",
-    "headscaleStarted": "Sign-in started: finish it in your browser."
+    "headscaleStarted": "Sign-in started: finish it in your browser.",
+    "falcoJoin": "Connect to the Falco network",
+    "falcoJoining": "Connecting…",
+    "falcoJoinHint": "No account: Falco uses a one-time key.",
+    "falcoJoined": "Connected to the Falco network."
   },
   "doctor": {
     "title": "Network doctor",
@@ -243,7 +247,8 @@
       "recommend": "Measuring the network",
       "hostLists": "Loading guests and devices",
       "pairing": "Pairing the device",
-      "device": "Managing the device"
+      "device": "Managing the device",
+      "joinLink": "Open the stream link"
     }
   },
   "ping": {
@@ -324,8 +329,8 @@
     "accept": "Accept",
     "browserNote": "Your browser will open to confirm sharing on Tailscale: it takes one click.",
     "step": {
-      "tailscale": "Tailscale connected",
-      "share": "Sharing confirmed",
+      "tailscale": "Network connected",
+      "share": "Friend reachable",
       "handshake": "Friendship saved",
       "pairing": "Devices paired"
     },
@@ -343,19 +348,19 @@
     "intro": "Stream games with your friends, as if they were on the couch next to you. You need a name and, if you like, a picture.",
     "continue": "Continue",
     "profileTitle": "What's your name?",
-    "avatar": "Choose a picture",
     "name": "Name",
     "namePlaceholder": "How your friends see you",
     "nameHint": "2 to 24 characters. You can change it any time.",
     "done": "Start",
-    "tailscale": {
-      "running": "Tailscale is connected: you're ready.",
-      "needsLogin": "Tailscale is installed but you need to sign in. You'll do it with your first invite.",
-      "stopped": "Tailscale is off: open it before inviting someone.",
-      "missing": "Tailscale isn't there yet: Falco installs it for you in one click."
+    "network": {
+      "running": "Network ready.",
+      "needsLogin": "Falco will connect the network by itself, no account needed.",
+      "stopped": "The network is off: Falco turns it on when needed.",
+      "missing": "Falco installs the secure network (Tailscale) for you: confirm the system prompt, no account to create."
     },
-    "installTailscale": "Install Tailscale",
-    "installing": "Installing… confirm the system prompt"
+    "preparingNetwork": "Setting up the network… confirm the system prompt",
+    "creating": "Creating profile…",
+    "networkError": "Set up the network"
   },
   "perms": {
     "title": "Permissions",
@@ -425,7 +430,8 @@
       "connect_timeout_s": "Connection timeout (s)",
       "reconnect_attempts": "Reconnection attempts",
       "warn_exit_node": "Warn about exit nodes",
-      "headscale_url": "Headscale server URL"
+      "headscale_url": "Headscale server URL",
+      "hub_url": "Falco Hub server (empty = default)"
     },
     "performance": {
       "raise_priority": "Raise engine priority while playing",
@@ -469,7 +475,8 @@
       "spettatore": "Spectator",
       "giocatore": "Player",
       "copilota": "Co-pilot",
-      "fidato": "Trusted"
+      "fidato": "Trusted",
+      "falco": "Falco network (recommended)"
     }
   },
   "update": {
@@ -652,5 +659,43 @@
       "onscreenHint": "Guests only hear apps with a window visible on the shared screen. Discord and other voice chats never come through, so nobody hears their own voice echoed back.",
       "allHint": "Guests hear all of the PC's audio, including Discord, notifications and background music."
     }
+  },
+  "avatar": {
+    "change": "Change photo",
+    "add": "Add photo",
+    "remove": "Remove",
+    "hint": "JPG, PNG or WebP. Cropped to the center."
+  },
+  "stream": {
+    "share": "Share stream",
+    "title": "Share your stream",
+    "shareHint": "Send this link: whoever opens it joins your stream, no account or setup needed.",
+    "secret": "Anyone with the link can join until it expires: only send it to people you want.",
+    "creating": "Creating link…",
+    "create": "Create link",
+    "role": "What guests can do",
+    "uses": "People",
+    "options": "Change options",
+    "clipboard": "You copied a stream link.",
+    "watch": "Watch"
+  },
+  "addFriend": {
+    "title": "Add friend",
+    "yourCode": "Your friend code",
+    "copyCode": "Copy code",
+    "copyLink": "Copy link",
+    "shareHint": "Send your code or link to who you want to add: you'll get their request.",
+    "theirCode": "Friend's code or link",
+    "placeholder": "K7QM-2XPA",
+    "send": "Send request",
+    "sending": "Sending…",
+    "sent": "Request sent to {name}.",
+    "theyAsked": "{name} already sent you a request: accept it below.",
+    "incoming": "Friend requests",
+    "outgoing": "Sent",
+    "waiting": "pending",
+    "wants": "wants to be your friend",
+    "cancel": "Cancel",
+    "noHub": "Falco's server isn't configured in this build: use «Share stream» or an invite."
   }
 }

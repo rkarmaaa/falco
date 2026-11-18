@@ -158,6 +158,44 @@ export interface Permissions {
   endHostSession: boolean;
 }
 
+/** Falco Hub (ADR 0017): codice amico e link. */
+export interface HubInfo {
+  configured: boolean;
+  code: string | null;
+  friendLink: string | null;
+  /** Rete Falco scelta come provider. */
+  network: boolean;
+}
+
+export interface HubUser {
+  id: string;
+  name: string;
+  code: string;
+}
+
+export interface FriendRequest {
+  id: string;
+  user: HubUser;
+  createdAt: number;
+}
+
+export interface HubRequests {
+  incoming: FriendRequest[];
+  outgoing: FriendRequest[];
+}
+
+/** Richiesta accettata o link di stream aperto: invito da completare con l'handshake. */
+export interface HubAccepted {
+  invite: string;
+  user: HubUser;
+}
+
+export interface StreamLink {
+  code: string;
+  url: string;
+  expiresAt: number;
+}
+
 export interface InvitePreview {
   host: { id: string; name: string; tag: string; accent: string };
   role: Role;

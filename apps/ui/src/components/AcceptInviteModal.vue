@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // «Accetta invito»: scheda dell'host, permessi a parole, poi tre passi con spunta
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { CircleCheck, CircleDashed, CircleX, LoaderCircle } from 'lucide-vue-next';
 import UiModal from './UiModal.vue';
@@ -9,12 +9,14 @@ import UiAvatar from './UiAvatar.vue';
 import PermissionList from './PermissionList.vue';
 import { acceptInvite, findInviteLink, previewInvite, resetAccept, social, type InviteStep } from '@/stores/social';
 import { isRpcError, type InvitePreview } from '@/ipc';
+import { ui } from '@/stores/ui';
+import { joinFriend } from '@/stores/core';
+import { attempt } from '@/stores/errors';
 
-const props = defineProps<{ initialLink?: string | null }>();
 const emit = defineEmits<{ close: [] }>();
 const { t } = useI18n();
 
-const text = ref(props.initialLink ?? '');
+const text = ref(ui.accept.link ?? '');
 const preview = ref<InvitePreview | null>(null);
 const error = ref<string | null>(null);
 const link = computed(() => findInviteLink(text.value));
@@ -45,7 +47,21 @@ function close(): void {
   emit('close');
 }
 
-onMounted(() => void check());
+// Link di stream: appena si è amici si entra nella sessione dell'host
+watch(
+  () => social.accept?.done,
+  (done) => {
+    const host = ui.accept.joinHost;
+    if (!done || !host) return;
+    close();
+    void attempt(t('errors.context.join', { name: host.name }), () => joinFriend(host.id, host.name), { name: host.name });
+  },
+);
+
+onMounted(async () => {
+  await check();
+  if (ui.accept.auto && preview.value) await accept();
+});
 </script>
 
 <template>

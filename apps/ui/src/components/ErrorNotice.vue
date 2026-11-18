@@ -5,7 +5,7 @@ import { Bug, Check, CircleAlert, Copy, X } from 'lucide-vue-next';
 import { describe, openDebug, type AppError } from '@/stores/errors';
 import { copyText } from '@/utils/clipboard';
 
-const props = defineProps<{ error: AppError; dismissible?: boolean }>();
+const props = defineProps<{ error: AppError; dismissible?: boolean; floating?: boolean }>();
 const emit = defineEmits<{ dismiss: [] }>();
 const copied = ref(false);
 
@@ -16,7 +16,7 @@ async function copy(): Promise<void> {
 </script>
 
 <template>
-  <div class="notice" role="alert">
+  <div class="notice" :class="{ floating }" role="alert">
     <CircleAlert class="icon" :size="18" :stroke-width="1.75" aria-hidden="true" />
     <p class="text">{{ error.friendly }}</p>
     <div class="actions">
@@ -47,14 +47,23 @@ async function copy(): Promise<void> {
   background: $bg-2;
   max-width: 520px;
 
+  // Come avviso in basso a destra: stessa carta degli altri toast, bordo di pericolo
+  &.floating {
+    @include floating-card;
+    width: 100%;
+    max-width: none;
+    border-color: $danger-line;
+  }
+
   .icon {
     color: $danger;
     margin-top: 1px;
   }
 
   .text {
+    margin: 0;
     font-size: $fs-small;
-    line-height: 18px;
+    line-height: $lh-small;
     color: $text-1;
     user-select: text;
   }
@@ -63,6 +72,8 @@ async function copy(): Promise<void> {
     grid-column: 2;
     display: flex;
     gap: $sp-1;
+    // I pulsanti fantasma si allineano al testo, non al loro riempimento
+    margin-left: -$sp-2;
 
     .act {
       @include reset-button;
@@ -70,7 +81,7 @@ async function copy(): Promise<void> {
       display: inline-flex;
       align-items: center;
       gap: $sp-1;
-      height: 28px;
+      height: $control-h-sm;
       padding: 0 $sp-2;
       border-radius: $r-field;
       font-size: $fs-small;

@@ -29,8 +29,13 @@ $live-glow: var(--live-glow);
 $eye: var(--eye);
 $ok: var(--ok);
 $busy: var(--busy);
+$busy-soft: var(--busy-soft);
 $danger: var(--danger);
 $danger-soft: var(--danger-soft);
+$danger-line: var(--danger-line);
+$accent-line: var(--accent-line);
+// Carte che galleggiano sopra il contenuto (toast, menu)
+$bg-float: var(--bg-float);
 $scrim: var(--scrim);
 
 $palette: (
@@ -57,8 +62,12 @@ $palette: (
   eye: #f4f1e8,
   ok: #46e0a9,
   busy: #f5b83d,
+  busy-soft: rgba(245, 184, 61, 0.14),
   danger: #ff5c6c,
   danger-soft: rgba(255, 92, 108, 0.14),
+  danger-line: rgba(255, 92, 108, 0.45),
+  accent-line: rgba(157, 169, 255, 0.35),
+  bg-float: rgba(25, 29, 49, 0.95),
   scrim: rgba(3, 4, 9, 0.66),
 );
 
@@ -77,6 +86,14 @@ $fs-h2: 16px;
 $fs-body: 14px;
 $fs-small: 13px;
 $fs-label: 11px;
+// Interlinee abbinate alle dimensioni
+$lh-display: 38px;
+$lh-h1: 30px;
+$lh-h2: 24px;
+$lh-body: 20px;
+$lh-small: 18px;
+$fw-title: 650;
+$fw-strong: 600;
 
 // Spaziatura, base 4
 $sp-1: 4px;
@@ -107,6 +124,18 @@ $topbar-h: 48px;
 $actionbar-h: 72px;
 $detail-w: 320px;
 $control-h: 40px;
+$control-h-sm: 28px;
+// Pagine: larghezze e margini uguali per tutte le viste
+$page-max-w: 1120px;
+$page-narrow-w: 760px;
+$page-pad-y: $sp-7;
+$page-pad-x: $sp-8;
+$page-pad-sm: $sp-6;
+$page-gap: $sp-5;
+$section-gap: $sp-3;
+// Avvisi in basso a destra
+$toast-w: 420px;
+$toast-docked-w: 340px;
 // Compatibilità con i componenti che usano ancora il vecchio nome
 $titlebar-h: $topbar-h;
 

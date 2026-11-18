@@ -53,6 +53,15 @@ pub mod methods {
     pub const UPDATE_CHECK: &str = "update.check";
     pub const UPDATE_INSTALL: &str = "update.install";
     pub const TAILSCALE_INSTALL: &str = "tailscale.install";
+    // Falco Hub (ADR 0017)
+    pub const HUB_INFO: &str = "hub.info";
+    pub const HUB_REQUESTS: &str = "hub.requests";
+    pub const HUB_ADD_FRIEND: &str = "hub.addFriend";
+    pub const HUB_ACCEPT: &str = "hub.accept";
+    pub const HUB_DECLINE: &str = "hub.decline";
+    pub const HUB_SHARE_STREAM: &str = "hub.shareStream";
+    pub const HUB_JOIN: &str = "hub.join";
+    pub const NET_JOIN_FALCO: &str = "net.joinFalco";
     pub const APP_OPEN_LINK: &str = "app.openLink";
     pub const DEBUG_REPORT: &str = "debug.report";
     pub const HOST_RECOMMEND: &str = "host.recommend";
@@ -76,6 +85,8 @@ pub mod events {
     pub const INVITE_REQUEST: &str = "invite.request";
     pub const HOST_GUESTS: &str = "host.guests";
     pub const PLAY_INVITE: &str = "play.invite";
+    /// Richieste d'amicizia cambiate sul Hub: `{ incoming, outgoing }`.
+    pub const HUB_REQUESTS: &str = "hub.requests";
     pub const UI_NAVIGATE: &str = "ui.navigate";
     pub const UPDATE_AVAILABLE: &str = "update.available";
     pub const UPDATE_PROGRESS: &str = "update.progress";

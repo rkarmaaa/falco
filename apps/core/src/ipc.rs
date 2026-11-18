@@ -184,6 +184,16 @@ struct OAuth {
 }
 
 #[derive(Deserialize)]
+struct HubText {
+    text: String,
+}
+
+#[derive(Deserialize)]
+struct HubId {
+    id: String,
+}
+
+#[derive(Deserialize)]
 struct CreateProfile {
     name: String,
 }
@@ -525,6 +535,42 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
             c.emit(events::PRESENCE_CHANGED, json!({ "self": { "tailscale": true } }));
             return Ok(Value::Null);
         }
+        methods::HUB_INFO => return Ok(crate::hub::info(core).await),
+        methods::HUB_REQUESTS => {
+            let r = crate::hub::requests(core).await.map_err(anyhow_err(codes::INTERNAL))?;
+            return serde_json::to_value(r).map_err(internal);
+        }
+        methods::HUB_ADD_FRIEND => {
+            let p: HubText = params(req.params)?;
+            return crate::hub::add_friend(core, &p.text)
+                .await
+                .map_err(anyhow_err(codes::INTERNAL));
+        }
+        methods::HUB_ACCEPT => {
+            let p: HubId = params(req.params)?;
+            let a = crate::hub::accept(core, &p.id).await.map_err(anyhow_err(codes::INTERNAL))?;
+            return serde_json::to_value(a).map_err(internal);
+        }
+        methods::HUB_DECLINE => {
+            let p: HubId = params(req.params)?;
+            crate::hub::decline(core, &p.id).await.map_err(anyhow_err(codes::INTERNAL))?;
+            return Ok(Value::Null);
+        }
+        methods::HUB_SHARE_STREAM => {
+            let p: crate::invites::CreateParams = params(req.params)?;
+            let link =
+                crate::hub::share_stream(core, p).await.map_err(anyhow_err(codes::INTERNAL))?;
+            return serde_json::to_value(link).map_err(internal);
+        }
+        methods::HUB_JOIN => {
+            let p: HubText = params(req.params)?;
+            let a = crate::hub::join(core, &p.text).await.map_err(anyhow_err(codes::INTERNAL))?;
+            return serde_json::to_value(a).map_err(internal);
+        }
+        methods::NET_JOIN_FALCO => {
+            crate::hub::join_network(core).await.map_err(anyhow_err(codes::INTERNAL))?;
+            return Ok(Value::Null);
+        }
         methods::NET_LOGIN_HEADSCALE => {
             // Stesso client Tailscale, server di controllo personalizzato (§9)
             let (ts, url) = {
@@ -554,6 +600,15 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
     }
 
     let mut c = core.lock().await;
+    // Il portachiavi può non essere pronto all'avvio del core: si riprova a ogni richiesta
+    if c.me.is_none()
+        && matches!(req.method.as_str(), methods::PROFILE_GET | methods::PROFILE_CREATE)
+    {
+        match crate::identity::Me::load(&c.db) {
+            Ok(me) => c.me = me,
+            Err(e) => return Err(anyhow_err(codes::INTERNAL)(e)),
+        }
+    }
     match req.method.as_str() {
         methods::PROFILE_GET => Ok(match c.me.as_ref() {
             None => json!({ "exists": false }),
@@ -570,12 +625,15 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
         }),
         methods::PROFILE_CREATE => {
             let p: CreateProfile = params(req.params)?;
+            // Profilo già presente (UI rimasta indietro): niente errore, la UI lo ricarica
             if c.me.is_some() {
-                return Err(RpcError::new(codes::INVALID_REQUEST, "il profilo esiste già"));
+                return Ok(Value::Null);
             }
             let me = crate::identity::Me::create(&c.db, &p.name, crate::core::now())
                 .map_err(anyhow_err(codes::INVALID_PARAMS))?;
             c.me = Some(me);
+            crate::hub::forget_registration();
+            crate::hub::poke();
             c.emit(events::PRESENCE_CHANGED, json!({ "self": { "hasProfile": true } }));
             Ok(Value::Null)
         }
@@ -653,6 +711,7 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
             if let Some(me) = core.me.as_mut() {
                 if let Some(name) = &p.name {
                     me.rename(&core.db, name, now).map_err(anyhow_err(codes::INVALID_PARAMS))?;
+                    crate::hub::forget_registration();
                 }
                 if let Some(b64) = &p.avatar_base64 {
                     let bytes = data_encoding::BASE64

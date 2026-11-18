@@ -423,6 +423,7 @@ pub async fn remove_friend(shared: &Shared, id: &str, block: bool) {
         })
         .await;
     }
+    crate::hub::unfriend(shared, id).await;
 }
 
 #[cfg(test)]

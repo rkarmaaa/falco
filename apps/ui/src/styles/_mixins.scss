@@ -65,3 +65,33 @@
   font: inherit;
   cursor: pointer;
 }
+
+// Carta sospesa sopra il contenuto: toast e avvisi
+@mixin floating-card {
+  border: 1px solid $line-strong;
+  border-radius: $r-card;
+  background: $bg-float;
+  box-shadow: $shadow-3;
+  backdrop-filter: blur(14px);
+  pointer-events: auto;
+}
+
+@mixin title-h1 {
+  font-size: $fs-h1;
+  line-height: $lh-h1;
+  font-weight: $fw-title;
+}
+
+@mixin title-h2 {
+  font-size: $fs-h2;
+  line-height: $lh-h2;
+  font-weight: $fw-strong;
+}
+
+// Testo di stato sotto un modulo: errore, conferma, nota
+@mixin message($color: $text-2) {
+  margin: 0;
+  font-size: $fs-small;
+  line-height: $lh-small;
+  color: $color;
+}

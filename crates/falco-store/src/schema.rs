@@ -85,6 +85,7 @@ pub fn fields() -> Vec<Field> {
         ("network.reconnect_attempts", i(0, 10)),
         ("network.warn_exit_node", Kind::Bool),
         ("network.headscale_url", Kind::Text),
+        ("network.hub_url", Kind::Text),
         ("performance.raise_priority", Kind::Bool),
         ("performance.warn_on_battery", Kind::Bool),
         ("performance.poll_ui_s", i(5, 300)),

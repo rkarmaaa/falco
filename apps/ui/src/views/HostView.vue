@@ -2,7 +2,7 @@
 // Ospita: condividi lo schermo, scegli la qualità, gestisci chi è collegato e i dispositivi associati.
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { Gamepad2, Keyboard, Monitor, Mouse, Power, Radio, UserPlus } from 'lucide-vue-next';
+import { Gamepad2, Keyboard, Monitor, Mouse, Power, Radio, Share2 } from 'lucide-vue-next';
 import UiButton from '@/components/UiButton.vue';
 import UiField from '@/components/UiField.vue';
 import UiAvatar from '@/components/UiAvatar.vue';
@@ -11,8 +11,8 @@ import { core, hostApi, setHostAvailable } from '@/stores/core';
 import { friendApi, loadGuests, setDevice, social, type Device } from '@/stores/social';
 import { attempt } from '@/stores/errors';
 import type { PairedClient, PendingPairing } from '@/ipc';
+import { openModal } from '@/stores/ui';
 
-const emit = defineEmits<{ invite: [] }>();
 const { t } = useI18n();
 const ready = computed(() => core.host.state === 'ready');
 const starting = computed(() => core.host.state === 'starting');
@@ -86,9 +86,9 @@ const toggleShare = () =>
         </p>
       </div>
       <div class="acts">
-        <UiButton v-if="ready" variant="secondary" @click="emit('invite')">
-          <UserPlus :size="17" :stroke-width="1.9" aria-hidden="true" />
-          {{ t('friends.invite') }}
+        <UiButton v-if="ready" variant="secondary" @click="openModal('share')">
+          <Share2 :size="17" :stroke-width="1.9" aria-hidden="true" />
+          {{ t('stream.share') }}
         </UiButton>
         <UiButton :variant="ready ? 'danger' : 'primary'" :size="48" :disabled="starting" @click="toggleShare">
           <Power :size="18" :stroke-width="2" aria-hidden="true" />

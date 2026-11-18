@@ -2,10 +2,14 @@
 
 Formato [Keep a Changelog](https://keepachangelog.com/it/1.1.0/), versioni [SemVer](https://semver.org/lang/it/).
 
-## [1.0.0-rc.2] - in preparazione
+## [1.0.0-rc.2] - 2026-11-18 · Beta
 
 ### Aggiunto
 
+- **Falco Hub** (Cloudflare Workers, gratuito): amici per **codice** (`K7QM-2XPA`) o **link**, con richieste d'amicizia da accettare o rifiutare e notifica.
+- **Condividi stream** con un clic: avvia la condivisione e crea un link corto; chi lo apre entra subito, senza account.
+- **Rete Falco**: Tailscale si installa e si collega da solo con una chiave monouso, senza account per gli utenti. Le chiavi OAuth non servono più (restano facoltative in Rete per chi usa la propria tailnet).
+- Badge **BETA**; nuovo selettore della foto profilo.
 - Nuova interfaccia: barra in alto compatta, barra delle azioni e dello stream in basso, tema unico scuro «Notte».
 - Lo stream resta dentro la finestra di Falco; «Schermo intero» con un pulsantino discreto per uscire.
 - Ospiti collegati nella barra con tastiera, mouse e controller che si illuminano quando ricevono input; tasto destro per concedere i singoli dispositivi. Di default si può solo guardare.
@@ -15,6 +19,9 @@ Formato [Keep a Changelog](https://keepachangelog.com/it/1.1.0/), versioni [SemV
 
 ### Corretto
 
+- Dopo il riavvio l'app poteva chiedere di nuovo nome e foto e poi dire «il profilo esiste già», bloccando la schermata di benvenuto.
+- Avvisi in basso a destra: testi altissimi e pulsanti con spazio vuoto.
+- Titoli e margini diversi tra Amici e Impostazioni: ora tutte le pagine usano lo stesso layout.
 - Chiudere la finestra con la X mostrava l'errore «window|destroy not allowed by ACL».
 - Dopo l'installazione la finestra diceva «Non riesco a parlare con Falco»: l'installer avviava il servizio con i privilegi di amministratore e la finestra non poteva collegarsi. Ora lo avvia come utente normale.
 
