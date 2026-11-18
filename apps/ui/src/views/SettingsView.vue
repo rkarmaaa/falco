@@ -32,10 +32,6 @@ const language = computed({
   get: () => core.config?.general.language ?? 'it',
   set: (v) => void save('general.language', v),
 });
-const theme = computed({
-  get: () => core.config?.general.theme ?? 'system',
-  set: (v) => void save('general.theme', v),
-});
 const status = computed<Status>({
   get: () => core.snapshot?.status ?? 'online',
   set: (v) => void setStatus(v),
@@ -196,14 +192,6 @@ function openTab(next: Tab): void {
               { value: 'it', label: 'Italiano' },
               { value: 'en', label: 'English' },
             ]"
-          />
-        </div>
-        <div class="field">
-          <span class="label">{{ $t('settings.theme') }}</span>
-          <UiSegmented
-            v-model="theme"
-            :label="t('settings.theme')"
-            :options="(['system', 'dark', 'light'] as const).map((v) => ({ value: v, label: t(`settings.themes.${v}`) }))"
           />
         </div>
       </template>

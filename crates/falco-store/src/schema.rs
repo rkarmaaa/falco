@@ -44,7 +44,6 @@ fn i(min: i64, max: i64) -> Kind {
 pub fn fields() -> Vec<Field> {
     let list: Vec<(&'static str, Kind)> = vec![
         ("general.language", e(config::Language::ALL)),
-        ("general.theme", e(config::Theme::ALL)),
         ("general.updates", e(config::Updates::ALL)),
         ("general.start_with_system", Kind::Bool),
         ("general.start_minimized", Kind::Bool),

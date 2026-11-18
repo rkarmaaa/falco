@@ -85,7 +85,12 @@
     "guests": "Connected guests",
     "noGuests": "Nobody is connected.",
     "since": "for {min} min",
-    "kick": "Kick"
+    "kick": "Kick",
+    "heroOn": "You're sharing",
+    "heroOff": "Share your screen",
+    "heroStarting": "Starting to share…",
+    "heroOnBody": "Nobody connected: invite someone or wait for a knock. | One person connected. | {n} people connected.",
+    "heroOffBody": "Friends can join and, by default, only watch. You decide who can use keyboard, mouse and controller."
   },
   "invites": {
     "title": "Invites",
@@ -112,12 +117,6 @@
       "about": "About"
     },
     "language": "Language",
-    "theme": "Theme",
-    "themes": {
-      "system": "Match system",
-      "dark": "Dark",
-      "light": "Light"
-    },
     "status": "Status",
     "saved": "Saved",
     "applyAt": {
@@ -227,6 +226,24 @@
       "session": "The session was interrupted. Reason: “{why}”. Check your connection and rejoin; if it happens often open the Network doctor.",
       "update_install": "Update failed. Reason: “{why}”. Falco stays on the current version: try again from Settings → About.",
       "invite_accept": "Invite not accepted. Reason: “{why}”. Ask for a new invite or try again shortly."
+    },
+    "context": {
+      "permissions": "Changing {name}'s permissions",
+      "kick": "Kicking {name}",
+      "status": "Changing your status",
+      "profile": "Changing sharing quality",
+      "share": "Starting to share",
+      "stopShare": "Stopping sharing",
+      "leave": "Leaving the stream",
+      "applyInputs": "Applying devices",
+      "join": "Joining {name}",
+      "knock": "Answering a knock",
+      "request": "Answering the friend request",
+      "update": "Installing the update",
+      "recommend": "Measuring the network",
+      "hostLists": "Loading guests and devices",
+      "pairing": "Pairing the device",
+      "device": "Managing the device"
     }
   },
   "ping": {
@@ -487,6 +504,146 @@
       "config": "Settings",
       "coreLog": "Service log",
       "sunshineLog": "Host engine log"
+    }
+  },
+  "top": {
+    "coreOffline": "Service stopped",
+    "netReady": "Network ready",
+    "netLogin": "Sign in to the network",
+    "netSetup": "Network needs setup"
+  },
+  "me": {
+    "sharing": "Sharing",
+    "offline": "Offline",
+    "copyId": "Copy your ID",
+    "editProfile": "Edit profile"
+  },
+  "bar": {
+    "label": "Actions and stream",
+    "waiting": "Waiting for friends · invite someone to start",
+    "starting": "Starting to share…",
+    "idle": "Share your screen so friends can join, or join someone who's playing",
+    "stop": "Stop",
+    "share": "Share"
+  },
+  "guests": {
+    "label": "Connected people",
+    "hint": "Right-click: devices and options",
+    "watching": "Watching",
+    "menu": "Options for {name}",
+    "since": "Connected for {min} min",
+    "watchOnly": "Watch only",
+    "kick": "Kick",
+    "pending": "Devices changed: they apply from the next connection.",
+    "applyNow": "Apply now",
+    "devicesOf": "{name}'s devices"
+  },
+  "devices": {
+    "keyboard": "Keyboard",
+    "mouse": "Mouse",
+    "controller": "Controller",
+    "allowed": "allowed",
+    "denied": "not allowed"
+  },
+  "session": {
+    "knocking": "Knocking on the host…",
+    "connecting": "Connecting…",
+    "connected": "Connected",
+    "watching": "At {name}'s",
+    "path": {
+      "direct": "direct",
+      "relay": "relay"
+    },
+    "yourDevices": "What you can use in this session",
+    "stats": "Stats",
+    "leave": "Leave",
+    "fullscreen": "Fullscreen",
+    "stage": "{name}'s stream",
+    "mock": "Simulated stream (browser preview)",
+    "externalTitle": "The stream is in its own window",
+    "externalBody": "On this system the stream opens in its own window. Actions stay down here.",
+    "joining": "Joining {name}",
+    "steps": {
+      "knock": "The host lets you in",
+      "connect": "Direct connection",
+      "video": "Video arrives"
+    },
+    "tip": "Click the stream to use mouse and keyboard, Ctrl+Alt+Shift+Z to release them",
+    "endedLeft": "You left {name}'s stream.",
+    "endedLost": "{name}'s stream stopped.",
+    "rejoin": "Rejoin"
+  },
+  "pill": {
+    "label": "Stream actions",
+    "exit": "Exit fullscreen",
+    "confirmLeave": "Confirm leave"
+  },
+  "share": {
+    "title": "Sharing quality",
+    "subtitle": "Choose how your screen is sent to friends. Try them all: they switch instantly when nobody is connected.",
+    "menuHint": "Applies to every guest",
+    "more": "More options…",
+    "appliesLater": "Saved: applies the next time sharing starts (someone is connected now).",
+    "appliedNow": "Applied: sharing restarted with the new settings.",
+    "appliesOnStart": "Saved: applies when you share.",
+    "findBest": "Find the best settings",
+    "testing": "Measuring the network…",
+    "testingBody": "Measuring bandwidth and stability towards your friends: it takes a few seconds.",
+    "advice": "I recommend “{profile}”",
+    "apply": "Use this",
+    "alreadyBest": "You're already using the best one",
+    "noCap": "no limit",
+    "cap": "Maximum bitrate",
+    "capHint": "Cap for every guest. Lower it if your upload is slow.",
+    "fec": "Error correction",
+    "fecHint": "Higher survives packet loss better, but uses more bandwidth.",
+    "encoder": "Encoder",
+    "quality": {
+      "speed": "Fast",
+      "balanced": "Balanced",
+      "quality": "Pretty"
+    },
+    "profiles": {
+      "latency": {
+        "name": "Low latency",
+        "short": "most responsive",
+        "desc": "The lowest possible delay. For fast games on a good network.",
+        "tags": "Fast encoder · FEC 10%"
+      },
+      "balanced": {
+        "name": "Balanced",
+        "short": "responsive and steady",
+        "desc": "A touch more delay, copes better with Wi‑Fi and uneven networks.",
+        "tags": "Balanced encoder · FEC 20%"
+      },
+      "slow": {
+        "name": "Slow connection",
+        "short": "for limited upload",
+        "desc": "Caps bandwidth and guards against loss. For slow networks or relays.",
+        "tags": "Max 15 Mbps · FEC 30%"
+      },
+      "quality": {
+        "name": "Best quality",
+        "short": "nicest picture",
+        "desc": "More detail for the same bandwidth, a few milliseconds more.",
+        "tags": "Quality encoder · FEC 15%"
+      },
+      "custom": {
+        "name": "Custom",
+        "short": "your call",
+        "desc": "Pick maximum bitrate, error correction and encoder yourself.",
+        "tags": "Everything adjustable"
+      }
+    },
+    "reasons": {
+      "relay": "At least one friend goes through a relay: better cap the bandwidth.",
+      "lowBandwidth": "Bandwidth to your friends is low (under 20 Mbps).",
+      "mediumBandwidth": "Bandwidth to your friends is moderate (under 40 Mbps).",
+      "jitter": "The network is a bit uneven: more error correction helps.",
+      "wifi": "You're on Wi‑Fi: a cable cuts delay and loss.",
+      "framesDropped": "Frames were lost in the last session.",
+      "noFriend": "No reachable friend to measure: keeping the most responsive profile.",
+      "fastNetwork": "Fast, steady network: you can use the lowest latency."
     }
   }
 }

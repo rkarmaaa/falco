@@ -7,6 +7,7 @@ import {
   type InvitePreview,
   type InviteRow,
   type MyProfile,
+  type Permissions,
   type Role,
 } from '@/ipc';
 
@@ -26,6 +27,10 @@ interface SocialStore {
   guests: { friendId: string; name: string; since: number }[];
   /** Inviti a giocare ricevuti. */
   playInvites: { friendId: string; name: string }[];
+  /** Permessi effettivi degli ospiti collegati. */
+  guestPerms: Record<string, Permissions>;
+  /** Dispositivi che stanno ricevendo input dagli ospiti adesso. */
+  activity: { keyboard: boolean; mouse: boolean; controller: boolean };
 }
 
 const state = reactive<SocialStore>({
@@ -37,7 +42,39 @@ const state = reactive<SocialStore>({
   knocks: [],
   guests: [],
   playInvites: [],
+  guestPerms: {},
+  activity: { keyboard: false, mouse: false, controller: false },
 });
+
+let activityTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** Permessi degli ospiti collegati, per le icone e il menu col tasto destro. */
+export async function loadGuestPerms(): Promise<void> {
+  const entries = await Promise.all(
+    state.guests.map(async (g) => {
+      const r = await rpc<{ effective: Permissions | null }>('friend.getPermissions', { id: g.friendId }).catch(() => null);
+      return [g.friendId, r?.effective ?? null] as const;
+    }),
+  );
+  state.guestPerms = Object.fromEntries(entries.filter((e): e is readonly [string, Permissions] => e[1] !== null));
+}
+
+export type Device = 'keyboard' | 'mouse' | 'controller';
+
+/** Concede o toglie un dispositivo a un ospite (override sul suo ruolo). */
+export async function setDevice(friendId: string, device: Device, on: boolean): Promise<void> {
+  const r = await rpc<{ overrides: Record<string, unknown> | null }>('friend.getPermissions', { id: friendId });
+  const key = device === 'controller' ? 'gamepads' : device;
+  const overrides = { ...(r.overrides ?? {}), [key]: device === 'controller' ? (on ? 1 : 0) : on };
+  await rpc('friend.setPermissions', { id: friendId, overrides });
+  await loadGuestPerms();
+}
+
+/** Torna a «solo guardare». */
+export async function watchOnly(friendId: string): Promise<void> {
+  await rpc('friend.setPermissions', { id: friendId, role: 'spettatore', overrides: {} });
+  await loadGuestPerms();
+}
 
 export async function loadProfile(): Promise<void> {
   state.profile = await rpc<MyProfile>('profile.get');
@@ -69,7 +106,15 @@ export async function initSocial(): Promise<void> {
     if (e.method === 'invite.progress' && p.side === 'host') void loadInvites();
     if (e.method === 'invite.request') state.requests.push(p as SocialStore['requests'][number]);
     if (e.method === 'session.knock') state.knocks.push(p as SocialStore['knocks'][number]);
-    if (e.method === 'host.guests') state.guests = (p.guests as SocialStore['guests']) ?? [];
+    if (e.method === 'host.guests') {
+      state.guests = (p.guests as SocialStore['guests']) ?? [];
+      void loadGuestPerms();
+    }
+    if (e.method === 'host.input') {
+      state.activity = p as unknown as SocialStore['activity'];
+      clearTimeout(activityTimer);
+      activityTimer = setTimeout(() => (state.activity = { keyboard: false, mouse: false, controller: false }), 450);
+    }
     if (e.method === 'play.invite') state.playInvites.push(p as SocialStore['playInvites'][number]);
   });
   await Promise.all([loadProfile(), loadFriends(), loadInvites()]).catch(() => {});
@@ -140,6 +185,7 @@ export function dismissPlayInvite(friendId: string): void {
 
 export async function loadGuests(): Promise<void> {
   state.guests = (await rpc<{ guests: SocialStore['guests'] }>('host.guests')).guests;
+  await loadGuestPerms();
 }
 
 export const friendApi = {

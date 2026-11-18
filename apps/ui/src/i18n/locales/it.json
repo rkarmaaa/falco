@@ -85,7 +85,12 @@
     "guests": "Ospiti collegati",
     "noGuests": "Nessuno è collegato.",
     "since": "da {min} min",
-    "kick": "Espelli"
+    "kick": "Espelli",
+    "heroOn": "Stai condividendo",
+    "heroOff": "Condividi il tuo schermo",
+    "heroStarting": "Avvio della condivisione…",
+    "heroOnBody": "Nessuno collegato: invita qualcuno o aspetta che bussi. | Una persona collegata. | {n} persone collegate.",
+    "heroOffBody": "Gli amici potranno entrare e, di default, solo guardare. Decidi tu chi può usare tastiera, mouse e controller."
   },
   "invites": {
     "title": "Inviti",
@@ -112,12 +117,6 @@
       "about": "Info"
     },
     "language": "Lingua",
-    "theme": "Tema",
-    "themes": {
-      "system": "Come il sistema",
-      "dark": "Scuro",
-      "light": "Chiaro"
-    },
     "status": "Stato",
     "saved": "Salvato",
     "applyAt": {
@@ -227,6 +226,24 @@
       "session": "La sessione si è interrotta. Motivo: «{why}». Controlla la connessione e rientra; se succede spesso apri il Dottore di rete.",
       "update_install": "Aggiornamento non riuscito. Motivo: «{why}». Falco resta alla versione attuale: riprova da Impostazioni → Info.",
       "invite_accept": "Invito non accettato. Motivo: «{why}». Chiedi un nuovo invito o riprova tra poco."
+    },
+    "context": {
+      "permissions": "Cambiare i permessi di {name}",
+      "kick": "Espellere {name}",
+      "status": "Cambiare il tuo stato",
+      "profile": "Cambiare la qualità della condivisione",
+      "share": "Avviare la condivisione",
+      "stopShare": "Interrompere la condivisione",
+      "leave": "Uscire dallo stream",
+      "applyInputs": "Applicare i dispositivi",
+      "join": "Entrare da {name}",
+      "knock": "Rispondere a chi bussa",
+      "request": "Rispondere alla richiesta di amicizia",
+      "update": "Installare l'aggiornamento",
+      "recommend": "Misurare la rete",
+      "hostLists": "Caricare ospiti e dispositivi",
+      "pairing": "Associare il dispositivo",
+      "device": "Gestire il dispositivo"
     }
   },
   "ping": {
@@ -487,6 +504,146 @@
       "config": "Impostazioni",
       "coreLog": "Log del servizio",
       "sunshineLog": "Log del motore host"
+    }
+  },
+  "top": {
+    "coreOffline": "Servizio fermo",
+    "netReady": "Rete pronta",
+    "netLogin": "Accedi alla rete",
+    "netSetup": "Rete da configurare"
+  },
+  "me": {
+    "sharing": "In condivisione",
+    "offline": "Offline",
+    "copyId": "Copia il tuo ID",
+    "editProfile": "Modifica profilo"
+  },
+  "bar": {
+    "label": "Azioni e stream",
+    "waiting": "In attesa di amici · invita qualcuno per iniziare",
+    "starting": "Avvio della condivisione…",
+    "idle": "Condividi lo schermo per far entrare gli amici, o entra da chi sta giocando",
+    "stop": "Interrompi",
+    "share": "Condividi"
+  },
+  "guests": {
+    "label": "Persone collegate",
+    "hint": "Tasto destro: dispositivi e opzioni",
+    "watching": "Guarda",
+    "menu": "Opzioni per {name}",
+    "since": "Collegato da {min} min",
+    "watchOnly": "Solo guardare",
+    "kick": "Espelli",
+    "pending": "Dispositivi cambiati: valgono dal prossimo collegamento.",
+    "applyNow": "Applica ora",
+    "devicesOf": "Dispositivi di {name}"
+  },
+  "devices": {
+    "keyboard": "Tastiera",
+    "mouse": "Mouse",
+    "controller": "Controller",
+    "allowed": "consentito",
+    "denied": "non consentito"
+  },
+  "session": {
+    "knocking": "Bussa all'host…",
+    "connecting": "Connessione in corso…",
+    "connected": "Connesso",
+    "watching": "Da {name}",
+    "path": {
+      "direct": "diretto",
+      "relay": "relay"
+    },
+    "yourDevices": "Cosa puoi usare in questa sessione",
+    "stats": "Statistiche",
+    "leave": "Esci",
+    "fullscreen": "Schermo intero",
+    "stage": "Stream di {name}",
+    "mock": "Stream simulato (anteprima nel browser)",
+    "externalTitle": "Lo stream è in una finestra a parte",
+    "externalBody": "Su questo sistema lo stream si apre nella sua finestra. Le azioni restano qui sotto.",
+    "joining": "Entri da {name}",
+    "steps": {
+      "knock": "L'host ti fa entrare",
+      "connect": "Connessione diretta",
+      "video": "Arriva il video"
+    },
+    "tip": "Clic nello stream per usare mouse e tastiera, Ctrl+Alt+Maiusc+Z per liberarli",
+    "endedLeft": "Sei uscito dallo stream di {name}.",
+    "endedLost": "Lo stream di {name} si è interrotto.",
+    "rejoin": "Rientra"
+  },
+  "pill": {
+    "label": "Azioni dello stream",
+    "exit": "Esci da schermo intero",
+    "confirmLeave": "Conferma uscita"
+  },
+  "share": {
+    "title": "Qualità della condivisione",
+    "subtitle": "Scegli come inviare lo schermo agli amici. Puoi provarle tutte: cambiano al volo se nessuno è collegato.",
+    "menuHint": "Vale per tutti gli ospiti",
+    "more": "Altre opzioni…",
+    "appliesLater": "Salvato: vale dal prossimo avvio della condivisione (ora c'è qualcuno collegato).",
+    "appliedNow": "Applicato: la condivisione è ripartita con le nuove impostazioni.",
+    "appliesOnStart": "Salvato: vale quando condividi.",
+    "findBest": "Trova le impostazioni migliori",
+    "testing": "Misuro la rete…",
+    "testingBody": "Misuro banda e stabilità verso i tuoi amici: bastano pochi secondi.",
+    "advice": "Ti consiglio «{profile}»",
+    "apply": "Usa questo",
+    "alreadyBest": "Stai già usando il migliore",
+    "noCap": "nessun limite",
+    "cap": "Bitrate massimo",
+    "capHint": "Tetto per tutti gli ospiti. Abbassalo se la tua connessione in upload è lenta.",
+    "fec": "Correzione degli errori",
+    "fecHint": "Più alta regge meglio le perdite di pacchetti, ma usa più banda.",
+    "encoder": "Encoder",
+    "quality": {
+      "speed": "Veloce",
+      "balanced": "Bilanciato",
+      "quality": "Bello"
+    },
+    "profiles": {
+      "latency": {
+        "name": "Bassa latenza",
+        "short": "il più reattivo",
+        "desc": "Il minimo ritardo possibile. Per giochi veloci su una buona rete.",
+        "tags": "Encoder veloce · FEC 10%"
+      },
+      "balanced": {
+        "name": "Bilanciato",
+        "short": "reattivo e stabile",
+        "desc": "Un filo di ritardo in più, regge meglio Wi‑Fi e reti irregolari.",
+        "tags": "Encoder bilanciato · FEC 20%"
+      },
+      "slow": {
+        "name": "Connessione lenta",
+        "short": "per upload limitati",
+        "desc": "Limita la banda e protegge dalle perdite. Per reti lente o relay.",
+        "tags": "Max 15 Mbps · FEC 30%"
+      },
+      "quality": {
+        "name": "Massima qualità",
+        "short": "immagine più bella",
+        "desc": "Più dettagli a parità di banda, qualche millisecondo in più.",
+        "tags": "Encoder qualità · FEC 15%"
+      },
+      "custom": {
+        "name": "Personalizzato",
+        "short": "scegli tu",
+        "desc": "Decidi tu bitrate massimo, correzione degli errori ed encoder.",
+        "tags": "Tutto regolabile"
+      }
+    },
+    "reasons": {
+      "relay": "Almeno un amico passa da un relay: meglio limitare la banda.",
+      "lowBandwidth": "La banda verso i tuoi amici è bassa (sotto 20 Mbps).",
+      "mediumBandwidth": "La banda verso i tuoi amici è media (sotto 40 Mbps).",
+      "jitter": "La rete è un po' irregolare: serve più correzione degli errori.",
+      "wifi": "Sei in Wi‑Fi: un cavo riduce ritardi e perdite.",
+      "framesDropped": "Nell'ultima sessione si sono persi dei frame.",
+      "noFriend": "Nessun amico raggiungibile per misurare: resta il profilo più reattivo.",
+      "fastNetwork": "Rete veloce e stabile: puoi usare la latenza più bassa."
     }
   }
 }

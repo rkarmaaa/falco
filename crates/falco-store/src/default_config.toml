@@ -4,7 +4,6 @@ schema = 1
 [general]
 language = "it"              # it | en
 updates = "auto"             # auto | notify | off
-theme = "system"             # system | dark | light
 start_with_system = true
 start_minimized = true
 close_to_tray = true

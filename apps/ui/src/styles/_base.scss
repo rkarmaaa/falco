@@ -1,4 +1,4 @@
-// Temi, reset e font. Caricato una volta da main.scss.
+// Tema unico «Notte», reset e font. Caricato una volta da main.scss.
 @use 'sass:map';
 @use 'tokens' as *;
 
@@ -10,22 +10,14 @@
   src: url('@fontsource-variable/geist/files/geist-latin-wght-normal.woff2') format('woff2-variations');
 }
 
-@mixin theme-vars($name) {
-  @each $key, $value in map.get($themes, $name) {
-    --#{$key}: #{$value};
-  }
-}
-
 :root {
   --t-fast: 120ms;
   --t-panel: 200ms;
   --t-modal: 320ms;
   color-scheme: dark;
-  @include theme-vars(dark);
 
-  &[data-theme='light'] {
-    color-scheme: light;
-    @include theme-vars(light);
+  @each $key, $value in $palette {
+    --#{$key}: #{$value};
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -49,12 +41,22 @@ body,
 }
 
 body {
-  background: $bg-0;
+  // Cielo notturno: un alone indaco dall'alto a sinistra, come nel logo
+  background:
+    radial-gradient(1400px 800px at 0% -10%, rgba(68, 86, 200, 0.26), transparent 65%),
+    radial-gradient(900px 600px at 110% 120%, rgba(70, 224, 169, 0.05), transparent 60%),
+    $bg-0;
   color: $text-1;
   font: 450 #{$fs-body}/20px $font;
+  font-feature-settings: 'ss01', 'cv11';
   -webkit-font-smoothing: antialiased;
   user-select: none;
   overflow: hidden;
+}
+
+// Finestra del pulsantino a schermo intero: fondo trasparente
+body.pill {
+  background: transparent;
 }
 
 h1,
@@ -72,6 +74,21 @@ select {
 
 ::selection {
   background: $accent-glow;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: $r-pill;
+  background: $bg-4 padding-box;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .sr-only {

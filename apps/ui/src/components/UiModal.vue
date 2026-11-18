@@ -2,11 +2,14 @@
 // Modale sul <dialog> nativo: focus, Esc e sfondo inerte sono gestiti dal browser
 import { onMounted, ref } from 'vue';
 import { X } from 'lucide-vue-next';
+import { useStageCover } from '@/stores/stage';
 
 defineProps<{ title: string }>();
 const emit = defineEmits<{ close: [] }>();
 const dialog = ref<HTMLDialogElement | null>(null);
 
+// Lo stream incorporato starebbe sopra la modale: si nasconde finché è aperta
+useStageCover();
 onMounted(() => dialog.value?.showModal?.());
 </script>
 

@@ -9,9 +9,10 @@ import FriendCard from '@/components/FriendCard.vue';
 import FriendDetail from '@/components/FriendDetail.vue';
 import { social } from '@/stores/social';
 import { joinFriend } from '@/stores/core';
-import { isRpcError, type Friend } from '@/ipc';
+import { attempt } from '@/stores/errors';
+import type { Friend } from '@/ipc';
 
-const emit = defineEmits<{ invite: []; accept: []; error: [string] }>();
+const emit = defineEmits<{ invite: []; accept: [] }>();
 const { t } = useI18n();
 const query = ref('');
 const selectedId = ref<string | null>(null);
@@ -27,13 +28,8 @@ const groups = computed(() => ({
 }));
 const selected = computed(() => social.friends.find((f) => f.id === selectedId.value) ?? null);
 
-async function enter(f: Friend): Promise<void> {
-  try {
-    await joinFriend(f.id, f.name);
-  } catch (e) {
-    const reason = isRpcError(e) ? String(e.data?.reason ?? '') : '';
-    emit('error', reason ? t(`joinError.${reason}`, { name: f.name }) : isRpcError(e) ? t('errors.cannotJoin', { name: f.name, why: e.message }) : t('connect.genericError'));
-  }
+function enter(f: Friend): void {
+  void attempt(t('errors.context.join', { name: f.name }), () => joinFriend(f.id, f.name), { name: f.name });
 }
 </script>
 
@@ -94,7 +90,6 @@ async function enter(f: Friend): Promise<void> {
 .friends {
   display: grid;
   gap: $sp-5;
-  max-width: 820px;
 
   .head {
     display: flex;
@@ -140,7 +135,7 @@ async function enter(f: Friend): Promise<void> {
 
   .group {
     display: grid;
-    gap: $sp-2;
+    gap: $sp-3;
 
     .label {
       @include label;
@@ -157,7 +152,8 @@ async function enter(f: Friend): Promise<void> {
 
     .list {
       display: grid;
-      gap: $sp-2;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: $sp-3;
       margin: 0;
       padding: 0;
       list-style: none;

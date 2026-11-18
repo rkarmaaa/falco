@@ -26,14 +26,67 @@ export function createMockTransport(): Transport {
   ];
   const invites: { tokenHash: string; role: string; createdAt: number; expiresAt: number; usesLeft: number; needsApproval: boolean; active: boolean }[] = [];
   const config = {
-    general: { language: 'it', updates: 'auto', theme: 'system', start_with_system: true, start_minimized: true, close_to_tray: true },
+    general: { language: 'it', updates: 'auto', start_with_system: true, start_minimized: true, close_to_tray: true },
     profile: { status: 'online' },
     stream: {},
-    host: { max_guests: 3, encoder: 'auto', default_role: 'spettatore' },
+    host: { max_guests: 3, encoder: 'auto', default_role: 'spettatore', profile: 'latency', max_bitrate_kbps: 0, encoder_quality: 'speed' },
     network: { provider: 'tailscale', presence_port: 47900, fec_percent: 20 },
     performance: {},
     advanced: {},
   } as Record<string, Record<string, unknown>>;
+
+  // Ospiti simulati: con ?guests nella URL entrano subito, altrimenti dopo che l'host è pronto
+  const guests: { friendId: string; name: string; since: number }[] = [];
+  const perms: Record<string, Record<string, unknown>> = {
+    L: { role: 'spettatore', keyboard: false, mouse: false, gamepads: 0 },
+    B: { role: 'spettatore', keyboard: false, mouse: false, gamepads: 0 },
+  };
+  const effective = (id: string) => {
+    const p = perms[id] ?? { role: 'spettatore', keyboard: false, mouse: false, gamepads: 0 };
+    return { role: p.role, view: true, audio: true, gamepads: p.gamepads, keyboard: p.keyboard, keyboardSystemKeys: false, mouse: p.mouse, launchApps: false, autoJoin: false, clipboard: false, endHostSession: false };
+  };
+  let inputTimer: ReturnType<typeof setInterval> | undefined;
+  function simulateGuests(): void {
+    const now = Math.floor(Date.now() / 1000);
+    setTimeout(() => {
+      guests.splice(0, guests.length, { friendId: 'L', name: 'Luca', since: now - 300 }, { friendId: 'B', name: 'Bea', since: now - 60 });
+      emit('host.guests', { guests: structuredClone(guests) });
+    }, 900);
+    clearInterval(inputTimer);
+    // Input a raffiche, come un ospite che gioca
+    inputTimer = setInterval(() => {
+      if (!guests.length) return;
+      const r = Math.random();
+      emit('host.input', { keyboard: r < 0.5, mouse: r > 0.3, controller: r > 0.8 });
+    }, 700);
+  }
+  let sessionTimers: ReturnType<typeof setTimeout>[] = [];
+  function startSession(name: string, friendId: string | null): void {
+    sessionTimers.forEach(clearTimeout);
+    const started = Math.floor(Date.now() / 1000);
+    const info = { host: '100.64.0.2', friendId, name, pid: 4242, startedAt: started, permissions: { ...effective('X'), gamepads: 1 }, app: 'Desktop' };
+    state.streaming = true;
+    state.session = info as StateSnapshot['session'];
+    sessionTimers = [
+      setTimeout(() => emit('session.started', info), 600),
+      setTimeout(() => emit('session.stats', { phase: 'connecting' }), 900),
+      setTimeout(() => emit('session.stats', { phase: 'connected' }), 1800),
+    ];
+    let n = 0;
+    const tick = () => {
+      if (!state.streaming) return;
+      emit('session.stats', { phase: 'stats', rttMs: 9 + Math.random() * 6, fps: 59 + Math.random(), bitrateKbps: 38000 + Math.random() * 6000, path: 'direct' });
+      if (++n < 10_000) sessionTimers.push(setTimeout(tick, 1000));
+    };
+    sessionTimers.push(setTimeout(tick, 2400));
+  }
+  function endSession(reason: string): void {
+    sessionTimers.forEach(clearTimeout);
+    if (!state.streaming) return;
+    state.streaming = false;
+    state.session = null;
+    emit('session.ended', { host: '100.64.0.2', durationS: 42, reason, latencyMs: 12.4 });
+  }
 
   const handlers: Record<string, (p: any) => unknown> = {
     'state.snapshot': () => structuredClone(state),
@@ -70,7 +123,12 @@ export function createMockTransport(): Transport {
         setTimeout(() => {
           state.host = { state: 'ready' };
           emit('host.state', state.host);
+          if (location.search.includes('guests')) simulateGuests();
         }, 1500);
+      else {
+        guests.splice(0);
+        emit('host.guests', { guests: [] });
+      }
       return { available };
     },
     'host.pairings': () => (state.host.state === 'ready' ? [{ id: 'p1', name: 'roth', address: '100.64.0.2' }] : []),
@@ -83,12 +141,32 @@ export function createMockTransport(): Transport {
       setTimeout(() => emit('pair.result', { host, ok: true }), 2500);
       return { pin: '4821', host: port ? `${host}:${port}` : host };
     },
-    'session.join': ({ host }: { host: string }) => {
-      setTimeout(() => emit('session.stats', { phase: 'connecting' }), 400);
-      setTimeout(() => emit('session.stats', { phase: 'connected' }), 1200);
-      setTimeout(() => emit('session.ended', { host, durationS: 5, reason: '0' }), 5000);
+    'session.join': ({ host, friendId }: { host?: string; friendId?: string }) => {
+      const f = friends.find((x) => x.id === friendId);
+      startSession(f?.name ?? host ?? '?', friendId ?? null);
       return null;
     },
+    'session.leave': () => {
+      endSession('left');
+      return null;
+    },
+    'host.guests': () => ({ guests: structuredClone(guests) }),
+    'host.kick': ({ id }: { id: string }) => {
+      guests.splice(guests.findIndex((g) => g.friendId === id), 1);
+      emit('host.guests', { guests: structuredClone(guests) });
+      return null;
+    },
+    'host.applyInputs': () => null,
+    'host.recommend': async () => {
+      await new Promise((r) => setTimeout(r, 1800));
+      return { profile: 'balanced', reasons: ['mediumBandwidth', 'wifi'], checks: [] };
+    },
+    'friend.getPermissions': ({ id }: { id: string }) => ({ role: perms[id]?.role ?? 'spettatore', overrides: { ...(perms[id] ?? {}) }, effective: effective(id), paired: true }),
+    'friend.setPermissions': ({ id, role, overrides }: { id: string; role?: string; overrides: Record<string, unknown> }) => {
+      perms[id] = { ...(role ? { role, keyboard: false, mouse: false, gamepads: 0 } : perms[id]), ...overrides };
+      return null;
+    },
+    'debug.report': () => ({ app: { version: state.version }, errors: [], logs: { core: ['(simulato)'] } }),
     'friends.list': () => structuredClone(friends),
     'friends.refresh': () => null,
     'friend.favorite': () => null,
@@ -148,7 +226,7 @@ export function createMockTransport(): Transport {
       await new Promise((r) => setTimeout(r, 60));
       const h = handlers[method];
       if (!h) throw { code: NOT_IMPLEMENTED, message: 'non ancora disponibile', data: { milestone: 'M3' } };
-      return h(params ?? {}) as T;
+      return (await h(params ?? {})) as T;
     },
     onEvent: (cb) => void listeners.push(cb),
     onConnection: () => {},

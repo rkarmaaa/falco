@@ -74,7 +74,6 @@ macro_rules! str_enum {
 
 str_enum!(Language { It = "it", En = "en" } default It);
 str_enum!(Updates { Auto = "auto", Notify = "notify", Off = "off" } default Auto);
-str_enum!(Theme { System = "system", Dark = "dark", Light = "light" } default System);
 str_enum!(Codec { Auto = "auto", H264 = "h264", Hevc = "hevc", Av1 = "av1" } default Auto);
 str_enum!(BitrateMode { Auto = "auto", Fixed = "fixed" } default Auto);
 str_enum!(DisplayMode { Fullscreen = "fullscreen", Borderless = "borderless", Windowed = "windowed" } default Borderless);
@@ -113,7 +112,6 @@ pub struct Config {
 pub struct General {
     pub language: Language,
     pub updates: Updates,
-    pub theme: Theme,
     pub start_with_system: bool,
     pub start_minimized: bool,
     pub close_to_tray: bool,
@@ -212,7 +210,6 @@ impl Default for General {
         Self {
             language: Language::It,
             updates: Updates::Auto,
-            theme: Theme::System,
             start_with_system: true,
             start_minimized: true,
             close_to_tray: true,
@@ -653,10 +650,10 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("config.toml");
         let mut f = ConfigFile::load_or_create(&path).unwrap();
-        f.set("general.theme", &json!("light")).unwrap();
-        assert!(std::fs::read_to_string(&path).unwrap().contains("theme = \"light\""));
+        f.set("general.language", &json!("en")).unwrap();
+        assert!(std::fs::read_to_string(&path).unwrap().contains("language = \"en\""));
         f.reset_section("general").unwrap();
-        assert_eq!(f.config().general.theme, Theme::System);
+        assert_eq!(f.config().general.language, Language::It);
         let again = ConfigFile::load_or_create(&path).unwrap();
         assert_eq!(again.config(), f.config());
     }

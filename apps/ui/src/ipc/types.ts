@@ -36,6 +36,34 @@ export interface StateSnapshot {
   friendsCount: number;
   hasProfile: boolean;
   oauthConfigured: boolean;
+  /** Sessione da ospite in corso. */
+  session?: SessionInfo | null;
+}
+
+/** Sessione da ospite: da `session.started` o dallo snapshot. */
+export interface SessionInfo {
+  host: string;
+  friendId: string | null;
+  name: string;
+  pid: number | null;
+  startedAt: number;
+  permissions: Permissions | null;
+  app: string;
+}
+
+export interface SessionStats {
+  rttMs: number;
+  fps: number;
+  bitrateKbps: number;
+  path: 'direct' | 'relay' | string;
+}
+
+export type HostProfile = 'latency' | 'balanced' | 'slow' | 'quality' | 'custom';
+
+export interface Recommendation {
+  profile: Exclude<HostProfile, 'custom'>;
+  reasons: string[];
+  checks: DoctorCheck[];
 }
 
 export interface RpcError {
@@ -64,7 +92,6 @@ export interface FaloConfig {
   general: {
     language: 'it' | 'en';
     updates: 'auto' | 'notify' | 'off';
-    theme: 'system' | 'dark' | 'light';
     start_with_system: boolean;
     start_minimized: boolean;
     close_to_tray: boolean;
