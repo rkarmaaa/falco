@@ -3,6 +3,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 #![cfg_attr(test, allow(clippy::unwrap_used))]
 
+mod access;
 mod bench;
 mod core;
 mod fpp_server;

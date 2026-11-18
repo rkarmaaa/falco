@@ -220,7 +220,12 @@ pub async fn join(core: Shared, address: String, app: String) -> anyhow::Result<
                         events::SESSION_STATS,
                         json!({ "phase": "stats", "rttMs": rtt_ms, "fps": fps, "bitrateKbps": bitrate_kbps, "path": path }),
                     ),
-                    Some(EngineEvent::Ended { reason: r }) => reason = r,
+                    // Moonlight resta aperto con un messaggio: lo chiudiamo noi
+                    Some(EngineEvent::Ended { reason: r }) => {
+                        reason = r;
+                        let _ = child.kill().await;
+                        break;
+                    }
                     None => {}
                 },
                 _ = child.wait() => break,
@@ -228,6 +233,24 @@ pub async fn join(core: Shared, address: String, app: String) -> anyhow::Result<
         }
         let mut c = core.lock().await;
         c.streaming = false;
+        // Avvisa l'host che abbiamo lasciato la sessione
+        if let (Some(fid), Some(me)) = (c.joined.take(), c.me.as_ref().map(|m| m.identity.clone()))
+        {
+            let addr = c.live.get(&fid).and_then(|l| l.address.clone());
+            if let Some(addr) = addr {
+                tokio::task::spawn_blocking(move || {
+                    crate::social::fpp_call(
+                        &me,
+                        "POST",
+                        &addr,
+                        "/v1/session/leave",
+                        Some(&json!({})),
+                        None,
+                        Duration::from_secs(3),
+                    )
+                });
+            }
+        }
         let _ = c.db.log_session(&falo_store::db::SessionRow {
             friend_id: address.clone(),
             role: "guest".into(),

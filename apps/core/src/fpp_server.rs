@@ -290,8 +290,57 @@ async fn handshake(
     axum::Json(HandshakeResponse { profile, pin, sunshine_port }).into_response()
 }
 
-async fn later() -> Response {
-    err(StatusCode::NOT_IMPLEMENTED, "disponibile dalla milestone M4")
+/// Un amico chiede di entrare (§7 «Bussare»); long-poll fino al timeout.
+async fn knock(
+    State(s): State<Srv>,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    method: Method,
+    uri: Uri,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Response {
+    let id = match s.auth(peer, &method, &uri, &headers, &body, true).await {
+        Ok(id) => id,
+        Err((code, msg)) => return err(code, &msg),
+    };
+    axum::Json(crate::access::knock(&s.core, &id.to_string()).await).into_response()
+}
+
+/// L'ospite ha chiuso lo stream.
+async fn leave(
+    State(s): State<Srv>,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    method: Method,
+    uri: Uri,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Response {
+    let id = match s.auth(peer, &method, &uri, &headers, &body, true).await {
+        Ok(id) => id,
+        Err((code, msg)) => return err(code, &msg),
+    };
+    crate::access::leave(&s.core, &id.to_string()).await;
+    StatusCode::NO_CONTENT.into_response()
+}
+
+/// L'host ci invita a giocare adesso.
+async fn notify(
+    State(s): State<Srv>,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    method: Method,
+    uri: Uri,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Response {
+    let id = match s.auth(peer, &method, &uri, &headers, &body, true).await {
+        Ok(id) => id,
+        Err((code, msg)) => return err(code, &msg),
+    };
+    let c = s.core.lock().await;
+    let name = c.db.friend(&id.to_string()).ok().flatten().map(|f| f.name).unwrap_or_default();
+    c.emit(events::PLAY_INVITE, json!({ "friendId": id.to_string(), "name": name }));
+    c.notify_user(&format!("{name} ti invita a giocare"), "Apri Falò e premi «Entra».");
+    StatusCode::NO_CONTENT.into_response()
 }
 
 fn router(s: Srv) -> Router {
@@ -301,8 +350,9 @@ fn router(s: Srv) -> Router {
         .route("/v1/presence", get(presence))
         .route("/v1/handshake", post(handshake))
         .route("/v1/friend/remove", post(friend_remove))
-        .route("/v1/session/knock", post(later))
-        .route("/v1/session/notify", post(later))
+        .route("/v1/session/knock", post(knock))
+        .route("/v1/session/leave", post(leave))
+        .route("/v1/session/notify", post(notify))
         .with_state(s)
 }
 

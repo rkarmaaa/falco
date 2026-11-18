@@ -218,7 +218,12 @@ pub async fn host_pairing(
             json!({ "side": "host", "step": "paired", "ok": uuid.is_some(), "name": name }),
         );
         drop(c);
-        if !was_available {
+        // Si spegne solo se nel frattempo l'utente non l'ha reso disponibile
+        let keep = {
+            let c = core.lock().await;
+            c.user_available || !c.guests.is_empty()
+        };
+        if !was_available && !keep {
             crate::core::set_available(core.clone(), false).await;
         }
     });

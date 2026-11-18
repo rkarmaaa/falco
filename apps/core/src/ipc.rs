@@ -82,11 +82,6 @@ fn params<T: for<'de> Deserialize<'de>>(v: Value) -> Result<T, RpcError> {
     serde_json::from_value(v).map_err(|e| RpcError::new(codes::INVALID_PARAMS, e.to_string()))
 }
 
-fn not_yet(milestone: &str) -> RpcError {
-    RpcError::new(codes::NOT_IMPLEMENTED, "non ancora disponibile")
-        .with_data(json!({ "milestone": milestone }))
-}
-
 fn internal(e: impl std::fmt::Display) -> RpcError {
     RpcError::new(codes::INTERNAL, e.to_string())
 }
@@ -208,6 +203,60 @@ async fn friend_target(core: &Shared, id: &str) -> Result<(String, u16), RpcErro
     Ok((ip, port))
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SetPermissions {
+    id: String,
+    role: Option<falo_proto::Role>,
+    overrides: Option<falo_proto::permissions::PermissionOverrides>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct KnockDecision {
+    friend_id: String,
+    accept: bool,
+}
+
+/// Bussa all'host prima di avviare Moonlight (§7); errore con il motivo se rifiutato.
+async fn knock_friend(core: &Shared, id: &str) -> Result<(), RpcError> {
+    let (me, addr, wait) = {
+        let c = core.lock().await;
+        let me = c.me.as_ref().map(|m| m.identity.clone());
+        let addr = c.live.get(id).and_then(|l| l.address.clone());
+        (me, addr, u64::from(c.config.config().host.knock_timeout_s) + 15)
+    };
+    let (Some(me), Some(addr)) = (me, addr) else {
+        return Err(RpcError::new(codes::SESSION_FAILED, "amico non raggiungibile")
+            .with_data(json!({ "reason": "offline" })));
+    };
+    let (status, _, body) = tokio::task::spawn_blocking(move || {
+        crate::social::fpp_call(
+            &me,
+            "POST",
+            &addr,
+            "/v1/session/knock",
+            Some(&json!({})),
+            None,
+            std::time::Duration::from_secs(wait),
+        )
+    })
+    .await
+    .map_err(internal)?
+    .map_err(anyhow_err(codes::SESSION_FAILED))?;
+    if status != 200 {
+        return Err(RpcError::new(codes::SESSION_FAILED, format!("l'host ha risposto {status}")));
+    }
+    match serde_json::from_slice::<crate::access::KnockAnswer>(&body) {
+        Ok(crate::access::KnockAnswer::Accepted { .. }) => Ok(()),
+        Ok(crate::access::KnockAnswer::Declined { reason }) => {
+            Err(RpcError::new(codes::SESSION_FAILED, format!("ingresso non consentito ({reason})"))
+                .with_data(json!({ "reason": reason })))
+        }
+        Err(e) => Err(internal(e)),
+    }
+}
+
 fn anyhow_err(code: i32) -> impl Fn(anyhow::Error) -> RpcError {
     move |e| RpcError::new(code, format!("{e:#}"))
 }
@@ -239,6 +288,7 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
     match req.method.as_str() {
         methods::HOST_SET_AVAILABLE => {
             let p: SetAvailable = params(req.params)?;
+            core.lock().await.user_available = p.available;
             tokio::spawn(crate::core::set_available(core.clone(), p.available));
             return Ok(json!({ "available": p.available }));
         }
@@ -283,7 +333,12 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
         methods::SESSION_JOIN => {
             let p: HostTarget = params(req.params)?;
             let (host, port) = match &p.friend_id {
-                Some(id) => friend_target(core, id).await?,
+                Some(id) => {
+                    let target = friend_target(core, id).await?;
+                    knock_friend(core, id).await?;
+                    core.lock().await.joined = Some(id.clone());
+                    target
+                }
                 None => (p.host.clone(), p.port.unwrap_or(47989)),
             };
             let address = crate::guest::moonlight_address(&host, port);
@@ -328,6 +383,68 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
             .await
             .map_err(internal)?
             .map_err(anyhow_err(codes::INVALID_PARAMS))?;
+            return Ok(Value::Null);
+        }
+        methods::FRIEND_SET_PERMISSIONS => {
+            let p: SetPermissions = params(req.params)?;
+            {
+                let c = core.lock().await;
+                let current = c.db.permissions(&p.id).map_err(internal)?;
+                let role = p
+                    .role
+                    .map(crate::invites::role_name)
+                    .or(current.as_ref().map(|x| x.0.clone()))
+                    .unwrap_or_else(|| "spettatore".into());
+                let overrides = match &p.overrides {
+                    Some(o) => serde_json::to_string(o).map_err(internal)?,
+                    None => current.map(|x| x.1).unwrap_or_else(|| "{}".into()),
+                };
+                c.db.set_permissions(&p.id, &role, &overrides, crate::core::now())
+                    .map_err(internal)?;
+                crate::social::emit_friends(&c);
+            }
+            // Effetto lato host senza riconnessione
+            crate::access::apply_all(core).await;
+            return Ok(Value::Null);
+        }
+        methods::HOST_ANSWER_KNOCK => {
+            let p: KnockDecision = params(req.params)?;
+            if let Some(tx) = core.lock().await.knocks.remove(&p.friend_id) {
+                let _ = tx.send(p.accept);
+            }
+            return Ok(Value::Null);
+        }
+        methods::HOST_KICK => {
+            let p: FriendRef = params(req.params)?;
+            crate::access::kick(core, &p.id).await;
+            return Ok(Value::Null);
+        }
+        methods::FRIEND_NOTIFY => {
+            let p: FriendRef = params(req.params)?;
+            let (me, addr) = {
+                let c = core.lock().await;
+                (
+                    c.me.as_ref().map(|m| m.identity.clone()),
+                    c.live.get(&p.id).and_then(|l| l.address.clone()),
+                )
+            };
+            let (Some(me), Some(addr)) = (me, addr) else {
+                return Err(RpcError::new(codes::SESSION_FAILED, "amico non raggiungibile"));
+            };
+            tokio::task::spawn_blocking(move || {
+                crate::social::fpp_call(
+                    &me,
+                    "POST",
+                    &addr,
+                    "/v1/session/notify",
+                    Some(&json!({})),
+                    None,
+                    std::time::Duration::from_secs(5),
+                )
+            })
+            .await
+            .map_err(internal)?
+            .map_err(anyhow_err(codes::SESSION_FAILED))?;
             return Ok(Value::Null);
         }
         methods::FRIEND_REMOVE => {
@@ -455,7 +572,17 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
             c.open_ui();
             Ok(Value::Null)
         }
-        methods::FRIEND_SET_PERMISSIONS => Err(not_yet("M4")),
+        methods::FRIEND_GET_PERMISSIONS => {
+            let p: FriendRef = params(req.params)?;
+            let raw = c.db.permissions(&p.id).map_err(internal)?;
+            Ok(json!({
+                "role": raw.as_ref().map(|r| r.0.clone()),
+                "overrides": raw.as_ref().and_then(|r| serde_json::from_str::<Value>(&r.1).ok()),
+                "effective": crate::access::effective(&c, &p.id),
+                "paired": raw.and_then(|r| r.2).is_some(),
+            }))
+        }
+        methods::HOST_GUESTS => Ok(json!({ "guests": c.guests.values().collect::<Vec<_>>() })),
         other => {
             Err(RpcError::new(codes::METHOD_NOT_FOUND, format!("metodo sconosciuto: {other}")))
         }

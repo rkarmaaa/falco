@@ -74,6 +74,37 @@ try {
   await a.call('host.endSession');
   console.log(`  sessione finita: ${JSON.stringify(await ended)}`);
 
+  step('M4: A rende Luca «spettatore» → B deve bussare');
+  const luca = (await a.call('friends.list')).find((f) => f.name === 'Luca');
+  await a.call('friend.setPermissions', { id: luca.id, role: 'spettatore' });
+  const perms = await a.call('friend.getPermissions', { id: luca.id });
+  console.log(`  ruolo ${perms.role}, entra da solo: ${perms.effective.autoJoin}, client associato: ${perms.paired}`);
+  let knocked = a.waitFor((m) => m.method === 'session.knock', 30_000);
+  const connected2 = b.waitFor((m) => m.method === 'session.stats' && m.params.phase === 'connected', 90_000);
+  const joining = b.call('session.join', { friendId: marco.id });
+  console.log(`  A riceve la richiesta: ${(await knocked).name}`);
+  await a.call('host.answerKnock', { friendId: luca.id, accept: true });
+  await joining;
+  await connected2;
+  console.log(`  ospiti di A: ${JSON.stringify((await a.call('host.guests')).guests.map((g) => g.name))}`);
+  const ended2 = b.waitFor((m) => m.method === 'session.ended', 30_000);
+  await a.call('host.kick', { id: luca.id });
+  await ended2;
+  console.log('  espulso: sessione chiusa');
+  await sleep(2000);
+  console.log(`  host di A dopo l'espulsione: ${JSON.stringify((await a.call('state.snapshot')).host)}`);
+
+  step('M4: B bussa di nuovo, A rifiuta');
+  knocked = a.waitFor((m) => m.method === 'session.knock', 30_000);
+  const refused = b.call('session.join', { friendId: marco.id }).then(
+    () => 'entrato?!',
+    (e) => e.message,
+  );
+  const first = await Promise.race([knocked.then(() => 'knock'), refused]);
+  if (first !== 'knock') throw new Error(`B rifiutato prima di bussare: ${first}`);
+  await a.call('host.answerKnock', { friendId: luca.id, accept: false });
+  console.log(`  B riceve: ${await refused}`);
+
   step('B rimuove Marco → anche A perde Luca');
   await b.call('friend.remove', { id: marco.id });
   await sleep(1500);

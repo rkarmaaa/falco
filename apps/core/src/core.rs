@@ -13,7 +13,7 @@ use falo_store::{ConfigFile, Db};
 use serde_json::json;
 use tokio::sync::{Mutex, broadcast, mpsc};
 
-pub const MILESTONE: &str = "M3";
+pub const MILESTONE: &str = "M4";
 
 /// Secondi Unix correnti.
 pub fn now() -> i64 {
@@ -87,6 +87,14 @@ pub struct Core {
     pub poke: Arc<tokio::sync::Notify>,
     /// Richieste in attesa di approvazione dell'host.
     pub approvals: std::collections::HashMap<String, tokio::sync::oneshot::Sender<bool>>,
+    /// Ospiti collegati alla sessione che ospito.
+    pub guests: std::collections::HashMap<String, crate::access::ActiveGuest>,
+    /// Richieste «bussa» in attesa di risposta.
+    pub knocks: std::collections::HashMap<String, tokio::sync::oneshot::Sender<bool>>,
+    /// Sessione da ospite in corso: ID dell'amico che ospita.
+    pub joined: Option<String>,
+    /// «Disponibile» scelto dall'utente (non un avvio temporaneo per il pairing).
+    pub user_available: bool,
     ui: Option<Child>,
     events: broadcast::Sender<Notification>,
     notify_tray: Notify,
@@ -117,6 +125,10 @@ impl Core {
             ui_clients: 0,
             poke: Arc::new(tokio::sync::Notify::new()),
             approvals: std::collections::HashMap::new(),
+            guests: std::collections::HashMap::new(),
+            knocks: std::collections::HashMap::new(),
+            joined: None,
+            user_available: false,
             ui: None,
             events: broadcast::channel(64).0,
             notify_tray,
@@ -278,12 +290,16 @@ pub async fn set_available(shared: Shared, available: bool) {
     let mut c = shared.lock().await;
     if c.host_available {
         let alive = c.host.alive();
+        c.guests.clear();
         c.host.state = if ready && alive {
             crate::host::HostState::Ready
         } else {
             crate::host::HostState::Error("il motore host non risponde".into())
         };
         c.publish_host();
+        drop(c);
+        // Client degli amici allineati ai permessi appena l'host è pronto
+        crate::access::apply_all(&shared).await;
     }
 }
 
@@ -295,6 +311,7 @@ pub async fn run(core: Core, mut tray_rx: mpsc::UnboundedReceiver<TrayCommand>) 
     let server = tokio::spawn(crate::ipc::serve(shared.clone()));
     let presence_server = tokio::spawn(crate::fpp_server::run(shared.clone()));
     let presence_client = tokio::spawn(crate::social::run(shared.clone()));
+    let access = tokio::spawn(crate::access::run(shared.clone()));
     let available = shared.lock().await.config.config().host.available_on_start;
     if available {
         tokio::spawn(set_available(shared.clone(), true));
@@ -302,6 +319,7 @@ pub async fn run(core: Core, mut tray_rx: mpsc::UnboundedReceiver<TrayCommand>) 
 
     while let Some(cmd) = tray_rx.recv().await {
         if let TrayCommand::SetAvailable(a) = cmd {
+            shared.lock().await.user_available = a;
             tokio::spawn(set_available(shared.clone(), a));
             continue;
         }
@@ -323,4 +341,5 @@ pub async fn run(core: Core, mut tray_rx: mpsc::UnboundedReceiver<TrayCommand>) 
     server.abort();
     presence_server.abort();
     presence_client.abort();
+    access.abort();
 }

@@ -111,8 +111,8 @@ pub fn my_presence(c: &Core) -> Presence {
         can_join: visible && ready && status == Status::Online,
         hosting: (visible && ready).then(|| fpp::Hosting {
             app: None,
-            slots_free: cfg.host.max_guests,
-            guests: Vec::new(),
+            slots_free: cfg.host.max_guests.saturating_sub(c.guests.len() as u8),
+            guests: c.guests.values().map(|g| g.name.clone()).collect(),
         }),
         profile_updated_at: c.me.as_ref().map(|m| m.updated_at()).unwrap_or(0),
         sunshine_port: cfg.network.sunshine_base_port,

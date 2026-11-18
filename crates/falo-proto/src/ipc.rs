@@ -40,6 +40,11 @@ pub mod methods {
     pub const INVITE_PREVIEW: &str = "invite.preview";
     pub const INVITE_APPROVE: &str = "invite.approve";
     pub const TAILSCALE_SET_OAUTH: &str = "tailscale.setOAuth";
+    pub const FRIEND_GET_PERMISSIONS: &str = "friend.getPermissions";
+    pub const FRIEND_NOTIFY: &str = "friend.notify";
+    pub const HOST_ANSWER_KNOCK: &str = "host.answerKnock";
+    pub const HOST_KICK: &str = "host.kick";
+    pub const HOST_GUESTS: &str = "host.guests";
 }
 
 pub mod events {
@@ -53,6 +58,8 @@ pub mod events {
     pub const HOST_STATE: &str = "host.state";
     pub const PAIR_RESULT: &str = "pair.result";
     pub const INVITE_REQUEST: &str = "invite.request";
+    pub const HOST_GUESTS: &str = "host.guests";
+    pub const PLAY_INVITE: &str = "play.invite";
 }
 
 pub mod codes {
