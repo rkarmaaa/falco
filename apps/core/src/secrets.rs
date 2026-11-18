@@ -2,11 +2,30 @@
 
 use anyhow::Context;
 
-const SERVICE: &str = "app.falo.desktop";
+fn entry(name: &str) -> anyhow::Result<keyring::Entry> {
+    let service = match falo_proto::endpoint::instance() {
+        Some(i) => format!("app.falo.desktop.{i}"),
+        None => "app.falo.desktop".into(),
+    };
+    keyring::Entry::new(&service, name).context("portachiavi non disponibile")
+}
+
+/// Legge un segreto, se esiste.
+pub fn get(name: &str) -> anyhow::Result<Option<String>> {
+    match entry(name)?.get_password() {
+        Ok(p) => Ok(Some(p)),
+        Err(keyring::Error::NoEntry) => Ok(None),
+        Err(e) => Err(e).context("lettura dal portachiavi"),
+    }
+}
+
+pub fn set(name: &str, value: &str) -> anyhow::Result<()> {
+    entry(name)?.set_password(value).context("segreto non salvato nel portachiavi")
+}
 
 /// Legge un segreto o ne crea uno casuale al primo uso.
 pub fn get_or_create(name: &str) -> anyhow::Result<String> {
-    let entry = keyring::Entry::new(SERVICE, name).context("portachiavi non disponibile")?;
+    let entry = entry(name)?;
     match entry.get_password() {
         Ok(p) => Ok(p),
         Err(keyring::Error::NoEntry) => {

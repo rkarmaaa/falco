@@ -18,7 +18,6 @@ JSON-RPC 2.0, un messaggio JSON per riga, su named pipe `\\.\pipe\falo-core-<ute
 | `config.reset` | `{ section }` | `null` | M0 |
 | `profile.update` | `{ status? }` (nome e avatar in M2) | `null` | M0 parziale |
 | `host.setAvailable` | `{ available }` | `{ available }`; avvia o ferma Sunshine, avanzamento con `host.state` | M1 |
-| `friends.list` | — | elenco di amici dal database | M0 (vuoto fino a M2) |
 | `net.runDoctor` | — | `{ checks: [{ id, level, value, action }] }` | M0 parziale |
 | `app.openUi` | — | `null`; usato dalla seconda istanza del core | M0 |
 | `host.pairings` | — | richieste di pairing in attesa `[{ id, name, address }]` | M1 |
@@ -29,7 +28,20 @@ JSON-RPC 2.0, un messaggio JSON per riga, su named pipe `\\.\pipe\falo-core-<ute
 | `host.endSession` | — | `null` | M1 |
 | `session.pair` | `{ host, port? }` | `{ pin, host }`; esito con l'evento `pair.result` | M1 |
 | `session.join` | `{ host, port?, app? }` | `null`; la UI si chiude, lo stato arriva con `session.stats` e `session.ended` | M1 |
-| `invite.create`, `invite.accept` | — | — | M3 |
+| `profile.get` | — | `{ exists, id, tag, accent, name, avatarUrl }` | M2 |
+| `profile.create` | `{ name }` | `null` | M2 |
+| `profile.update` | `{ name?, status?, avatarBase64?, clearAvatar? }` | `null` | M2 |
+| `friends.list` | — | amici con stato live, dispositivi e ruolo | M2 |
+| `friends.refresh` | — | `null`; aggiorna subito la presenza | M2 |
+| `friend.favorite` | `{ id, favorite }` | `null` | M2 |
+| `friend.remove`, `friend.block` | `{ id }` | `null` | M2 |
+| `invite.create` | `{ role, validityHours, uses }` | `{ link, expiresAt, tailscaleShared }` | M3 |
+| `invite.list` | — | inviti con usi, scadenza, stato | M3 |
+| `invite.revoke` | `{ tokenHash }` | `null` | M3 |
+| `invite.preview` | `{ link }` | host, ruolo, permessi, scadenza | M3 |
+| `invite.accept` | `{ link }` | `null`; avanzamento con `invite.progress` | M3 |
+| `invite.approve` | `{ requestId, accept }` | `null` | M3 |
+| `tailscale.setOAuth` | `{ clientId, clientSecret }` | `null` (verifica e salva nel portachiavi) | M3 |
 | `friend.setPermissions` | — | — | M4 |
 | `update.check`, `update.install` | — | — | M6 ([ADR 0008](adr/0008-aggiornamenti-automatici.md)) |
 
@@ -39,7 +51,8 @@ JSON-RPC 2.0, un messaggio JSON per riga, su named pipe `\\.\pipe\falo-core-<ute
 | --- | --- | --- |
 | `presence.changed` | `{ self: { status?, hostAvailable? } }`; in M2 anche gli amici | M0 |
 | `config.changed` | `{ key, value }` oppure `{ section }` | M0 |
-| `invite.progress` | — | M3 |
+| `invite.progress` | `{ side: guest \| host, step, ok, message? }` | M3 |
+| `invite.request` | `{ requestId, name, tag }` | M3 |
 | `host.state` | `{ state: stopped \| starting \| ready \| error, message? }` | M1 |
 | `pair.result` | `{ host, ok }` | M1 |
 | `session.stats` | `{ phase: connecting \| connected \| stats, rttMs?, fps?, bitrateKbps?, path? }` | M1 |

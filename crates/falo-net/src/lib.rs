@@ -3,6 +3,7 @@
 
 pub mod doctor;
 pub mod tailscale;
+pub mod tailscale_api;
 
 use std::future::Future;
 use std::net::IpAddr;

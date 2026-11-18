@@ -85,6 +85,7 @@ impl From<FaloId> for String {
 }
 
 /// Coppia di chiavi locale. La parte privata va solo nel portachiavi (M2).
+#[derive(Clone)]
 pub struct Identity {
     key: SigningKey,
 }

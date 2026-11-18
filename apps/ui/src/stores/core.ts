@@ -121,6 +121,16 @@ export async function join(address: string, app = 'Desktop'): Promise<void> {
   }
 }
 
+export async function joinFriend(friendId: string, name: string): Promise<void> {
+  state.session = { phase: 'starting', host: name };
+  try {
+    await rpc('session.join', { friendId });
+  } catch (e) {
+    state.session = { phase: 'idle', host: null };
+    throw e;
+  }
+}
+
 export const hostApi = {
   pairings: () => rpc<PendingPairing[]>('host.pairings'),
   clients: () => rpc<PairedClient[]>('host.clients'),

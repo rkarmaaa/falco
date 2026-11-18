@@ -36,6 +36,9 @@ pub struct InviteTailscale {
     pub invite_url: String,
     pub node: String,
     pub ip: String,
+    /// Porta di presenza, solo se diversa da 47900.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub port: Option<u16>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -117,6 +120,7 @@ mod tests {
                 invite_url: "https://login.tailscale.com/admin/invite/abc".into(),
                 node: "marco-pc".into(),
                 ip: "100.101.102.103".into(),
+                port: None,
             },
             token: new_token().0,
             role: Role::Player,

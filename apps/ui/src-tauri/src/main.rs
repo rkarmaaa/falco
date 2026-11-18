@@ -28,6 +28,7 @@ fn core_connected(link: State<'_, Arc<CoreLink>>) -> bool {
 
 fn main() {
     let result = tauri::Builder::default()
+        .plugin(tauri_plugin_clipboard_manager::init())
         .setup(|app| {
             let link = Arc::new(CoreLink::default());
             app.manage(link.clone());

@@ -27,20 +27,24 @@ Fatto in anticipo, utile alle milestone successive:
 - [x] Comando `falo-core bench [secondi] [stato]` (§10)
 - [ ] **Marco**: 1080p60 HEVC da Windows con GPU AMD a MacBook M1 via Tailscale, latenza uguale ai motori originali (telecamera a 240 fps, §17)
 
-## M2 · Identità e amici
+## M2 · Identità e amici (fatto)
 
-- [ ] Onboarding con nome e avatar, chiavi nel portachiavi (`keyring`)
-- [ ] Server di presenza FPP con autenticazione e limiti
-- [ ] Lista amici con i sei stati del §5, dettaglio nel pannello destro
-- [ ] Stato online visibile entro 15 s a finestra aperta
+- [x] Onboarding con nome e avatar (WebP 256×256 ≤ 64 KB), chiave Ed25519 nel portachiavi
+- [x] Server di presenza FPP solo sugli IP Tailscale: firma, ±60 s, `tailscale whois`, 20 richieste/min, ETag
+- [x] Lista amici (in gioco, online, occupato, offline, in attesa, bloccato) e dettaglio nel pannello destro
+- [x] Stato online entro 15 s a finestra aperta (60 s in tray, solo preferiti; fermo in streaming)
+- [x] Prova a due istanze: `node scripts/e2e-friends.mjs` (`FALO_INSTANCE=b` per la seconda)
+- [ ] Esportazione e ripristino `.falo-id` (Argon2id + XChaCha20-Poly1305) e collegamento di un secondo dispositivo
 
-## M3 · Inviti
+## M3 · Inviti (fatto, tranne Tailscale automatico)
 
 - [ ] Installazione automatica di Tailscale nell'onboarding (o `tsnet`, secondo l'ADR 0012)
-- [ ] Configurazione guidata dell'OAuth client Tailscale e modalità manuale
-- [ ] Creazione, revoca e scadenza degli inviti
-- [ ] Accettazione da link, incolla e appunti; handshake; pairing automatico
-- [ ] Un utente senza Tailscale passa dal link a «Siete amici» in meno di 3 minuti
+- [x] OAuth client Tailscale verificato e salvato nel portachiavi; senza OAuth l'amico deve essere già nella tailnet
+- [x] Creazione, revoca e scadenza degli inviti; uso singolo atomico; approvazione dell'host per inviti multipli
+- [x] Accettazione da link, incolla e appunti; handshake; pairing automatico di Moonlight
+- [x] Rimozione e blocco su tre livelli (rifiuto, revoca del pairing, avviso all'amico)
+- [ ] Invito Tailscale inverso automatico (passo 9) e revoca della condivisione via API (ADR 0009)
+- [ ] **Marco**: un utente senza Tailscale passa dal link a «Siete amici» in meno di 3 minuti (serve l'installazione automatica)
 
 ## M4 · Permessi e più ospiti
 

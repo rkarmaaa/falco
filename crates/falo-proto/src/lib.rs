@@ -4,6 +4,7 @@
 
 pub mod canonical;
 pub mod endpoint;
+pub mod fpp;
 pub mod identity;
 pub mod invite;
 pub mod ipc;

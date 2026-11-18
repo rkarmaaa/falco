@@ -23,7 +23,36 @@
     "invite": "Invita",
     "emptyTitle": "Qui saranno i tuoi amici",
     "emptyBody": "Mandagli un invito su Discord o WhatsApp: con un clic loro e due tuoi siete pronti a giocare.",
-    "emptyAction": "Invita il primo"
+    "emptyAction": "Invita il primo",
+    "haveInvite": "Ho un invito",
+    "join": "Entra",
+    "devices": "Dispositivi",
+    "favorite": "Preferito",
+    "makeFavorite": "Aggiungi ai preferiti",
+    "unfavorite": "Togli dai preferiti",
+    "remove": "Rimuovi",
+    "block": "Blocca",
+    "cancel": "Annulla",
+    "confirm": {
+      "remove": "Rimuovere {name}? Non potrà più collegarsi e il suo dispositivo verrà dissociato.",
+      "block": "Bloccare {name}? Non lo vedrai più e non potrà contattarti. Lo puoi sbloccare dalle impostazioni."
+    },
+    "groups": {
+      "playing": "In gioco ora",
+      "online": "Online",
+      "offline": "Offline"
+    },
+    "state": {
+      "playing": "Sta giocando",
+      "online": "Online",
+      "busy": "Occupato",
+      "offline": "Offline",
+      "pending": "In attesa della condivisione"
+    },
+    "activity": {
+      "playing": "Sta giocando · nessun posto libero | Sta giocando · {n} posto libero | Sta giocando · {n} posti liberi",
+      "seen": "Visto {when}"
+    }
   },
   "host": {
     "title": "Ospita",
@@ -55,7 +84,15 @@
   "invites": {
     "title": "Inviti",
     "emptyTitle": "Nessun invito attivo",
-    "emptyBody": "Gli inviti che crei compaiono qui, con usi rimasti e scadenza. Puoi revocarli quando vuoi."
+    "emptyBody": "Gli inviti che crei compaiono qui, con usi rimasti e scadenza. Puoi revocarli quando vuoi.",
+    "active": "Inviti attivi",
+    "noneActive": "Nessun invito attivo.",
+    "history": "Storico",
+    "usesLeft": "nessun uso rimasto | 1 uso rimasto | {n} usi rimasti",
+    "expires": "scade il {when}",
+    "created": "creato il {when}",
+    "approval": "con approvazione",
+    "revoke": "Revoca"
   },
   "settings": {
     "title": "Impostazioni",
@@ -84,7 +121,17 @@
     },
     "version": "Versione {version} · milestone {milestone}",
     "license": "Software libero sotto licenza GPL-3.0.",
-    "soon": "Arriva con la milestone {milestone}."
+    "soon": "Arriva con la milestone {milestone}.",
+    "changeAvatar": "Cambia immagine",
+    "save": "Salva",
+    "oauth": {
+      "title": "Inviti automatici con Tailscale",
+      "intro": "Per creare inviti con un clic, crea un OAuth client nella console di Tailscale (Settings → Trust credentials) con gli scope devices:core:read e device_invites, poi incolla qui ID e secret. Si fa una volta sola.",
+      "configured": "Configurato: gli inviti includono la condivisione su Tailscale.",
+      "clientId": "Client ID",
+      "secret": "Client secret",
+      "saved": "Credenziali verificate e salvate nel portachiavi."
+    }
   },
   "doctor": {
     "title": "Dottore di rete",
@@ -121,7 +168,8 @@
     "offlineFix": "Riaprilo dal menu Start o dal Launchpad: questa finestra si ricollega da sola."
   },
   "errors": {
-    "notImplemented": "Questa funzione arriva con la milestone {milestone}."
+    "notImplemented": "Questa funzione arriva con la milestone {milestone}.",
+    "cannotJoin": "Non riesco a entrare da {name}. {why}. Riprova tra poco o chiedigli se è ancora disponibile."
   },
   "ping": {
     "direct": "diretto",
@@ -144,5 +192,92 @@
       "connected": "In gioco"
     },
     "ended": "Sessione finita dopo {minutes} min."
+  },
+  "time": {
+    "minutes": "{n} min fa",
+    "hours": "{n} ore fa",
+    "days": "{n} giorni fa"
+  },
+  "role": {
+    "spettatore": "Spettatore",
+    "giocatore": "Giocatore",
+    "copilota": "Co-pilota",
+    "fidato": "Fidato",
+    "hint": {
+      "spettatore": "Vede e sente lo stream, niente input",
+      "giocatore": "Un controller, entra senza chiedere",
+      "copilota": "Due controller, tastiera e mouse",
+      "fidato": "Tutto, compreso avviare app e chiudere la sessione"
+    }
+  },
+  "perm": {
+    "view": "Vede e sente lo stream",
+    "gamepads": "nessun controller | Un controller | Fino a {n} controller",
+    "noGamepads": "Nessun controller",
+    "keyboard": "Tastiera (scorciatoie di sistema bloccate)",
+    "keyboardFull": "Tastiera completa",
+    "noKeyboard": "Niente tastiera",
+    "mouse": "Mouse",
+    "noMouse": "Niente mouse",
+    "autoJoin": "Entra senza chiedere",
+    "knock": "Deve chiedere per entrare",
+    "launchApps": "Può avviare o cambiare app",
+    "noLaunchApps": "Non può cambiare app"
+  },
+  "invite": {
+    "title": "Invita un amico",
+    "role": "Ruolo",
+    "validity": "Validità",
+    "hours1": "1 ora",
+    "hours24": "24 ore",
+    "days7": "7 giorni",
+    "uses": "Usi",
+    "approvalNote": "Con più usi dovrai approvare ogni ingresso.",
+    "create": "Crea link",
+    "share": "Incolla il link su Discord o WhatsApp. Se la chat non lo rende cliccabile, all'amico basta copiarlo: Falò lo trova negli appunti.",
+    "copy": "Copia",
+    "copied": "Copiato",
+    "done": "Fatto",
+    "secret": "Chi ha il link può usarlo: mandalo solo all'amico giusto.",
+    "noShare": "Tailscale non è configurato per gli inviti: l'amico deve essere già nella tua rete. Configuralo in Impostazioni → Host."
+  },
+  "accept": {
+    "title": "Accetta invito",
+    "friends": "Siete amici",
+    "paste": "Link dell'invito",
+    "invalid": "Questo link non sembra un invito di Falò.",
+    "accept": "Accetta",
+    "browserNote": "Si aprirà il browser per confermare la condivisione su Tailscale: basta un clic.",
+    "step": {
+      "tailscale": "Tailscale collegato",
+      "share": "Condivisione confermata",
+      "handshake": "Amicizia registrata",
+      "pairing": "Dispositivi associati"
+    },
+    "doneBody": "Tu e {name} siete amici. Quando ospita, lo trovi in «In gioco ora».",
+    "clipboard": "Hai un invito di {name} negli appunti",
+    "open": "Apri"
+  },
+  "requests": {
+    "wants": "{name} vuole unirsi",
+    "accept": "Accetta",
+    "decline": "Rifiuta"
+  },
+  "onboarding": {
+    "welcome": "Benvenuto su Falò",
+    "intro": "Gioca in streaming con i tuoi amici, come fossero sul divano accanto a te. Ti servono un nome e, se vuoi, una foto.",
+    "continue": "Continua",
+    "profileTitle": "Come ti chiami?",
+    "avatar": "Scegli un'immagine",
+    "name": "Nome",
+    "namePlaceholder": "Come ti vedono gli amici",
+    "nameHint": "Da 2 a 24 caratteri. Puoi cambiarlo quando vuoi.",
+    "done": "Inizia",
+    "tailscale": {
+      "running": "Tailscale è collegato: sei pronto.",
+      "needsLogin": "Tailscale è installato ma devi accedere. Lo farai al primo invito.",
+      "stopped": "Tailscale è spento: aprilo prima di invitare qualcuno.",
+      "missing": "Tailscale non c'è ancora: Falò lo installerà al primo invito."
+    }
   }
 }

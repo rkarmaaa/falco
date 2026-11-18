@@ -65,6 +65,30 @@ impl Tailscale {
     }
 }
 
+#[derive(Deserialize)]
+struct Whois {
+    #[serde(rename = "Node")]
+    node: WhoisNode,
+}
+
+#[derive(Deserialize)]
+struct WhoisNode {
+    #[serde(rename = "StableID")]
+    stable_id: String,
+}
+
+impl Tailscale {
+    /// Nodo Tailscale (ID stabile) che possiede un indirizzo: doppio vincolo del §5.
+    pub async fn whois(&self, ip: IpAddr) -> Result<Option<String>, NetError> {
+        let out = self.run(&["whois", "--json", &ip.to_string()]).await?;
+        Ok(parse_whois(&out))
+    }
+}
+
+pub fn parse_whois(json: &[u8]) -> Option<String> {
+    serde_json::from_slice::<Whois>(json).ok().map(|w| w.node.stable_id)
+}
+
 impl NetworkProvider for Tailscale {
     fn kind(&self) -> &'static str {
         "tailscale"
@@ -177,6 +201,14 @@ mod tests {
         let mac = s.peers.iter().find(|p| p.hostname == "bea-mac").unwrap();
         assert_eq!(mac.path, PeerPath::Relay { region: "fra".into() });
         assert!(!s.exit_node_active);
+    }
+
+    #[test]
+    fn whois_stable_id() {
+        let j =
+            br#"{"Node":{"ID":66005,"StableID":"nSTzF88PYt11CNTRL","Name":"x"},"UserProfile":{}}"#;
+        assert_eq!(parse_whois(j).as_deref(), Some("nSTzF88PYt11CNTRL"));
+        assert_eq!(parse_whois(b"no peer found"), None);
     }
 
     #[test]

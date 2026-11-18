@@ -13,7 +13,7 @@ use falo_store::{ConfigFile, Db};
 use serde_json::json;
 use tokio::sync::{Mutex, broadcast, mpsc};
 
-pub const MILESTONE: &str = "M1";
+pub const MILESTONE: &str = "M3";
 
 /// Secondi Unix correnti.
 pub fn now() -> i64 {
@@ -77,6 +77,16 @@ pub struct Core {
     pub host: crate::host::Host,
     pub streaming: bool,
     pub last_self_ips: Vec<std::net::IpAddr>,
+    /// Identità locale; `None` finché l'utente non completa l'onboarding.
+    pub me: Option<crate::identity::Me>,
+    /// Presenza degli amici, aggiornata dal ciclo di `social::run`.
+    pub live: std::collections::HashMap<String, crate::social::Live>,
+    /// Finestre collegate all'IPC: decide la frequenza di aggiornamento.
+    pub ui_clients: usize,
+    /// Sveglia il ciclo di presenza (aggiornamento immediato).
+    pub poke: Arc<tokio::sync::Notify>,
+    /// Richieste in attesa di approvazione dell'host.
+    pub approvals: std::collections::HashMap<String, tokio::sync::oneshot::Sender<bool>>,
     ui: Option<Child>,
     events: broadcast::Sender<Notification>,
     notify_tray: Notify,
@@ -89,18 +99,40 @@ impl Core {
         data_dir: &Path,
         notify_tray: Notify,
     ) -> anyhow::Result<Self> {
+        let db = Db::open(db_path)?;
+        let me = crate::identity::Me::load(&db).unwrap_or_else(|e| {
+            tracing::error!("identità non caricata: {e:#}");
+            None
+        });
         Ok(Self {
             config,
-            db: Db::open(db_path)?,
+            db,
             net: Tailscale::detect(),
             host_available: false,
             host: crate::host::Host::new(data_dir),
             streaming: false,
             last_self_ips: Vec::new(),
+            me,
+            live: std::collections::HashMap::new(),
+            ui_clients: 0,
+            poke: Arc::new(tokio::sync::Notify::new()),
+            approvals: std::collections::HashMap::new(),
             ui: None,
             events: broadcast::channel(64).0,
             notify_tray,
         })
+    }
+
+    /// Notifica di sistema (richieste di ingresso, inviti accettati).
+    pub fn notify_user(&self, title: &str, body: &str) {
+        let r = notify_rust::Notification::new().appname("Falò").summary(title).body(body).show();
+        if let Err(e) = r {
+            tracing::warn!("notifica non mostrata: {e}");
+        }
+    }
+
+    pub fn live_remove(&mut self, id: &str) {
+        self.live.remove(id);
     }
 
     pub fn subscribe(&self) -> broadcast::Receiver<Notification> {
@@ -148,6 +180,8 @@ impl Core {
                 exit_node_active: net.exit_node_active,
             },
             friends_count: self.db.friend_count().unwrap_or(0),
+            has_profile: self.me.is_some(),
+            oauth_configured: crate::invites::oauth_configured(),
         }
     }
 
@@ -259,6 +293,8 @@ pub async fn run(core: Core, mut tray_rx: mpsc::UnboundedReceiver<TrayCommand>) 
     shared.lock().await.refresh_tray();
 
     let server = tokio::spawn(crate::ipc::serve(shared.clone()));
+    let presence_server = tokio::spawn(crate::fpp_server::run(shared.clone()));
+    let presence_client = tokio::spawn(crate::social::run(shared.clone()));
     let available = shared.lock().await.config.config().host.available_on_start;
     if available {
         tokio::spawn(set_available(shared.clone(), true));
@@ -285,4 +321,6 @@ pub async fn run(core: Core, mut tray_rx: mpsc::UnboundedReceiver<TrayCommand>) 
         }
     }
     server.abort();
+    presence_server.abort();
+    presence_client.abort();
 }

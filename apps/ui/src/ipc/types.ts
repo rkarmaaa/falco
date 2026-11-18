@@ -34,6 +34,8 @@ export interface StateSnapshot {
     exitNodeActive: boolean;
   };
   friendsCount: number;
+  hasProfile: boolean;
+  oauthConfigured: boolean;
 }
 
 export interface RpcError {
@@ -79,3 +81,70 @@ export const CORE_UNREACHABLE = -32099;
 export const NOT_IMPLEMENTED = -32001;
 export const HOST_NOT_READY = -32003;
 export const SESSION_FAILED = -32004;
+
+export type FriendState = 'playing' | 'online' | 'busy' | 'offline' | 'pending';
+export type Role = 'spettatore' | 'giocatore' | 'copilota' | 'fidato';
+
+export interface FriendDevice {
+  tsNodeId: string;
+  tsIp: string;
+  hostname: string;
+  os: string;
+  canHost: boolean;
+}
+
+export interface Friend {
+  id: string;
+  tag: string;
+  name: string;
+  accent: string;
+  avatarUrl: string | null;
+  state: FriendState;
+  canJoin: boolean;
+  slotsFree: number | null;
+  favorite: boolean;
+  lastSeen: number | null;
+  role: Role | null;
+  devices: readonly FriendDevice[];
+}
+
+export interface MyProfile {
+  exists: boolean;
+  id?: string;
+  tag?: string;
+  accent?: string;
+  name?: string;
+  avatarUrl?: string | null;
+}
+
+export interface Permissions {
+  role: Role;
+  view: boolean;
+  audio: boolean;
+  gamepads: number;
+  keyboard: boolean;
+  keyboardSystemKeys: boolean;
+  mouse: boolean;
+  launchApps: boolean;
+  autoJoin: boolean;
+  clipboard: boolean;
+  endHostSession: boolean;
+}
+
+export interface InvitePreview {
+  host: { id: string; name: string; tag: string; accent: string };
+  role: Role;
+  permissions: Permissions;
+  expiresAt: number;
+  needsTailscaleShare: boolean;
+}
+
+export interface InviteRow {
+  tokenHash: string;
+  role: Role;
+  createdAt: number;
+  expiresAt: number;
+  usesLeft: number;
+  needsApproval: boolean;
+  active: boolean;
+}

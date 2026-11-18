@@ -6,12 +6,16 @@ import { RefreshCw } from 'lucide-vue-next';
 import UiSegmented from '@/components/UiSegmented.vue';
 import UiButton from '@/components/UiButton.vue';
 import DiagnosticRow from '@/components/DiagnosticRow.vue';
+import UiAvatar from '@/components/UiAvatar.vue';
+import UiField from '@/components/UiField.vue';
+import ConnectCard from '@/components/ConnectCard.vue';
 import { core, setConfig, setStatus } from '@/stores/core';
-import { rpc, type DoctorCheck, type Status } from '@/ipc';
+import { rename, setAvatar, social } from '@/stores/social';
+import { isRpcError, rpc, type DoctorCheck, type Status } from '@/ipc';
 
 type Tab = 'profile' | 'streaming' | 'network' | 'host' | 'permissions' | 'advanced' | 'about';
 const tabs: Tab[] = ['profile', 'streaming', 'network', 'host', 'permissions', 'advanced', 'about'];
-const soon: Partial<Record<Tab, string>> = { streaming: 'M1', host: 'M1', permissions: 'M4', advanced: 'M5' };
+const soon: Partial<Record<Tab, string>> = { streaming: 'M5', permissions: 'M4' };
 
 const { t } = useI18n();
 const tab = ref<Tab>('profile');
@@ -35,6 +39,41 @@ const status = computed<Status>({
   get: () => core.snapshot?.status ?? 'online',
   set: (v) => void setStatus(v),
 });
+
+const name = ref(social.profile.name ?? '');
+const profileError = ref<string | null>(null);
+async function saveName(): Promise<void> {
+  profileError.value = null;
+  try {
+    await rename(name.value);
+    saved.value = true;
+    setTimeout(() => (saved.value = false), 1500);
+  } catch (e) {
+    profileError.value = isRpcError(e) ? e.message : t('connect.genericError');
+  }
+}
+async function pickAvatar(e: Event): Promise<void> {
+  const f = (e.target as HTMLInputElement).files?.[0];
+  if (!f) return;
+  try {
+    await setAvatar(f);
+  } catch (err) {
+    profileError.value = isRpcError(err) ? err.message : t('connect.genericError');
+  }
+}
+
+const oauthId = ref('');
+const oauthSecret = ref('');
+const oauthMsg = ref<{ ok: boolean; text: string } | null>(null);
+async function saveOAuth(): Promise<void> {
+  try {
+    await rpc('tailscale.setOAuth', { clientId: oauthId.value.trim(), clientSecret: oauthSecret.value.trim() });
+    oauthMsg.value = { ok: true, text: t('settings.oauth.saved') };
+    oauthSecret.value = '';
+  } catch (e) {
+    oauthMsg.value = { ok: false, text: isRpcError(e) ? e.message : t('connect.genericError') };
+  }
+}
 
 const checks = ref<DoctorCheck[]>([]);
 const running = ref(false);
@@ -77,6 +116,19 @@ function openTab(next: Tab): void {
 
     <div class="panel" role="tabpanel">
       <template v-if="tab === 'profile'">
+        <div class="me">
+          <label class="avatar-pick">
+            <UiAvatar :name="social.profile.name ?? '?'" :src="social.profile.avatarUrl" :accent="social.profile.accent" :size="56" />
+            <span class="link">{{ $t('settings.changeAvatar') }}</span>
+            <input class="sr-only" type="file" accept="image/*" @change="pickAvatar" />
+          </label>
+          <form class="rename" @submit.prevent="saveName">
+            <UiField v-model="name" :label="$t('onboarding.name')" :maxlength="24" />
+            <UiButton variant="secondary" type="submit">{{ $t('settings.save') }}</UiButton>
+          </form>
+          <span class="tag">{{ social.profile.tag }}</span>
+        </div>
+        <p v-if="profileError" class="error" role="alert">{{ profileError }}</p>
         <div class="field">
           <span class="label">{{ $t('settings.status') }}</span>
           <UiSegmented
@@ -117,6 +169,24 @@ function openTab(next: Tab): void {
         <ul class="doctor">
           <DiagnosticRow v-for="c in checks" :key="c.id" :check="c" />
         </ul>
+      </template>
+
+      <template v-else-if="tab === 'host'">
+        <h2 class="subtitle">{{ $t('settings.oauth.title') }}</h2>
+        <p class="muted">{{ core.snapshot?.oauthConfigured ? $t('settings.oauth.configured') : $t('settings.oauth.intro') }}</p>
+        <form class="oauth" @submit.prevent="saveOAuth">
+          <UiField v-model="oauthId" :label="$t('settings.oauth.clientId')" />
+          <label class="field">
+            <span class="label">{{ $t('settings.oauth.secret') }}</span>
+            <input v-model="oauthSecret" class="secret" type="password" autocomplete="off" />
+          </label>
+          <UiButton variant="secondary" type="submit" :disabled="!oauthId || !oauthSecret">{{ $t('settings.save') }}</UiButton>
+        </form>
+        <p v-if="oauthMsg" :class="oauthMsg.ok ? 'ok' : 'error'" role="status">{{ oauthMsg.text }}</p>
+      </template>
+
+      <template v-else-if="tab === 'advanced'">
+        <ConnectCard />
       </template>
 
       <template v-else-if="tab === 'about'">
@@ -203,6 +273,82 @@ function openTab(next: Tab): void {
 
     .muted {
       color: $text-2;
+    }
+
+    .error {
+      color: $danger;
+      font-size: $fs-small;
+    }
+
+    .ok {
+      color: $ok;
+      font-size: $fs-small;
+    }
+
+    .subtitle {
+      font-size: $fs-h2;
+      line-height: 24px;
+      font-weight: 600;
+    }
+
+    .me {
+      display: flex;
+      align-items: flex-end;
+      gap: $sp-5;
+
+      .avatar-pick {
+        display: grid;
+        justify-items: center;
+        gap: $sp-1;
+        cursor: pointer;
+
+        .link {
+          font-size: $fs-small;
+          color: $text-2;
+        }
+
+        &:focus-within .link {
+          color: $ember-500;
+        }
+      }
+
+      .rename {
+        display: flex;
+        align-items: flex-end;
+        gap: $sp-2;
+      }
+
+      .tag {
+        margin-bottom: $sp-2;
+        color: $text-3;
+        font-variant-numeric: tabular-nums;
+      }
+    }
+
+    .oauth {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      align-items: end;
+      gap: $sp-3;
+
+      .field {
+        display: grid;
+        gap: $sp-1;
+
+        .label {
+          @include label;
+        }
+      }
+
+      .secret {
+        @include surface(2);
+        @include focus-ring;
+        height: $control-h;
+        padding: 0 $sp-3;
+        border-radius: $r-field;
+        color: $text-1;
+        font: inherit;
+      }
     }
 
     .doctor-head {

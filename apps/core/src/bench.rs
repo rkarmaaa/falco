@@ -74,4 +74,5 @@ pub fn run(args: &[String]) -> anyhow::Result<()> {
         "budget": { "coreRssMb": 15, "trayCpuPercent": 0.5 },
     });
     println!("{}", serde_json::to_string_pretty(&report)?);
- 
+    Ok(())
+}

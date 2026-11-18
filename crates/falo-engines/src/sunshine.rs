@@ -112,7 +112,6 @@ pub fn generate_conf(s: &HostSettings, gpu: GpuVendor, platform: Platform) -> St
     put("log_path", path("sunshine.log"));
     put("pkey", path("key.pem"));
     put("cert", path("cert.pem"));
-    put("channels", s.max_guests.to_string());
     put("upnp", if s.upnp { "enabled" } else { "disabled" }.into());
     put("fec_percentage", s.fec_percent.to_string());
     put("origin_web_ui_allowed", "pc".into());
@@ -184,7 +183,6 @@ mod tests {
         let conf = generate_conf(&settings(), GpuVendor::Amd, Platform::Windows);
         for line in [
             "encoder = amdvce",
-            "channels = 3",
             "upnp = disabled",
             "fec_percentage = 20",
             "amd_usage = ultralowlatency",

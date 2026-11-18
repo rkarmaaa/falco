@@ -37,11 +37,8 @@ fn primary_screen() -> ((u32, u32), u16) {
     display_info::DisplayInfo::all()
         .ok()
         .and_then(|all| all.into_iter().find(|d| d.is_primary))
-        .map(|d| {
-            let s = d.scale_factor.max(1.0);
-            let (w, h) = (d.width as f32 * s, d.height as f32 * s);
-            ((w.round() as u32, h.round() as u32), d.frequency.round() as u16)
-        })
+        // display-info restituisce già pixel fisici: nessuna moltiplicazione per la scala
+        .map(|d| ((d.width.min(3840), d.height.min(2160)), d.frequency.round() as u16))
         .unwrap_or(((1920, 1080), 60))
 }
 

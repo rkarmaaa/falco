@@ -5,11 +5,15 @@
 
 mod bench;
 mod core;
+mod fpp_server;
 mod guest;
 mod host;
 mod i18n;
+mod identity;
+mod invites;
 mod ipc;
 mod secrets;
+mod social;
 mod tray;
 
 use std::path::PathBuf;
@@ -155,13 +159,19 @@ fn init_logging(
         LogLevel::Debug => "debug",
     };
     std::fs::create_dir_all(&paths.logs).ok()?;
-    let appender = tracing_appender::rolling::Builder::new()
+    let appender = match tracing_appender::rolling::Builder::new()
         .rotation(tracing_appender::rolling::Rotation::DAILY)
         .max_log_files(7)
         .filename_prefix("core")
         .filename_suffix("log")
         .build(&paths.logs)
-        .ok()?;
+    {
+        Ok(a) => a,
+        Err(e) => {
+            eprintln!("log non disponibili: {e}");
+            return None;
+        }
+    };
     let (writer, guard) = tracing_appender::non_blocking(appender);
     let filter = tracing_subscriber::EnvFilter::try_from_env("FALO_LOG")
         .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new(level));

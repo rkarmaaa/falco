@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="Licenza GPL-3.0" src="https://img.shields.io/badge/licenza-GPL--3.0-FF6A2B"></a>
-  <img alt="Stato: M1" src="https://img.shields.io/badge/stato-M1%20streaming-1F1C19">
+  <img alt="Stato: M3" src="https://img.shields.io/badge/stato-M3%20inviti-1F1C19">
 </p>
 
 ---
@@ -26,7 +26,7 @@ Falò è un orchestratore: configura e avvia motori di streaming maturi (Sunshin
 - **Sicuro per costruzione**: nessuna porta esposta su Internet, ogni messaggio tra amici è firmato, i permessi si applicano sull'host.
 
 > [!NOTE]
-> Il progetto è alla milestone **M1 · Streaming orchestrato**: Falò fa da host (Sunshine dedicato) e da client (Moonlight), con pairing e streaming pilotati dal core. Amici, inviti e permessi arrivano con M2–M4. Vedi [TODO.md](TODO.md).
+> Il progetto è alla milestone **M3 · Inviti**: Falò fa da host e da client, con profili firmati, amici, presenza, inviti con un link e pairing automatico. Permessi granulari, rete avanzata e pacchetto di installazione arrivano con M4–M6. Vedi [TODO.md](TODO.md).
 
 ## Documentazione
 

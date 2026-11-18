@@ -25,6 +25,13 @@ tokio = { workspace = true, features = ["rt", "macros", "sync", "io-util", "time
 tray-icon.workspace = true
 tao.workspace = true
 image.workspace = true
+webp.workspace = true
+sha2.workspace = true
+axum.workspace = true
+data-encoding.workspace = true
+ureq.workspace = true
+opener = "0.8"
+notify-rust = "4"
 keyring.workspace = true
 sysinfo.workspace = true
 display-info = "0.5"

@@ -29,6 +29,17 @@ pub mod methods {
     pub const HOST_END_SESSION: &str = "host.endSession";
     pub const SESSION_PAIR: &str = "session.pair";
     pub const SESSION_LEAVE: &str = "session.leave";
+    pub const PROFILE_GET: &str = "profile.get";
+    pub const PROFILE_CREATE: &str = "profile.create";
+    pub const FRIENDS_REFRESH: &str = "friends.refresh";
+    pub const FRIEND_REMOVE: &str = "friend.remove";
+    pub const FRIEND_BLOCK: &str = "friend.block";
+    pub const FRIEND_FAVORITE: &str = "friend.favorite";
+    pub const INVITE_LIST: &str = "invite.list";
+    pub const INVITE_REVOKE: &str = "invite.revoke";
+    pub const INVITE_PREVIEW: &str = "invite.preview";
+    pub const INVITE_APPROVE: &str = "invite.approve";
+    pub const TAILSCALE_SET_OAUTH: &str = "tailscale.setOAuth";
 }
 
 pub mod events {
@@ -41,6 +52,7 @@ pub mod events {
     pub const NET_WARNING: &str = "net.warning";
     pub const HOST_STATE: &str = "host.state";
     pub const PAIR_RESULT: &str = "pair.result";
+    pub const INVITE_REQUEST: &str = "invite.request";
 }
 
 pub mod codes {
@@ -172,6 +184,9 @@ pub struct StateSnapshot {
     pub streaming: bool,
     pub network: NetworkSummary,
     pub friends_count: usize,
+    /// Il profilo esiste? Se no, la UI mostra l'onboarding.
+    pub has_profile: bool,
+    pub oauth_configured: bool,
 }
 
 #[cfg(test)]

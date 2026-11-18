@@ -23,9 +23,13 @@ pub async fn serve(core: Shared) {
                 let core = core.clone();
                 tokio::spawn(async move {
                     let (rx, tx) = transport::split(stream);
-                    if let Err(e) = connection(core, rx, tx).await {
+                    core.lock().await.ui_clients += 1;
+                    core.lock().await.poke.notify_one();
+                    if let Err(e) = connection(core.clone(), rx, tx).await {
                         tracing::debug!("connessione IPC chiusa: {e}");
                     }
+                    let mut c = core.lock().await;
+                    c.ui_clients = c.ui_clients.saturating_sub(1);
                 });
             }
             Err(e) => tracing::warn!("accept IPC: {e}"),
@@ -116,11 +120,6 @@ struct SetAvailable {
 }
 
 #[derive(Deserialize)]
-struct ProfileUpdate {
-    status: Option<falo_proto::Status>,
-}
-
-#[derive(Deserialize)]
 struct Approve {
     id: String,
     pin: String,
@@ -135,12 +134,82 @@ struct ClientRef {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct HostTarget {
+    #[serde(default)]
     host: String,
     #[serde(default)]
     port: Option<u16>,
+    /// In alternativa a host/porta: l'amico da raggiungere.
+    #[serde(default)]
+    friend_id: Option<String>,
     #[serde(default = "desktop")]
     app: String,
+}
+
+#[derive(Deserialize)]
+struct FriendRef {
+    id: String,
+    #[serde(default)]
+    favorite: bool,
+}
+
+#[derive(Deserialize)]
+struct Link {
+    link: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct InviteDecision {
+    request_id: String,
+    accept: bool,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct TokenRef {
+    token_hash: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct OAuth {
+    client_id: String,
+    client_secret: String,
+}
+
+#[derive(Deserialize)]
+struct CreateProfile {
+    name: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ProfileEdit {
+    name: Option<String>,
+    status: Option<falo_proto::Status>,
+    /// Immagine in base64 (qualsiasi formato comune).
+    avatar_base64: Option<String>,
+    #[serde(default)]
+    clear_avatar: bool,
+}
+
+/// Indirizzo Moonlight di un amico: IP che ha risposto e porta di Sunshine dalla presenza.
+async fn friend_target(core: &Shared, id: &str) -> Result<(String, u16), RpcError> {
+    let c = core.lock().await;
+    let live = c.live.get(id).cloned().unwrap_or_default();
+    let addr = live
+        .address
+        .or_else(|| c.db.devices(id).ok()?.into_iter().find(|d| d.can_host).map(|d| d.ts_ip))
+        .ok_or_else(|| RpcError::new(codes::SESSION_FAILED, "amico non raggiungibile"))?;
+    let (ip, _) = crate::social::split_address(&addr);
+    let port = live.presence.map(|p| p.sunshine_port).unwrap_or(47989);
+    Ok((ip, port))
+}
+
+fn anyhow_err(code: i32) -> impl Fn(anyhow::Error) -> RpcError {
+    move |e| RpcError::new(code, format!("{e:#}"))
 }
 
 fn desktop() -> String {
@@ -213,10 +282,62 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
         }
         methods::SESSION_JOIN => {
             let p: HostTarget = params(req.params)?;
-            let address = crate::guest::moonlight_address(&p.host, p.port.unwrap_or(47989));
+            let (host, port) = match &p.friend_id {
+                Some(id) => friend_target(core, id).await?,
+                None => (p.host.clone(), p.port.unwrap_or(47989)),
+            };
+            let address = crate::guest::moonlight_address(&host, port);
             crate::guest::join(core.clone(), address, p.app)
                 .await
-                .map_err(|e| RpcError::new(codes::SESSION_FAILED, format!("{e:#}")))?;
+                .map_err(anyhow_err(codes::SESSION_FAILED))?;
+            return Ok(Value::Null);
+        }
+        methods::INVITE_CREATE => {
+            let p: crate::invites::CreateParams = params(req.params)?;
+            let created =
+                crate::invites::create(core, p).await.map_err(anyhow_err(codes::INTERNAL))?;
+            return serde_json::to_value(created).map_err(internal);
+        }
+        methods::INVITE_REVOKE => {
+            let p: TokenRef = params(req.params)?;
+            crate::invites::revoke(core, &p.token_hash)
+                .await
+                .map_err(anyhow_err(codes::INTERNAL))?;
+            return Ok(Value::Null);
+        }
+        methods::INVITE_ACCEPT => {
+            let p: Link = params(req.params)?;
+            // Valida subito il link, poi prosegue in background con eventi invite.progress
+            crate::invites::preview(&p.link).map_err(anyhow_err(codes::INVALID_PARAMS))?;
+            let core2 = core.clone();
+            tokio::spawn(async move {
+                if let Err(e) = crate::invites::accept(core2.clone(), p.link).await {
+                    core2.lock().await.emit(
+                        events::INVITE_PROGRESS,
+                        json!({ "side": "guest", "step": "error", "ok": false, "message": format!("{e:#}") }),
+                    );
+                }
+            });
+            return Ok(Value::Null);
+        }
+        methods::TAILSCALE_SET_OAUTH => {
+            let p: OAuth = params(req.params)?;
+            tokio::task::spawn_blocking(move || {
+                crate::invites::set_oauth(&p.client_id, &p.client_secret)
+            })
+            .await
+            .map_err(internal)?
+            .map_err(anyhow_err(codes::INVALID_PARAMS))?;
+            return Ok(Value::Null);
+        }
+        methods::FRIEND_REMOVE => {
+            let p: FriendRef = params(req.params)?;
+            crate::social::remove_friend(core, &p.id, false).await;
+            return Ok(Value::Null);
+        }
+        methods::FRIEND_BLOCK => {
+            let p: FriendRef = params(req.params)?;
+            crate::social::remove_friend(core, &p.id, true).await;
             return Ok(Value::Null);
         }
         _ => {}
@@ -224,6 +345,58 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
 
     let mut c = core.lock().await;
     match req.method.as_str() {
+        methods::PROFILE_GET => Ok(match c.me.as_ref() {
+            None => json!({ "exists": false }),
+            Some(m) => json!({
+                "exists": true,
+                "id": m.identity.id().to_string(),
+                "tag": m.identity.id().tag(),
+                "accent": m.identity.id().accent(),
+                "name": m.name(),
+                "avatarUrl": m.avatar_hash()
+                    .and_then(|h| c.db.avatar(h).ok().flatten())
+                    .map(|b| crate::identity::data_url(&b)),
+            }),
+        }),
+        methods::PROFILE_CREATE => {
+            let p: CreateProfile = params(req.params)?;
+            if c.me.is_some() {
+                return Err(RpcError::new(codes::INVALID_REQUEST, "il profilo esiste già"));
+            }
+            let me = crate::identity::Me::create(&c.db, &p.name, crate::core::now())
+                .map_err(anyhow_err(codes::INVALID_PARAMS))?;
+            c.me = Some(me);
+            c.emit(events::PRESENCE_CHANGED, json!({ "self": { "hasProfile": true } }));
+            Ok(Value::Null)
+        }
+        methods::FRIENDS_LIST => {
+            serde_json::to_value(crate::social::friend_views(&c)).map_err(internal)
+        }
+        methods::FRIENDS_REFRESH => {
+            c.poke.notify_one();
+            Ok(Value::Null)
+        }
+        methods::FRIEND_FAVORITE => {
+            let p: FriendRef = params(req.params)?;
+            c.db.set_favorite(&p.id, p.favorite).map_err(internal)?;
+            crate::social::emit_friends(&c);
+            Ok(Value::Null)
+        }
+        methods::INVITE_LIST => {
+            serde_json::to_value(c.db.invites(crate::core::now()).map_err(internal)?)
+                .map_err(internal)
+        }
+        methods::INVITE_PREVIEW => {
+            let p: Link = params(req.params)?;
+            crate::invites::preview(&p.link).map_err(anyhow_err(codes::INVALID_PARAMS))
+        }
+        methods::INVITE_APPROVE => {
+            let p: InviteDecision = params(req.params)?;
+            if let Some(tx) = c.approvals.remove(&p.request_id) {
+                let _ = tx.send(p.accept);
+            }
+            Ok(Value::Null)
+        }
         methods::STATE_SNAPSHOT => {
             let net = crate::core::Core::net_status(c.net.clone()).await;
             serde_json::to_value(c.snapshot(&net)).map_err(internal)
@@ -247,14 +420,31 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
             Ok(Value::Null)
         }
         methods::PROFILE_UPDATE => {
-            let p: ProfileUpdate = params(req.params)?;
+            let p: ProfileEdit = params(req.params)?;
             if let Some(s) = p.status {
                 c.set_status(s).map_err(config_error)?;
             }
+            let now = crate::core::now();
+            let core = &mut *c;
+            if let Some(me) = core.me.as_mut() {
+                if let Some(name) = &p.name {
+                    me.rename(&core.db, name, now).map_err(anyhow_err(codes::INVALID_PARAMS))?;
+                }
+                if let Some(b64) = &p.avatar_base64 {
+                    let bytes = data_encoding::BASE64
+                        .decode(b64.as_bytes())
+                        .map_err(|_| RpcError::new(codes::INVALID_PARAMS, "immagine non valida"))?;
+                    me.set_avatar(&core.db, &bytes, now)
+                        .map_err(anyhow_err(codes::INVALID_PARAMS))?;
+                }
+                if p.clear_avatar {
+                    me.clear_avatar(&core.db, now).map_err(anyhow_err(codes::INTERNAL))?;
+                }
+            }
+            if p.name.is_some() || p.avatar_base64.is_some() || p.clear_avatar {
+                c.emit(events::PRESENCE_CHANGED, json!({ "self": { "profile": true } }));
+            }
             Ok(Value::Null)
-        }
-        methods::FRIENDS_LIST => {
-            serde_json::to_value(c.db.friends().map_err(internal)?).map_err(internal)
         }
         methods::NET_RUN_DOCTOR => {
             let status = crate::core::Core::net_status(c.net.clone()).await;
@@ -266,7 +456,6 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
             Ok(Value::Null)
         }
         methods::FRIEND_SET_PERMISSIONS => Err(not_yet("M4")),
-        methods::INVITE_CREATE | methods::INVITE_ACCEPT => Err(not_yet("M3")),
         other => {
             Err(RpcError::new(codes::METHOD_NOT_FOUND, format!("metodo sconosciuto: {other}")))
         }

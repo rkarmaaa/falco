@@ -4,6 +4,7 @@ import type { Component } from 'vue';
 import { Gamepad2, Settings, Ticket, Users } from 'lucide-vue-next';
 import UiAvatar from './UiAvatar.vue';
 import { core } from '@/stores/core';
+import { social } from '@/stores/social';
 
 export type Section = 'friends' | 'host' | 'invites' | 'settings';
 
@@ -41,7 +42,9 @@ const items: { id: Section; icon: Component }[] = [
       @click="model = 'settings'"
     >
       <UiAvatar
-        name="Tu"
+        :name="social.profile.name ?? '?'"
+        :src="social.profile.avatarUrl"
+        :accent="social.profile.accent"
         :size="40"
         :status="core.snapshot?.status === 'busy' ? 'busy' : core.snapshot?.status === 'invisible' ? 'offline' : 'online'"
       />
