@@ -27,7 +27,7 @@ defineProps<{ size?: number }>();
 
   .wing,
   .body {
-    stroke: $accent-500;
+    stroke: $accent-fg;
     stroke-width: 2.5;
     stroke-linejoin: round;
   }
@@ -37,7 +37,7 @@ defineProps<{ size?: number }>();
   }
 
   .tail {
-    stroke: $accent-400;
+    stroke: $accent-fg;
     stroke-width: 2.5;
     stroke-linecap: round;
     stroke-linejoin: round;

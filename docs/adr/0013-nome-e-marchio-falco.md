@@ -22,11 +22,12 @@ Non c'erano utenti né rilasci: nessuna migrazione dei dati, dei link o del port
 
 ## Marchio
 
-- Concetto «volo notturno»: il falco pellegrino è il più veloce degli uccelli e vede da lontano, come uno stream a bassa latenza tra amici.
-- Simbolo: testa di falco pellegrino di profilo verso destra, cappuccio Cielo con il baffo, occhio e cera ambra, su quadrato arrotondato grafite.
-- Palette: accento **Cielo** `#4CA6FF` al posto della brace; l'ambra `#F5A524` resta solo nell'occhio e nelle illustrazioni, per non confondersi con lo stato «occupato».
-- Token SCSS neutri (`$accent-*`, `$on-accent`, `$eye`): un futuro cambio di colore non richiede rinomine.
-- Illustrazione degli stati vuoti: falco in planata a tratto (`FalconArt.vue`).
+- Logo disegnato da Marco (2026-11-18): testa di rapace di profilo in retino bianco e nero su gradiente indaco `#32409A` → `#111634`. Sostituisce il marchio provvisorio disegnato a mano.
+- Accento dell'interfaccia preso dal punto più chiaro dello sfondo del logo: `#32409A`. Essendo scuro si usa per i riempimenti con testo bianco; per testo, bordi e focus sul tema scuro c'è la tinta `$accent-fg` `#8C98EC`.
+- Superfici del tema scuro con una sfumatura blu notte coerente con il logo.
+- Token SCSS neutri (`$accent-*`, `$accent-fg`, `$on-accent`, `$eye`): un futuro cambio di colore non richiede rinomine.
+- Formati: SVG sorgente, PNG da 16 a 1024 px, ICO, ICNS, icone Tauri, favicon (elenco in `DESIGN_SYSTEM.md`).
+- Illustrazione degli stati vuoti: falco in planata a tratto (`FalconArt.vue`), da rifare nello stile del logo nella fase grafica.
 
 ## Da fare
 

@@ -134,7 +134,7 @@ async function approve(p: PendingPairing): Promise<void> {
 
     // Host pronto: stato vivo, bordo d'accento
     &.live {
-      box-shadow: inset 0 0 0 1px $accent-500;
+      box-shadow: inset 0 0 0 1px $accent-fg;
     }
 
     .state {

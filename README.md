@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/brand/falco-mark.svg" width="96" alt="" />
+  <img src="assets/brand/png/falco-256.png" width="112" alt="Falco" />
 </p>
 
 <h1 align="center">Falco</h1>
@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <a href="LICENSE"><img alt="Licenza GPL-3.0" src="https://img.shields.io/badge/licenza-GPL--3.0-4CA6FF"></a>
+  <a href="LICENSE"><img alt="Licenza GPL-3.0" src="https://img.shields.io/badge/licenza-GPL--3.0-32409A"></a>
   <img alt="Stato: M3" src="https://img.shields.io/badge/stato-M3%20inviti-1A1E26">
 </p>
 

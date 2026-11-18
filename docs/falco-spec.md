@@ -63,7 +63,7 @@ flowchart LR
   SA <== "stream (tailnet)" ==> MB
   TA <-. "coordinamento" .-> TS[("Servizi Tailscale")]:::external
   TB <-. "coordinamento" .-> TS
-  classDef falco stroke:#4CA6FF,stroke-width:2px
+  classDef falco stroke:#32409A,stroke-width:2px
   classDef ephemeral stroke-dasharray:4 3
   classDef external stroke-dasharray:4 3
 ```
@@ -315,7 +315,7 @@ sequenceDiagram
   O->>T: 3. accetta la condivisione (browser)
   O->>H: 4. POST /v1/handshake (token, profilo, nodo)
   H->>O: 5. amico salvato, PIN di 4 cifre
-  rect rgba(76,166,255,.15)
+  rect rgba(50,64,154,.2)
   O->>H: 6. pairing Moonlight ↔ Sunshine con il PIN
   end
   H--)T: 7. accetta l'invito inverso (non blocca il gioco)
@@ -594,7 +594,7 @@ Il traffico è già cifrato da WireGuard dentro la tailnet. La cifratura di Suns
 
 ## 12. Design system
 
-Lo stile è «volo notturno»: superfici grafite fredde, un solo colore d'accento (Cielo) usato con parsimonia, tipografia compatta e decisa. Il marchio è la testa di un falco pellegrino di profilo; la guida completa è in `DESIGN_SYSTEM.md`. Il colore indica sempre uno stato o un'azione, mai una decorazione.
+Lo stile è «volo notturno»: superfici blu notte, un solo colore d'accento (indaco `#32409A`, dal logo) usato con parsimonia, tipografia compatta e decisa. Il marchio è la testa di un rapace in retino su gradiente indaco (`assets/brand/falco-icon.svg`); la guida completa è in `DESIGN_SYSTEM.md`. Il colore indica sempre uno stato o un'azione, mai una decorazione.
 
 **Principi visivi**
 
@@ -607,23 +607,23 @@ Lo stile è «volo notturno»: superfici grafite fredde, un solo colore d'accent
 
 | Token | Valore | Uso |
 | --- | --- | --- |
-| `$bg-0` | `#0B0D11` | Sfondo dell'app |
-| `$bg-1` | `#12151B` | Barra laterale, pannelli |
-| `$bg-2` | `#1A1E26` | Card, campi |
-| `$bg-3` | `#242A34` | Hover, elementi selezionati |
-| `$line` | `#2E3540` | Bordi e separatori da 1 px |
+| `$bg-0` | `#0B0D16` | Sfondo dell'app |
+| `$bg-1` | `#11141F` | Barra laterale, pannelli |
+| `$bg-2` | `#181C2A` | Card, campi |
+| `$bg-3` | `#222739` | Hover, elementi selezionati |
+| `$line` | `#2B3147` | Bordi e separatori da 1 px |
 | `$text-1` | `#EEF1F5` | Testo principale |
 | `$text-2` | `#A7B0BD` | Testo secondario |
 | `$text-3` | `#8A93A0` | Etichette, testo disattivato |
-| `$accent-500` | `#4CA6FF` | Accento «Cielo», azione primaria (testo sopra: `$bg-0`, contrasto circa 7,6:1) |
-| `$accent-400` / `$accent-600` | `#79BCFF` / `#2B86E3` | Hover / premuto |
-| `$accent-glow` | `rgba(76, 166, 255, .35)` | Alone degli stati vivi |
-| `$eye` | `#F5A524` | Ambra dell'occhio del falco: solo marchio e illustrazioni |
+| `$accent-500` | `#32409A` | Indaco Falco (dal logo), riempimento dell'azione primaria con testo bianco (9:1) |
+| `$accent-400` / `$accent-600` | `#3B4BB3` / `#2A3684` | Hover / premuto |
+| `$accent-fg` | `#8C98EC` | Accento per testo, bordi, focus e stati vivi (7,2:1) |
+| `$accent-glow` | `rgba(140, 152, 236, .35)` | Alone degli stati vivi |
 | `$ok` | `#3DDC84` | Online, connessione diretta, ping buono |
 | `$busy` | `#F5B83D` | Occupato, relay DERP, ping medio |
 | `$danger` | `#FF4D5E` | Errori, espulsione, ping alto |
 
-Tema chiaro: `$bg-0 #F4F6F9`, `$bg-1 #FFFFFF`, `$bg-2 #FAFBFD`, `$bg-3 #E9EDF2`, `$line #DCE2EA`, `$text-1 #12161C`, `$text-2 #4E5967`, `$text-3 #66707D`, `$accent-500 #1F7FE0`. I token SCSS puntano a custom property CSS, e il tema cambia con `data-theme` su `<html>`.
+Tema chiaro: `$bg-0 #F4F6F9`, `$bg-1 #FFFFFF`, `$bg-2 #FAFBFD`, `$bg-3 #E9EDF2`, `$line #DCE2EA`, `$text-1 #12161C`, `$text-2 #4E5967`, `$text-3 #66707D`; l'accento resta `#32409A` sia come riempimento sia come `$accent-fg`. I token SCSS puntano a custom property CSS, e il tema cambia con `data-theme` su `<html>`.
 
 **Tipografia**
 
@@ -922,7 +922,7 @@ flowchart LR
   M0["M0 · Fondamenta<br/>monorepo, CI, spike"] --> M1["M1 · Streaming<br/>latenza = motori originali"]:::key
   M1 --> M2["M2 · Identità e amici"] --> M3["M3 · Inviti<br/>link → amici in &lt; 3 min"]
   M3 --> M4["M4 · Permessi<br/>e più ospiti"] --> M5["M5 · Rete<br/>e diagnostica"] --> M6["M6 · Rilascio 1.0"]
-  classDef key stroke:#4CA6FF,stroke-width:3px
+  classDef key stroke:#32409A,stroke-width:3px
 ```
 
 Il blocco in evidenza è il primo traguardo che conta: se a M1 la latenza non è uguale a quella di Sunshine e Moonlight originali, ci si ferma e si corregge prima di costruire il resto.

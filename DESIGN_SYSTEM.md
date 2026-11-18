@@ -1,6 +1,6 @@
 # Design system di Falco
 
-> «Volo notturno»: superfici grafite fredde, un solo colore d'accento, **Cielo**, usato con parsimonia, tipografia compatta e decisa. Il falco vede tutto e arriva per primo: l'interfaccia è essenziale, rapida, senza ornamenti. Il colore indica sempre uno stato o un'azione, mai una decorazione.
+> «Volo notturno»: superfici blu notte, un solo colore d'accento, l'**indaco Falco** del logo, usato con parsimonia, tipografia compatta e decisa. Il falco vede tutto e arriva per primo: l'interfaccia è essenziale, rapida, senza ornamenti. Il colore indica sempre uno stato o un'azione, mai una decorazione.
 
 Questo documento è la guida pratica al design system. La fonte di verità per i valori resta il §12 di [`docs/falco-spec.md`](docs/falco-spec.md); l'implementazione vive in [`apps/ui/src/styles`](apps/ui/src/styles) e nei componenti di [`apps/ui/src/components`](apps/ui/src/components). Se un file Figma delle schermate esiste, è la fonte del layout; colori, spazi e tipografia vengono sempre da qui.
 
@@ -25,22 +25,32 @@ Questo documento è la guida pratica al design system. La fonte di verità per i
 
 | Elemento | Regola |
 | --- | --- |
-| Nome | Sempre «Falco», con la maiuscola. Mai «FALCO» nei testi, mai abbreviato |
+| Nome | Sempre «Falco», con la maiuscola. Mai abbreviato |
 | Payoff | «Gioca con gli amici. Veloce come un falco.» (inglese: «Play with friends. Fast as a falcon.») |
-| Simbolo | Testa di falco pellegrino di profilo, rivolta a destra (in avanti): cappuccio Cielo scuro con il «baffo» sotto l'occhio, guancia chiara, becco corto uncinato, occhio e cera **ambra**. File: [`assets/brand/falco-mark.svg`](assets/brand/falco-mark.svg) |
-| Contenitore | Quadrato arrotondato (raggio 22% del lato) su `#12151B`, con alone Cielo tenue dietro la testa |
-| Ambra dell'occhio | `$eye` `#F5A524`: solo nel simbolo e nelle illustrazioni, mai per pulsanti o stati |
-| Area di rispetto | Almeno il 12% del lato attorno al contenitore |
-| Dimensione minima | 16 px (favicon e tray); sotto i 24 px si usa il simbolo senza alone |
-| Da non fare | Ruotare il falco a sinistra, cambiare i colori del simbolo, aggiungere testo dentro il contenitore |
+| Simbolo | Testa di rapace di profilo in retino (mezzatinta) bianco e nero su gradiente indaco, disegnato da Marco. Sorgente: [`assets/brand/falco-icon.svg`](assets/brand/falco-icon.svg) |
+| Gradiente | Da `#32409A` (in alto a sinistra) a `#111634` (in basso a destra); raggio degli angoli 96/512 |
+| Colore del brand | `#32409A`, preso dal punto più chiaro dello sfondo: è l'accento dell'interfaccia |
+| Dimensione minima | 16 px (favicon e tray) |
+| Da non fare | Ricolorare il retino, specchiare il simbolo, aggiungere testo dentro il contenitore |
 
-Le icone dell'app si rigenerano dal simbolo con `npx tauri icon ../../assets/brand/falco-mark.svg -o src-tauri/icons` da `apps/ui`.
+**Formati pronti** in `assets/brand/`:
+
+| File | Uso |
+| --- | --- |
+| `falco-icon.svg` | Sorgente vettoriale con il retino incorporato |
+| `png/falco-{16,24,32,48,64,128,256,512,1024}.png` | Siti, store, documenti, social |
+| `falco.ico` | Windows (multi-risoluzione) |
+| `falco.icns` | macOS |
+| `apps/ui/src-tauri/icons/*` | Icone del pacchetto e del tray (generate con Tauri) |
+| `apps/ui/public/favicon.ico`, `favicon-32.png` | Favicon della UI |
+
+Per rigenerare tutto dal sorgente: `npx tauri icon ../../assets/brand/falco-icon.svg -o src-tauri/icons` da `apps/ui`, e con `-p 16,24,32,48,64,128,256,512,1024` per i PNG.
 
 ## Principi
 
-1. **Una sola azione primaria per schermata**, sempre in Cielo con testo scuro.
+1. **Una sola azione primaria per schermata**, sempre in indaco con testo bianco.
 2. **Gerarchia data da spazio e peso del testo**, non da riquadri: bordi da 1 px, nessuna ombra pesante.
-3. **L'alone Cielo è solo per ciò che è «vivo»**: un amico in gioco, una sessione attiva, l'host disponibile.
+3. **L'alone d'accento è solo per ciò che è «vivo»**: un amico in gioco, una sessione attiva, l'host disponibile.
 4. **Tema scuro di default**, tema chiaro che segue il sistema; entrambi rispettano il contrasto WCAG AA.
 5. **Lo stato non è mai indicato dal solo colore**: c'è sempre un testo o un'icona.
 6. **Leggerezza**: nessuna libreria di componenti, nessun CSS-in-JS a runtime, animazioni solo su `transform` e `opacity`.
@@ -53,25 +63,28 @@ I token SCSS (`$bg-0`, `$accent-500`…) puntano a custom property CSS (`var(--b
 
 | Token | Scuro | Chiaro | Uso |
 | --- | --- | --- | --- |
-| `$bg-0` | `#0B0D11` | `#F4F6F9` | Sfondo dell'app |
-| `$bg-1` | `#12151B` | `#FFFFFF` | Barra laterale, pannelli, barra del titolo |
-| `$bg-2` | `#1A1E26` | `#FAFBFD` | Card, campi |
-| `$bg-3` | `#242A34` | `#E9EDF2` | Hover, elementi selezionati |
-| `$line` | `#2E3540` | `#DCE2EA` | Bordi e separatori da 1 px |
+| `$bg-0` | `#0B0D16` | `#F4F6F9` | Sfondo dell'app |
+| `$bg-1` | `#11141F` | `#FFFFFF` | Barra laterale, pannelli, barra del titolo |
+| `$bg-2` | `#181C2A` | `#FAFBFD` | Card, campi |
+| `$bg-3` | `#222739` | `#E9EDF2` | Hover, elementi selezionati |
+| `$line` | `#2B3147` | `#DCE2EA` | Bordi e separatori da 1 px |
 | `$text-1` | `#EEF1F5` | `#12161C` | Testo principale (17,2:1) |
 | `$text-2` | `#A7B0BD` | `#4E5967` | Testo secondario (8,9:1 / 6,6:1) |
 | `$text-3` | `#8A93A0` | `#66707D` | Etichette, testo disattivato (6,3:1 / 4,6:1) |
 
-### Cielo (accento)
+### Accento (indaco Falco)
+
+L'accento nasce dal logo: `#32409A`. È un indaco scuro, quindi ha **due ruoli**:
 
 | Token | Scuro | Chiaro | Uso |
 | --- | --- | --- | --- |
-| `$accent-500` | `#4CA6FF` | `#1F7FE0` | Azione primaria, sezione attiva, stato vivo |
-| `$accent-400` | `#79BCFF` | `#3A93F0` | Hover |
-| `$accent-600` | `#2B86E3` | `#1767BD` | Premuto |
-| `$accent-glow` | `rgba(76,166,255,.35)` | `rgba(31,127,224,.28)` | Alone degli stati vivi |
-| `$on-accent` | `#0B0D11` | `#0B0D11` | Testo e icone sopra l'accento (7,6:1 / 4,8:1) |
-| `$eye` | `#F5A524` | `#D9890B` | Ambra dell'occhio: solo marchio e illustrazioni |
+| `$accent-500` | `#32409A` | `#32409A` | Riempimenti: azione primaria, interruttore attivo (testo bianco, 9,0:1) |
+| `$accent-400` | `#3B4BB3` | `#3B4BB3` | Hover dei riempimenti |
+| `$accent-600` | `#2A3684` | `#2A3684` | Premuto |
+| `$on-accent` | `#FFFFFF` | `#FFFFFF` | Testo e icone sopra i riempimenti |
+| `$accent-fg` | `#8C98EC` | `#32409A` | Testo, bordi, focus, indicatori e stati vivi (7,2:1 / 8,3:1) |
+| `$accent-glow` | `rgba(140,152,236,.35)` | `rgba(50,64,154,.25)` | Alone degli stati vivi |
+| `$eye` | `#F4F1E8` | `#12161C` | Occhio nelle illustrazioni |
 
 ### Stati
 
@@ -86,7 +99,7 @@ Tutte le coppie testo/sfondo superano WCAG AA in entrambi i temi (rapporti tra p
 
 ### Regole d'uso
 
-- Il Cielo compare **al massimo una volta come riempimento** per schermata (l'azione primaria). Altrove solo come bordo, indicatore o alone.
+- L'indaco compare **al massimo una volta come riempimento** per schermata (l'azione primaria). Altrove solo come bordo, indicatore o alone.
 - Verde, ambra e rosso sono riservati agli stati: mai usarli per decorare.
 - Il colore `accent` di un amico (derivato dall'hash del suo ID) serve solo al suo monogramma.
 
@@ -178,7 +191,7 @@ Da costruire nelle prossime milestone, con le regole già fissate dalla specific
 
 - Icone [Lucide](https://lucide.dev) da `lucide-vue-next`, importate una per una (`import { Users } from 'lucide-vue-next'`), tratto **1,75**, dimensioni 16, 18, 20 o 22.
 - Le icone decorative hanno `aria-hidden="true"`; i pulsanti di sola icona hanno un'etichetta (`aria-label` o testo `sr-only`).
-- Illustrazioni originali a tratto (vedi `FalconArt.vue`): falco in planata, tratto Cielo da 2,5, occhio ambra `$eye`, scie in `$text-3`, alone `$accent-glow` tenue.
+- Illustrazioni originali a tratto (vedi `FalconArt.vue`): falco in planata, tratto `$accent-fg` da 2,5, occhio `$eye`, scie in `$text-3`, alone `$accent-glow` tenue.
 - Nessun asset di Parsec, Moonlight o Sunshine.
 
 ## Testi e tono
@@ -257,6 +270,5 @@ Da costruire nelle prossime milestone, con le regole già fissate dalla specific
 
 ## Questioni aperte
 
-- Approvazione del nuovo marchio e della palette «Volo notturno» (rinomina da Falò a Falco del 2026-11-18).
+- Rifinitura grafica delle schermate attorno al nuovo logo (fase dedicata).
 - Verifica che «Falco» non sia un marchio registrato nel settore del software di gioco.
-- Rifinitura grafica delle schermate: prevista in una fase dedicata.

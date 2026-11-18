@@ -73,7 +73,7 @@ const initials = computed(() =>
   }
 
   &.playing {
-    --ring: #{$accent-500};
+    --ring: #{$accent-fg};
     @include glow;
   }
 

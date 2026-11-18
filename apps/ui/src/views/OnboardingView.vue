@@ -3,7 +3,7 @@
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { ImagePlus } from 'lucide-vue-next';
-import FalconArt from '@/components/FalconArt.vue';
+import logo from '@/assets/falco-256.png';
 import UiButton from '@/components/UiButton.vue';
 import UiField from '@/components/UiField.vue';
 import UiAvatar from '@/components/UiAvatar.vue';
@@ -45,7 +45,7 @@ async function finish(): Promise<void> {
 <template>
   <section class="onboarding">
     <div v-if="step === 'welcome'" class="card">
-      <FalconArt :size="160" />
+      <img class="logo" :src="logo" width="128" height="128" alt="Falco" />
       <h1 class="display">{{ $t('onboarding.welcome') }}</h1>
       <p class="tagline">{{ $t('app.tagline') }}</p>
       <p class="body">{{ $t('onboarding.intro') }}</p>
@@ -82,6 +82,11 @@ async function finish(): Promise<void> {
     width: min(420px, 100%);
     text-align: center;
 
+    .logo {
+      border-radius: 22%;
+      box-shadow: 0 12px 40px $accent-glow;
+    }
+
     .display {
       font-size: $fs-display;
       line-height: 38px;
@@ -96,7 +101,7 @@ async function finish(): Promise<void> {
     }
 
     .tagline {
-      color: $accent-400;
+      color: $accent-fg;
       font-weight: 600;
       margin-top: -$sp-2;
     }
@@ -133,7 +138,7 @@ async function finish(): Promise<void> {
       }
 
       &:focus-within .pick {
-        color: $accent-500;
+        color: $accent-fg;
       }
     }
 

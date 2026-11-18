@@ -15,8 +15,10 @@ $accent-400: var(--accent-400);
 $accent-500: var(--accent-500);
 $accent-600: var(--accent-600);
 $accent-glow: var(--accent-glow);
+// Accento per testo, bordi, focus e indicatori (i riempimenti usano $accent-500)
+$accent-fg: var(--accent-fg);
 $on-accent: var(--on-accent);
-// Ambra dell'occhio del falco: solo nel marchio e nelle illustrazioni
+// Occhio del falco nelle illustrazioni
 $eye: var(--eye);
 $ok: var(--ok);
 $busy: var(--busy);
@@ -26,20 +28,21 @@ $scrim: var(--scrim);
 // Valori grezzi per tema, usati solo da _base.scss
 $themes: (
   dark: (
-    bg-0: #0b0d11,
-    bg-1: #12151b,
-    bg-2: #1a1e26,
-    bg-3: #242a34,
-    line: #2e3540,
+    bg-0: #0b0d16,
+    bg-1: #11141f,
+    bg-2: #181c2a,
+    bg-3: #222739,
+    line: #2b3147,
     text-1: #eef1f5,
     text-2: #a7b0bd,
     text-3: #8a93a0,
-    accent-400: #79bcff,
-    accent-500: #4ca6ff,
-    accent-600: #2b86e3,
-    accent-glow: rgba(76, 166, 255, 0.35),
-    on-accent: #0b0d11,
-    eye: #f5a524,
+    accent-400: #3b4bb3,
+    accent-500: #32409a,
+    accent-600: #2a3684,
+    accent-fg: #8c98ec,
+    accent-glow: rgba(140, 152, 236, 0.35),
+    on-accent: #ffffff,
+    eye: #f4f1e8,
     ok: #3ddc84,
     busy: #f5b83d,
     danger: #ff4d5e,
@@ -54,12 +57,13 @@ $themes: (
     text-1: #12161c,
     text-2: #4e5967,
     text-3: #66707d,
-    accent-400: #3a93f0,
-    accent-500: #1f7fe0,
-    accent-600: #1767bd,
-    accent-glow: rgba(31, 127, 224, 0.28),
-    on-accent: #0b0d11,
-    eye: #d9890b,
+    accent-400: #3b4bb3,
+    accent-500: #32409a,
+    accent-600: #2a3684,
+    accent-fg: #32409a,
+    accent-glow: rgba(50, 64, 154, 0.25),
+    on-accent: #ffffff,
+    eye: #12161c,
     ok: #1e9e5a,
     busy: #b7791f,
     danger: #d93848,

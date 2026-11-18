@@ -44,7 +44,7 @@ defineProps<{ label: string; placeholder?: string; inputmode?: 'text' | 'numeric
     }
 
     &:focus-visible {
-      border-color: $accent-500;
+      border-color: $accent-fg;
       box-shadow: 0 0 0 2px $accent-glow;
     }
   }

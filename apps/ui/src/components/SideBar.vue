@@ -93,7 +93,7 @@ const items: { id: Section; icon: Component }[] = [
     // Indicatore della sezione attiva: barra accento a sinistra
     &.active {
       background: $bg-3;
-      color: $accent-500;
+      color: $accent-fg;
 
       &::before {
         content: '';
@@ -102,7 +102,7 @@ const items: { id: Section; icon: Component }[] = [
         width: 3px;
         height: 20px;
         border-radius: $r-pill;
-        background: $accent-500;
+        background: $accent-fg;
       }
     }
   }

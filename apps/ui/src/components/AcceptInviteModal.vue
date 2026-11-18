@@ -162,7 +162,7 @@ onMounted(() => void check());
 }
 
 .spin {
-  color: $accent-500;
+  color: $accent-fg;
   animation: spin 1s linear infinite;
 
   @media (prefers-reduced-motion: reduce) {

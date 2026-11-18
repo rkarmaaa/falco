@@ -170,7 +170,7 @@ onMounted(async () => {
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 
       &.request {
-        box-shadow: inset 0 0 0 1px $accent-500, 0 8px 24px rgba(0, 0, 0, 0.25);
+        box-shadow: inset 0 0 0 1px $accent-fg, 0 8px 24px rgba(0, 0, 0, 0.25);
       }
 
       .tag {

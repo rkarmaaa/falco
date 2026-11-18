@@ -106,10 +106,10 @@ function ago(ts: number): string {
 
   // In gioco: bordo d'accento
   &.playing {
-    box-shadow: inset 0 0 0 1px $accent-500;
+    box-shadow: inset 0 0 0 1px $accent-fg;
 
     .activity {
-      color: $accent-400;
+      color: $accent-fg;
     }
   }
 
