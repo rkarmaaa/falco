@@ -231,7 +231,7 @@ mod tests {
     #[test]
     fn weekday_math() {
         // Lunedì 2026-11-16 12:00 UTC
-        let ts: i64 = 1_763_294_400;
+        let ts: i64 = 1_794_830_400;
         let days = ts.div_euclid(86_400);
         assert_eq!((days + 3).rem_euclid(7), 0);
     }
