@@ -81,12 +81,25 @@ Fatto in anticipo, utile alle milestone successive:
 - [x] Repository sull'account personale: `rkarmaaa/falco`
 - [ ] Fork dei motori compilati in CI al posto dei pacchetti ufficiali (`engines/`)
 - [ ] Budget del §10 misurati in CI (`falco-core bench`) e accessibilità verificata con screen reader
-- [ ] Rifinitura grafica delle schermate (fase dedicata)
+- [x] Rifinitura grafica delle schermate: vedi M7
+
+## M7 · Interfaccia «come Parsec» (fatto, ADR 0015)
+
+- [x] Barra laterale sostituita da una barra in alto compatta; barra delle azioni e dello stream in basso
+- [x] Card utente in basso a sinistra con ID oppure «In condivisione» / «Offline»
+- [x] Ospiti collegati con tastiera, mouse e controller che si illuminano all'input (hook degli input iniettati + XInput)
+- [x] Di default si guarda soltanto; tasto destro sull'ospite per concedere ogni dispositivo, «Solo guardare», «Espelli»
+- [x] Lo stream resta nella finestra (Moonlight incorporato), «Schermo intero» in fondo a destra, pulsantino discreto a schermo intero
+- [x] Profili di condivisione per l'host e «Trova le impostazioni migliori»
+- [x] Tema unico scuro, design system aggiornato
+- [x] Verificato in loopback su Windows 11 4K/150% (`scripts/e2e-embed.mjs`)
+- [ ] **Marco**: prova con un amico vero (due PC) di stream incorporato, input che si illuminano, «Applica ora»
+- [ ] Permessi di input per singolo ospite dentro Sunshine (fork): oggi i dispositivi accesi sono l'unione dei permessi
+- [ ] macOS: incorporare lo stream e rilevare gli input (oggi finestra separata, icone spente)
 
 ## Decisioni da prendere (Marco)
 
 - [ ] **Come arriva Tailscale senza installazione manuale**: installazione silenziosa del client ufficiale oppure `tsnet` dentro Falco ([ADR 0012](docs/adr/0012-nessuna-installazione-manuale.md))
-- [ ] Contrasto di `$text-3` e valori del tema chiaro ([DESIGN_SYSTEM.md](DESIGN_SYSTEM.md#questioni-aperte))
 - [ ] Verifica del marchio «Falco» nel settore
 - [ ] Base dell'host: Sunshine con i permessi di Apollo, oppure Apollo direttamente
 - [ ] Supporto ARM64 per Windows in v1 o in v2

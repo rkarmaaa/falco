@@ -45,8 +45,9 @@ fn core_connected(link: State<'_, Arc<CoreLink>>) -> bool {
 }
 
 /// Pulsantino sopra il flusso a schermo intero: finestra piccola, trasparente, sempre in primo piano.
+/// Asincrono: su Windows creare una finestra da un comando sincrono la blocca.
 #[tauri::command]
-fn pill(app: tauri::AppHandle, show: bool) -> Result<(), String> {
+async fn pill(app: tauri::AppHandle, show: bool) -> Result<(), String> {
     if let Some(w) = app.get_webview_window("pill") {
         if !show {
             return w.close().map_err(|e| e.to_string());
@@ -58,7 +59,7 @@ fn pill(app: tauri::AppHandle, show: bool) -> Result<(), String> {
     }
     let main = app.get_webview_window("main").ok_or("finestra principale assente")?;
     let monitor = main.current_monitor().map_err(|e| e.to_string())?;
-    let (w, h) = (340.0, 56.0);
+    let (w, h) = (480.0, 56.0);
     let builder =
         WebviewWindowBuilder::new(&app, "pill", WebviewUrl::App("index.html#pill".into()))
             .title("Falco")

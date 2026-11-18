@@ -2,6 +2,20 @@
 
 Formato [Keep a Changelog](https://keepachangelog.com/it/1.1.0/), versioni [SemVer](https://semver.org/lang/it/).
 
+## [1.0.0-rc.2] - in preparazione
+
+### Aggiunto
+
+- Nuova interfaccia: barra in alto compatta, barra delle azioni e dello stream in basso, tema unico scuro «Notte».
+- Lo stream resta dentro la finestra di Falco; «Schermo intero» con un pulsantino discreto per uscire.
+- Ospiti collegati nella barra con tastiera, mouse e controller che si illuminano quando ricevono input; tasto destro per concedere i singoli dispositivi. Di default si può solo guardare.
+- Qualità della condivisione: Bassa latenza, Bilanciato, Connessione lenta, Massima qualità, Personalizzato, e «Trova le impostazioni migliori».
+- Ogni errore ha un messaggio chiaro con «Copia» e «Debug» (informazioni dettagliate copiabili).
+
+### Rimosso
+
+- Tema chiaro e la scelta del tema (`general.theme` viene ignorato).
+
 ## [1.0.0-rc.1] - 2026-11-18
 
 ### Aggiunto

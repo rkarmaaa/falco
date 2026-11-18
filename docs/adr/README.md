@@ -18,3 +18,4 @@ Una decisione per file, numerate. Per un nuovo ADR copia [0000-modello.md](0000-
 | [0012](0012-nessuna-installazione-manuale.md) | Nessuna installazione manuale per l'utente | accettato |
 | [0013](0013-nome-e-marchio-falco.md) | Nome e marchio: Falco | accettato |
 | [0014](0014-latenza-minima.md) | Profilo a latenza minima | accettato |
+| [0015](0015-stream-incorporato-e-input-per-dispositivo.md) | Stream nella finestra e input per dispositivo | accettato |

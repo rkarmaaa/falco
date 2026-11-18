@@ -31,7 +31,10 @@ JSON-RPC 2.0, un messaggio JSON per riga, su named pipe `\\.\pipe\falco-core-<ut
 | `host.setClientEnabled` | `{ uuid, enabled }` | `null` | M1 |
 | `host.endSession` | — | `null` | M1 |
 | `session.pair` | `{ host, port? }` | `{ pin, host }`; esito con l'evento `pair.result` | M1 |
-| `session.join` | `{ host, port?, app? }` | `null`; la UI si chiude, lo stato arriva con `session.stats` e `session.ended` | M1 |
+| `session.join` | `{ host, port?, app? }` oppure `{ friendId }` | `null`; la UI resta aperta e incorpora lo stream ([ADR 0015](adr/0015-stream-incorporato-e-input-per-dispositivo.md)); stato con `session.started`, `session.stats`, `session.ended` | M1 |
+| `session.leave` | — | `null`; chiude lo stream in corso (`session.ended` con `reason: "left"`) | M7 |
+| `host.recommend` | — | `{ profile, reasons, checks }`: profilo di condivisione consigliato dal Dottore di rete | M7 |
+| `host.applyInputs` | — | `null`; riavvia subito la condivisione per applicare i dispositivi concessi | M7 |
 | `profile.get` | — | `{ exists, id, tag, accent, name, avatarUrl }` | M2 |
 | `profile.create` | `{ name }` | `null` | M2 |
 | `profile.update` | `{ name?, status?, avatarBase64?, clearAvatar? }` | `null` | M2 |
@@ -69,7 +72,10 @@ JSON-RPC 2.0, un messaggio JSON per riga, su named pipe `\\.\pipe\falco-core-<ut
 | `host.state` | `{ state: stopped \| starting \| ready \| error, message? }` | M1 |
 | `pair.result` | `{ host, ok }` | M1 |
 | `session.stats` | `{ phase: connecting \| connected \| stats, rttMs?, fps?, bitrateKbps?, path? }` | M1 |
-| `session.ended` | `{ host, reason, durationS }` | M1 |
+| `session.started` | `{ host, friendId, name, pid, startedAt, permissions, app }` | M7 |
+| `session.ended` | `{ host, reason, durationS, stats?, latencyMs? }` | M1 |
+| `host.input` | `{ keyboard, mouse, controller }`: dispositivi che stanno ricevendo input dagli ospiti | M7 |
+| `error.occurred` | `{ source, message, data? }` | M7 |
 | `session.knock` | `{ friendId, name }` | M4 |
 | `host.guests` | `{ guests }` | M4 |
 | `play.invite` | `{ friendId, name }` | M4 |
