@@ -49,3 +49,5 @@ embed-manifest = "1"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.56"
+willhook = "0.6"       # hook LL: input iniettati da Sunshine (icone che si illuminano)
+rusty-xinput = "1.3"   # stato dei controller virtuali degli ospiti

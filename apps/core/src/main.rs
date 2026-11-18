@@ -13,6 +13,7 @@ mod guest;
 mod host;
 mod i18n;
 mod identity;
+mod input_monitor;
 mod invites;
 mod ipc;
 mod netmodes;

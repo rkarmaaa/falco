@@ -1,4 +1,5 @@
-//! Ospite: pairing e streaming con Moonlight (§8.2). La UI si chiude durante il gioco.
+//! Ospite: pairing e streaming con Moonlight (§8.2).
+//! Su Windows Moonlight parte in finestra e la UI la incorpora (ADR 0015): l'app resta aperta.
 
 use std::net::IpAddr;
 use std::time::Duration;
@@ -215,8 +216,21 @@ pub async fn list_apps(bin: &std::path::Path, address: &str) -> Vec<String> {
     apps
 }
 
+/// Chi stiamo raggiungendo e cosa ci ha concesso (dalla risposta a «bussa»).
+#[derive(Debug, Clone, Default)]
+pub struct SessionInfo {
+    pub friend_id: Option<String>,
+    pub name: Option<String>,
+    pub permissions: Option<serde_json::Value>,
+}
+
 /// Avvia lo streaming; ritorna subito, la sessione prosegue in background.
-pub async fn join(core: Shared, address: String, app: String) -> anyhow::Result<()> {
+pub async fn join(
+    core: Shared,
+    address: String,
+    app: String,
+    info: SessionInfo,
+) -> anyhow::Result<()> {
     let bin = falco_engines::locate::moonlight().context("motore client non trovato")?;
     let (cfg, ts) = {
         let c = core.lock().await;
@@ -230,14 +244,41 @@ pub async fn join(core: Shared, address: String, app: String) -> anyhow::Result<
         let mut c = core.lock().await;
         let path = c.path_to(&address, &net);
         c.streaming = true;
-        c.close_ui();
-        plan(&cfg, &address, path, &app)
+        let mut req = plan(&cfg, &address, path, &app);
+        // In finestra: la UI la incorpora e gestisce lei lo schermo intero
+        if cfg!(windows) {
+            req.display_mode = "windowed".into();
+        }
+        req
     };
     let args = moonlight::stream_args(&req);
     tracing::info!("stream: {}", args.join(" "));
-    let (mut child, mut events) =
-        EngineProcess::spawn(&bin, &args, Priority::AboveNormal)?.into_parts();
+    let spawned = EngineProcess::spawn(&bin, &args, Priority::AboveNormal);
+    let (mut child, mut events) = match spawned {
+        Ok(p) => p.into_parts(),
+        Err(e) => {
+            core.lock().await.streaming = false;
+            return Err(e.into());
+        }
+    };
     let started = now();
+    let (stop_tx, mut stop_rx) = tokio::sync::oneshot::channel::<()>();
+    {
+        let mut c = core.lock().await;
+        let session = json!({
+            "host": address,
+            "friendId": info.friend_id,
+            "name": info.name.unwrap_or_else(|| address.clone()),
+            "pid": child.id(),
+            "startedAt": started,
+            "permissions": info.permissions,
+            "app": app,
+        });
+        c.session = Some(session.clone());
+        c.session_stop = Some(stop_tx);
+        c.open_ui();
+        c.emit(events::SESSION_STARTED, session);
+    }
 
     tokio::spawn(async move {
         let mut reason = "closed".to_owned();
@@ -267,6 +308,11 @@ pub async fn join(core: Shared, address: String, app: String) -> anyhow::Result<
                     None => {}
                 },
                 _ = child.wait() => break,
+                _ = &mut stop_rx, if ending.is_none() => {
+                    reason = "left".into();
+                    let _ = child.kill().await;
+                    break;
+                }
                 _ = async { match wait { Some(t) => tokio::time::sleep_until(t).await, None => std::future::pending().await } } => {
                     let _ = child.kill().await;
                     break;
@@ -275,6 +321,8 @@ pub async fn join(core: Shared, address: String, app: String) -> anyhow::Result<
         }
         let mut c = core.lock().await;
         c.streaming = false;
+        c.session = None;
+        c.session_stop = None;
         // Avvisa l'host che abbiamo lasciato la sessione
         if let (Some(fid), Some(me)) = (c.joined.take(), c.me.as_ref().map(|m| m.identity.clone()))
         {
@@ -302,7 +350,7 @@ pub async fn join(core: Shared, address: String, app: String) -> anyhow::Result<
             path: "direct".into(),
         });
         // Fine inattesa (codice diverso da 0): errore con il motivo di Moonlight
-        if reason != "0" && reason != "closed" {
+        if !matches!(reason.as_str(), "0" | "closed" | "left") {
             c.record_error(
                 "session",
                 &format!("sessione terminata: {reason}"),
@@ -324,7 +372,6 @@ pub async fn join(core: Shared, address: String, app: String) -> anyhow::Result<
                 "latencyMs": summary.as_ref().map(moonlight::VideoStats::total_ms),
             }),
         );
-        c.open_ui();
     });
     Ok(())
 }

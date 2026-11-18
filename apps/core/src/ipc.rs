@@ -230,16 +230,21 @@ struct KnockDecision {
 /// «Entra» da un amico: bussa, poi avvia lo stream (usato da UI e tray).
 pub async fn join_friend(core: &Shared, id: &str, app: &str) -> Result<(), RpcError> {
     let (host, port) = friend_target(core, id).await?;
-    knock_friend(core, id).await?;
-    core.lock().await.joined = Some(id.to_owned());
+    let permissions = knock_friend(core, id).await?;
+    let name = {
+        let mut c = core.lock().await;
+        c.joined = Some(id.to_owned());
+        c.db.friend(id).ok().flatten().map(|f| f.name)
+    };
     let address = crate::guest::moonlight_address(&host, port);
-    crate::guest::join(core.clone(), address, app.to_owned())
+    let info = crate::guest::SessionInfo { friend_id: Some(id.to_owned()), name, permissions };
+    crate::guest::join(core.clone(), address, app.to_owned(), info)
         .await
         .map_err(anyhow_err(codes::SESSION_FAILED))
 }
 
 /// Bussa all'host prima di avviare Moonlight (§7); errore con il motivo se rifiutato.
-async fn knock_friend(core: &Shared, id: &str) -> Result<(), RpcError> {
+async fn knock_friend(core: &Shared, id: &str) -> Result<Option<Value>, RpcError> {
     let (me, addr, wait) = {
         let c = core.lock().await;
         let me = c.me.as_ref().map(|m| m.identity.clone());
@@ -268,7 +273,9 @@ async fn knock_friend(core: &Shared, id: &str) -> Result<(), RpcError> {
         return Err(RpcError::new(codes::SESSION_FAILED, format!("l'host ha risposto {status}")));
     }
     match serde_json::from_slice::<crate::access::KnockAnswer>(&body) {
-        Ok(crate::access::KnockAnswer::Accepted { .. }) => Ok(()),
+        Ok(crate::access::KnockAnswer::Accepted { permissions }) => {
+            Ok(serde_json::to_value(permissions).ok())
+        }
         Ok(crate::access::KnockAnswer::Declined { reason }) => {
             Err(RpcError::new(codes::SESSION_FAILED, format!("ingresso non consentito ({reason})"))
                 .with_data(json!({ "reason": reason })))
@@ -362,7 +369,7 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
             }
             let (host, port) = (p.host.clone(), p.port.unwrap_or(47989));
             let address = crate::guest::moonlight_address(&host, port);
-            crate::guest::join(core.clone(), address, p.app)
+            crate::guest::join(core.clone(), address, p.app, crate::guest::SessionInfo::default())
                 .await
                 .map_err(anyhow_err(codes::SESSION_FAILED))?;
             return Ok(Value::Null);
@@ -436,6 +443,12 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
             }
             return Ok(Value::Null);
         }
+        methods::SESSION_LEAVE => {
+            if let Some(stop) = core.lock().await.session_stop.take() {
+                let _ = stop.send(());
+            }
+            return Ok(Value::Null);
+        }
         methods::HOST_KICK => {
             let p: FriendRef = params(req.params)?;
             crate::access::kick(core, &p.id).await;
@@ -471,6 +484,21 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
         }
         methods::NET_RUN_DOCTOR => {
             return Ok(crate::doctor::to_json(&crate::doctor::run(core).await));
+        }
+        methods::HOST_RECOMMEND => {
+            let checks = crate::doctor::run(core).await;
+            let (profile, reasons) = crate::doctor::recommend(&checks);
+            return Ok(json!({ "profile": profile, "reasons": reasons, "checks": checks }));
+        }
+        methods::HOST_APPLY_INPUTS => {
+            // Riavvia subito la condivisione anche con ospiti collegati (si ricollegano)
+            {
+                let mut c = core.lock().await;
+                c.guests.clear();
+                crate::access::emit_guests(&mut c);
+            }
+            crate::access::sync_inputs(core).await;
+            return Ok(Value::Null);
         }
         methods::DEBUG_REPORT => {
             let logs = core.lock().await.data_dir.join("logs");

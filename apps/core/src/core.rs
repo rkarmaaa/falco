@@ -88,6 +88,9 @@ pub struct Core {
     pub host_available: bool,
     pub host: crate::host::Host,
     pub streaming: bool,
+    /// Sessione da ospite in corso e comando per chiuderla.
+    pub session: Option<serde_json::Value>,
+    pub session_stop: Option<tokio::sync::oneshot::Sender<()>>,
     pub last_self_ips: Vec<std::net::IpAddr>,
     /// Identità locale; `None` finché l'utente non completa l'onboarding.
     pub me: Option<crate::identity::Me>,
@@ -109,6 +112,8 @@ pub struct Core {
     pub user_available: bool,
     /// Input da riapplicare in Sunshine appena non ci sono ospiti.
     pub inputs_pending: bool,
+    /// Attivo solo con ospiti collegati.
+    pub input_monitor: Option<crate::input_monitor::InputMonitor>,
     /// Altri Falco visti nella rete locale (provider LAN), per ID.
     pub lan_peers: std::collections::HashMap<String, falco_net::lan::LanPeer>,
     /// Aggiornamento disponibile (ADR 0008).
@@ -141,6 +146,8 @@ impl Core {
             host_available: false,
             host: crate::host::Host::new(data_dir),
             streaming: false,
+            session: None,
+            session_stop: None,
             last_self_ips: Vec::new(),
             me,
             live: std::collections::HashMap::new(),
@@ -152,6 +159,7 @@ impl Core {
             joined: None,
             user_available: false,
             inputs_pending: false,
+            input_monitor: None,
             lan_peers: std::collections::HashMap::new(),
             update: None,
             data_dir: data_dir.to_path_buf(),
@@ -186,6 +194,10 @@ impl Core {
 
     pub fn subscribe(&self) -> broadcast::Receiver<Notification> {
         self.events.subscribe()
+    }
+
+    pub fn event_sender(&self) -> broadcast::Sender<Notification> {
+        self.events.clone()
     }
 
     pub fn emit(&self, method: &str, params: serde_json::Value) {
@@ -240,6 +252,7 @@ impl Core {
             friends_count: self.db.friend_count().unwrap_or(0),
             has_profile: self.me.is_some(),
             oauth_configured: crate::invites::oauth_configured(),
+            session: self.session.clone(),
         }
     }
 
@@ -282,7 +295,7 @@ impl Core {
         }
     }
 
-    /// Chiude la UI prima dello streaming: nessuna webview durante il gioco (§10).
+    /// Chiude la UI (uscita dal tray, riavvio per aggiornamento).
     pub fn close_ui(&mut self) {
         if let Some(mut ui) = self.ui.take() {
             let _ = ui.kill();
@@ -363,6 +376,7 @@ pub async fn set_available(shared: Shared, available: bool) {
     if c.host_available {
         let alive = c.host.alive();
         c.guests.clear();
+        c.input_monitor = None;
         c.host.state = if ready && alive {
             crate::host::HostState::Ready
         } else {

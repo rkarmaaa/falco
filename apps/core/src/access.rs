@@ -220,7 +220,7 @@ pub async fn knock(shared: &Shared, friend_id: &str) -> KnockAnswer {
             friend_id.to_owned(),
             ActiveGuest { friend_id: friend_id.to_owned(), name, since: now() },
         );
-        emit_guests(&c);
+        emit_guests(&mut c);
     }
     apply_all(shared).await;
     KnockAnswer::Accepted { permissions: Box::new(perms) }
@@ -231,7 +231,7 @@ pub async fn leave(shared: &Shared, friend_id: &str) {
     {
         let mut c = shared.lock().await;
         c.guests.remove(friend_id);
-        emit_guests(&c);
+        emit_guests(&mut c);
     }
     apply_all(shared).await;
     // Permessi cambiati durante la sessione: si applicano ora che è finita
@@ -245,7 +245,7 @@ pub async fn kick(shared: &Shared, friend_id: &str) {
     let (api, uuid) = {
         let mut c = shared.lock().await;
         c.guests.remove(friend_id);
-        emit_guests(&c);
+        emit_guests(&mut c);
         (c.host.api(), c.db.permissions(friend_id).ok().flatten().and_then(|p| p.2))
     };
     if let (Some(api), Some(uuid)) = (api, uuid) {
@@ -258,9 +258,17 @@ pub async fn kick(shared: &Shared, friend_id: &str) {
     }
 }
 
-pub fn emit_guests(c: &Core) {
+pub fn emit_guests(c: &mut Core) {
     let list: Vec<&ActiveGuest> = c.guests.values().collect();
     c.emit(events::HOST_GUESTS, json!({ "guests": list }));
+    // Il monitor degli input gira solo con ospiti che possono usare almeno un dispositivo
+    let i = c.host.inputs;
+    let wanted = !c.guests.is_empty() && (i.keyboard || i.mouse || i.controller);
+    if wanted && c.input_monitor.is_none() {
+        c.input_monitor = Some(crate::input_monitor::InputMonitor::start(c.event_sender()));
+    } else if !wanted {
+        c.input_monitor = None;
+    }
 }
 
 /// Ricontrolla fasce orarie e scadenze ogni minuto mentre si ospita.

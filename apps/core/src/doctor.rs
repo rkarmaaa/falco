@@ -311,9 +311,73 @@ pub fn to_json(checks: &[Check]) -> serde_json::Value {
     json!({ "checks": checks })
 }
 
+/// Profilo di condivisione consigliato dai controlli: `(profilo, motivi)`.
+/// La latenza resta la priorità; si scende solo quando la rete lo impone.
+pub fn recommend(checks: &[Check]) -> (&'static str, Vec<&'static str>) {
+    let warn = |id: &str| {
+        checks.iter().any(|c| c.id == id && c.level != Level::Ok && c.level != Level::Pending)
+    };
+    let mbps = checks
+        .iter()
+        .filter(|c| c.id == "bandwidth")
+        .filter_map(|c| {
+            c.value.as_deref()?.rsplit(" · ").next()?.trim_end_matches(" Mbps").parse::<f64>().ok()
+        })
+        .reduce(f64::min);
+    let mut reasons = Vec::new();
+    let relay = warn("peerPath") || warn("peersRelay");
+    if relay {
+        reasons.push("relay");
+    }
+    if mbps.is_some_and(|m| m < 20.0) {
+        reasons.push("lowBandwidth");
+    }
+    if relay || !reasons.is_empty() {
+        return ("slow", reasons);
+    }
+    if mbps.is_some_and(|m| m < 40.0) {
+        reasons.push("mediumBandwidth");
+    }
+    if warn("jitter") {
+        reasons.push("jitter");
+    }
+    if warn("wifi") {
+        reasons.push("wifi");
+    }
+    if checks.iter().any(|c| c.id == "lastSession" && c.action == Some("framesDropped")) {
+        reasons.push("framesDropped");
+    }
+    if !reasons.is_empty() {
+        return ("balanced", reasons);
+    }
+    if mbps.is_none() {
+        reasons.push("noFriend");
+    } else {
+        reasons.push("fastNetwork");
+    }
+    ("latency", reasons)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn recommendation_follows_the_network() {
+        let c = |id: &'static str, level, value: Option<&str>| Check {
+            id,
+            level,
+            value: value.map(str::to_owned),
+            action: None,
+        };
+        assert_eq!(recommend(&[]).0, "latency");
+        let slow = [c("bandwidth", Level::Warn, Some("Luca · 12 Mbps"))];
+        assert_eq!(recommend(&slow), ("slow", vec!["lowBandwidth"]));
+        let mid = [c("bandwidth", Level::Ok, Some("Luca · 35 Mbps")), c("wifi", Level::Warn, None)];
+        assert_eq!(recommend(&mid), ("balanced", vec!["mediumBandwidth", "wifi"]));
+        let fast = [c("bandwidth", Level::Ok, Some("Luca · 300 Mbps"))];
+        assert_eq!(recommend(&fast), ("latency", vec!["fastNetwork"]));
+    }
 
     #[test]
     fn last_session_thresholds() {

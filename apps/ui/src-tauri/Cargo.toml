@@ -20,5 +20,9 @@ serde.workspace = true
 serde_json.workspace = true
 tokio = { workspace = true, features = ["sync", "time", "io-util", "macros"] }
 
+[target.'cfg(windows)'.dependencies]
+# Incorporare la finestra di Moonlight (ADR 0015); già presente tra le dipendenze di Tauri
+windows-sys = { version = "0.60", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }
+
 [lints]
 workspace = true

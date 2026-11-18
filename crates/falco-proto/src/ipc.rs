@@ -55,6 +55,8 @@ pub mod methods {
     pub const TAILSCALE_INSTALL: &str = "tailscale.install";
     pub const APP_OPEN_LINK: &str = "app.openLink";
     pub const DEBUG_REPORT: &str = "debug.report";
+    pub const HOST_RECOMMEND: &str = "host.recommend";
+    pub const HOST_APPLY_INPUTS: &str = "host.applyInputs";
 }
 
 pub mod events {
@@ -64,6 +66,10 @@ pub mod events {
     pub const SESSION_KNOCK: &str = "session.knock";
     pub const SESSION_STATS: &str = "session.stats";
     pub const SESSION_ENDED: &str = "session.ended";
+    /// Moonlight avviato: `{ host, name, pid, startedAt, permissions? }` (la UI incorpora la finestra).
+    pub const SESSION_STARTED: &str = "session.started";
+    /// Input ricevuti dagli ospiti: `{ keyboard, mouse, controller }` (al massimo 4 volte al secondo).
+    pub const HOST_INPUT: &str = "host.input";
     pub const NET_WARNING: &str = "net.warning";
     pub const HOST_STATE: &str = "host.state";
     pub const PAIR_RESULT: &str = "pair.result";
@@ -210,6 +216,9 @@ pub struct StateSnapshot {
     /// Il profilo esiste? Se no, la UI mostra l'onboarding.
     pub has_profile: bool,
     pub oauth_configured: bool,
+    /// Sessione da ospite in corso (stessi campi di `session.started`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub session: Option<serde_json::Value>,
 }
 
 #[cfg(test)]
