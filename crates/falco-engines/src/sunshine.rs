@@ -42,6 +42,31 @@ pub struct HostSettings {
     /// Cartella con conf, apps, credenziali, stato e certificati di questa istanza.
     pub dir: PathBuf,
     pub overrides: BTreeMap<String, String>,
+    /// Tetto del bitrate per tutti gli ospiti (0 = nessuno).
+    pub max_bitrate_kbps: u32,
+    /// `speed` | `balanced` | `quality`
+    pub encoder_quality: String,
+    /// Dispositivi che almeno un amico può usare: gli altri sono spenti in Sunshine.
+    pub inputs: Inputs,
+}
+
+/// Input accettati da Sunshine (interruttori globali, finché il fork non li porta per client).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct Inputs {
+    pub keyboard: bool,
+    pub mouse: bool,
+    pub controller: bool,
+}
+
+/// Parametri di un profilo di condivisione: (FEC %, tetto kbps, qualità encoder).
+pub fn profile_params(profile: &str) -> Option<(u8, u32, &'static str)> {
+    Some(match profile {
+        "latency" => (10, 0, "speed"),
+        "balanced" => (20, 0, "balanced"),
+        "slow" => (30, 15_000, "speed"),
+        "quality" => (15, 0, "quality"),
+        _ => return None,
+    })
 }
 
 impl HostSettings {
@@ -114,6 +139,13 @@ pub fn generate_conf(s: &HostSettings, gpu: GpuVendor, platform: Platform) -> St
     put("cert", path("cert.pem"));
     put("upnp", if s.upnp { "enabled" } else { "disabled" }.into());
     put("fec_percentage", s.fec_percent.to_string());
+    if s.max_bitrate_kbps > 0 {
+        put("max_bitrate", s.max_bitrate_kbps.to_string());
+    }
+    let onoff = |b: bool| if b { "enabled" } else { "disabled" }.to_owned();
+    put("keyboard", onoff(s.inputs.keyboard));
+    put("mouse", onoff(s.inputs.mouse));
+    put("controller", onoff(s.inputs.controller));
     put("origin_web_ui_allowed", "pc".into());
     put("hevc_mode", "0".into()); // 0 = decide la capacità del client
     put("av1_mode", "0".into());
@@ -121,17 +153,28 @@ pub fn generate_conf(s: &HostSettings, gpu: GpuVendor, platform: Platform) -> St
     if gpu == GpuVendor::Amd || s.encoder == "amf" {
         put("amd_usage", "ultralowlatency".into());
         put("amd_rc", "cbr".into());
-        put("amd_quality", "speed".into());
+        put("amd_quality", s.encoder_quality.clone());
         put("amd_preanalysis", "disabled".into());
     }
     // Preset a latenza minima per gli altri encoder (valori verificati su Sunshine 2026.914)
     if gpu == GpuVendor::Nvidia || s.encoder == "nvenc" {
-        put("nvenc_preset", "1".into()); // P1, il più veloce
+        // P1 il più veloce, P4 bilanciato, P7 il più bello
+        let preset = match s.encoder_quality.as_str() {
+            "quality" => "7",
+            "balanced" => "4",
+            _ => "1",
+        };
+        put("nvenc_preset", preset.into());
         put("nvenc_twopass", "disabled".into());
         put("nvenc_latency_over_power", "enabled".into());
     }
     if gpu == GpuVendor::Intel || s.encoder == "quicksync" {
-        put("qsv_preset", "veryfast".into());
+        let preset = match s.encoder_quality.as_str() {
+            "quality" => "slower",
+            "balanced" => "medium",
+            _ => "veryfast",
+        };
+        put("qsv_preset", preset.into());
     }
     if s.encoder == "software" {
         put("sw_preset", "ultrafast".into());
@@ -188,6 +231,9 @@ mod tests {
             name: "marco-pc".into(),
             dir: PathBuf::from("C:/dati/sunshine"),
             overrides: BTreeMap::new(),
+            max_bitrate_kbps: 0,
+            encoder_quality: "speed".into(),
+            inputs: Inputs::default(),
         }
     }
 
@@ -229,6 +275,24 @@ nvidia geforce rtx 4070"
             GpuVendor::Nvidia
         );
         assert_eq!(vendor_from_names("microsoft basic display"), GpuVendor::Unknown);
+    }
+
+    #[test]
+    fn inputs_and_bitrate_cap() {
+        let mut s = settings();
+        s.max_bitrate_kbps = 15_000;
+        s.inputs = Inputs { keyboard: false, mouse: true, controller: true };
+        let conf = generate_conf(&s, GpuVendor::Amd, Platform::Windows);
+        for line in [
+            "max_bitrate = 15000",
+            "keyboard = disabled",
+            "mouse = enabled",
+            "controller = enabled",
+        ] {
+            assert!(conf.lines().any(|l| l == line), "manca «{line}»");
+        }
+        assert_eq!(profile_params("slow"), Some((30, 15_000, "speed")));
+        assert_eq!(profile_params("custom"), None);
     }
 
     #[test]

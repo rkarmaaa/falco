@@ -301,8 +301,17 @@ pub async fn join(core: Shared, address: String, app: String) -> anyhow::Result<
             avg_rtt_ms: summary.as_ref().map(|v| f64::from(v.network_latency_ms)),
             path: "direct".into(),
         });
+        // Fine inattesa (codice diverso da 0): errore con il motivo di Moonlight
+        if reason != "0" && reason != "closed" {
+            c.record_error(
+                "session",
+                &format!("sessione terminata: {reason}"),
+                Some(json!({ "host": address, "reason": reason })),
+            );
+        }
         if let Some(s) = &summary {
-            let last = json!({ "host": address, "at": now(), "stats": s, "latencyMs": s.total_ms() });
+            let last =
+                json!({ "host": address, "at": now(), "stats": s, "latencyMs": s.total_ms() });
             let _ = c.db.set_meta("last_session", &last.to_string());
         }
         c.emit(

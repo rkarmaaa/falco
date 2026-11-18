@@ -69,7 +69,11 @@ async fn handle_line(core: &Shared, line: &str) -> Option<Response> {
         }
     };
     let id = req.id.clone();
+    let method = req.method.clone();
     let result = dispatch(core, req).await;
+    if let Err(e) = &result {
+        core.lock().await.errors.push(&method, Some(e.code), &e.message, e.data.clone());
+    }
     // Le notifiche (senza id) non ricevono risposta
     let id = id?;
     Some(match result {
@@ -340,8 +344,12 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
             let pin = crate::guest::new_pin();
             let (core2, pin2, addr2) = (core.clone(), pin.clone(), address.clone());
             tokio::spawn(async move {
-                if let Err(e) = crate::guest::pair(core2, addr2, pin2).await {
-                    tracing::warn!("pairing: {e:#}");
+                if let Err(e) = crate::guest::pair(core2.clone(), addr2.clone(), pin2).await {
+                    core2.lock().await.record_error(
+                        "session.pair",
+                        &format!("{e:#}"),
+                        Some(json!({ "host": addr2 })),
+                    );
                 }
             });
             return Ok(json!({ "pin": pin, "host": address }));
@@ -379,6 +387,7 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
             let core2 = core.clone();
             tokio::spawn(async move {
                 if let Err(e) = crate::invites::accept(core2.clone(), p.link).await {
+                    core2.lock().await.errors.push("invite.accept", None, &format!("{e:#}"), None);
                     core2.lock().await.emit(
                         events::INVITE_PROGRESS,
                         json!({ "side": "guest", "step": "error", "ok": false, "message": format!("{e:#}") }),
@@ -415,8 +424,9 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
                     .map_err(internal)?;
                 crate::social::emit_friends(&c);
             }
-            // Effetto lato host senza riconnessione
+            // Effetto lato host senza riconnessione; gli input richiedono il riavvio del motore
             crate::access::apply_all(core).await;
+            crate::access::sync_inputs(core).await;
             return Ok(Value::Null);
         }
         methods::HOST_ANSWER_KNOCK => {
@@ -461,6 +471,10 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
         }
         methods::NET_RUN_DOCTOR => {
             return Ok(crate::doctor::to_json(&crate::doctor::run(core).await));
+        }
+        methods::DEBUG_REPORT => {
+            let logs = core.lock().await.data_dir.join("logs");
+            return Ok(crate::debug::report(core, &logs).await);
         }
         methods::UPDATE_CHECK => {
             let a = crate::updater::check(core).await.map_err(anyhow_err(codes::INTERNAL))?;

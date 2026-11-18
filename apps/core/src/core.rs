@@ -107,12 +107,16 @@ pub struct Core {
     pub joined: Option<String>,
     /// «Disponibile» scelto dall'utente (non un avvio temporaneo per il pairing).
     pub user_available: bool,
+    /// Input da riapplicare in Sunshine appena non ci sono ospiti.
+    pub inputs_pending: bool,
     /// Altri Falco visti nella rete locale (provider LAN), per ID.
     pub lan_peers: std::collections::HashMap<String, falco_net::lan::LanPeer>,
     /// Aggiornamento disponibile (ADR 0008).
     pub update: Option<crate::updater::Available>,
     /// Cartella dei dati locali (motori, aggiornamenti).
     pub data_dir: std::path::PathBuf,
+    /// Errori recenti per il report di debug.
+    pub errors: crate::debug::ErrorLog,
     ui: Option<Child>,
     events: broadcast::Sender<Notification>,
     notify_tray: Notify,
@@ -147,9 +151,11 @@ impl Core {
             knocks: std::collections::HashMap::new(),
             joined: None,
             user_available: false,
+            inputs_pending: false,
             lan_peers: std::collections::HashMap::new(),
             update: None,
             data_dir: data_dir.to_path_buf(),
+            errors: crate::debug::ErrorLog::default(),
             ui: None,
             events: broadcast::channel(64).0,
             notify_tray,
@@ -162,6 +168,16 @@ impl Core {
         if let Err(e) = r {
             tracing::warn!("notifica non mostrata: {e}");
         }
+    }
+
+    /// Errore di un'attività di sfondo: registrato e inviato alla UI.
+    pub fn record_error(&mut self, source: &str, message: &str, data: Option<serde_json::Value>) {
+        tracing::warn!("{source}: {message}");
+        self.errors.push(source, None, message, data.clone());
+        self.emit(
+            events::ERROR_OCCURRED,
+            json!({ "source": source, "message": message, "data": data }),
+        );
     }
 
     pub fn live_remove(&mut self, id: &str) {
@@ -331,8 +347,9 @@ pub async fn set_available(shared: Shared, available: bool) {
         return;
     }
     let cfg = c.config.config().clone();
-    if let Err(e) = c.host.start(&cfg).await {
-        tracing::warn!("host non avviato: {e:#}");
+    let inputs = crate::access::wanted_inputs(&c);
+    if let Err(e) = c.host.start(&cfg, inputs).await {
+        c.record_error("host.start", &format!("{e:#}"), None);
         c.host.state = crate::host::HostState::Error(format!("{e:#}"));
         c.host_available = false;
         c.publish_host();

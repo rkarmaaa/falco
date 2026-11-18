@@ -81,6 +81,8 @@ str_enum!(DisplayMode { Fullscreen = "fullscreen", Borderless = "borderless", Wi
 str_enum!(Audio { Stereo = "stereo", Surround51 = "5.1", Surround71 = "7.1" } default Stereo);
 str_enum!(CaptureKeys { Never = "never", Fullscreen = "fullscreen", Always = "always" } default Fullscreen);
 str_enum!(Overlay { Auto = "auto", Always = "always", Never = "never" } default Auto);
+str_enum!(HostProfile { Latency = "latency", Balanced = "balanced", Slow = "slow", Quality = "quality", Custom = "custom" } default Latency);
+str_enum!(EncoderQuality { Speed = "speed", Balanced = "balanced", Quality = "quality" } default Speed);
 str_enum!(Encoder { Auto = "auto", Amf = "amf", Nvenc = "nvenc", QuickSync = "quicksync", VideoToolbox = "videotoolbox", Software = "software" } default Auto);
 str_enum!(Provider { Tailscale = "tailscale", Lan = "lan", Direct = "direct", Headscale = "headscale" } default Tailscale);
 str_enum!(AddressFamily { Ipv4 = "ipv4", Ipv6 = "ipv6", Both = "both" } default Both);
@@ -148,6 +150,11 @@ pub struct Host {
     pub default_role: String,
     pub knock_timeout_s: u32,
     pub apps_autodetect: bool,
+    /// Profilo di condivisione: imposta bitrate massimo, FEC e qualità dell'encoder.
+    pub profile: HostProfile,
+    /// Tetto del bitrate per tutti gli ospiti (0 = nessun tetto). Solo con profilo «custom».
+    pub max_bitrate_kbps: u32,
+    pub encoder_quality: EncoderQuality,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -240,6 +247,9 @@ impl Default for Host {
             default_role: "spettatore".into(),
             knock_timeout_s: 30,
             apps_autodetect: true,
+            profile: HostProfile::Latency,
+            max_bitrate_kbps: 0,
+            encoder_quality: EncoderQuality::Speed,
         }
     }
 }
@@ -317,6 +327,9 @@ impl Config {
         let h = &self.host;
         check_range(&mut out, "host.max_guests", h.max_guests, 1, 8);
         check_range(&mut out, "host.knock_timeout_s", h.knock_timeout_s, 5, 300);
+        if h.max_bitrate_kbps != 0 {
+            check_range(&mut out, "host.max_bitrate_kbps", h.max_bitrate_kbps, 1_000, 150_000);
+        }
         if !ROLES.contains(&h.default_role.as_str()) {
             out.push(Issue {
                 key: "host.default_role",

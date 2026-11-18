@@ -54,6 +54,7 @@ pub mod methods {
     pub const UPDATE_INSTALL: &str = "update.install";
     pub const TAILSCALE_INSTALL: &str = "tailscale.install";
     pub const APP_OPEN_LINK: &str = "app.openLink";
+    pub const DEBUG_REPORT: &str = "debug.report";
 }
 
 pub mod events {
@@ -73,6 +74,8 @@ pub mod events {
     pub const UPDATE_AVAILABLE: &str = "update.available";
     pub const UPDATE_PROGRESS: &str = "update.progress";
     pub const UI_OPEN_LINK: &str = "ui.openLink";
+    /// Errore di un'attività di sfondo (host, pairing, inviti, sessioni, aggiornamenti).
+    pub const ERROR_OCCURRED: &str = "error.occurred";
 }
 
 pub mod codes {

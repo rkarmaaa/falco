@@ -17,8 +17,7 @@ pub const MANIFEST_URL: &str =
     "https://github.com/rkarmaaa/falco/releases/latest/download/latest.json";
 /// Chiave pubblica minisign degli aggiornamenti (base64 del file `.pub`).
 /// Vuota finchÃ© non viene generata la chiave di rilascio: aggiornamenti spenti.
-pub const PUBLIC_KEY: &str =
-    "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDM1MkM1QTE3Q0NCMDdERUUKUldUdWZiRE1GMW9zTlZGbXMyWnZKbmUrS1p6V1RWU2s2ZDRiVWFtdEk0ZUFtL1RmNzJScnF2dFIK";
+pub const PUBLIC_KEY: &str = "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDM1MkM1QTE3Q0NCMDdERUUKUldUdWZiRE1GMW9zTlZGbXMyWnZKbmUrS1p6V1RWU2s2ZDRiVWFtdEk0ZUFtL1RmNzJScnF2dFIK";
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Manifest {
@@ -158,7 +157,7 @@ pub async fn run(shared: Shared) {
                         !c.streaming && c.guests.is_empty()
                     };
                     if idle && let Err(e) = install(&shared).await {
-                        tracing::warn!("aggiornamento automatico: {e:#}");
+                        shared.lock().await.record_error("update.install", &format!("{e:#}"), None);
                     }
                 }
                 Ok(_) => {}

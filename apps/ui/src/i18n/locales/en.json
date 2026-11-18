@@ -208,7 +208,26 @@
   },
   "errors": {
     "notImplemented": "This feature arrives with milestone {milestone}.",
-    "cannotJoin": "I can't join {name}. {why}. Try again shortly or ask if they're still available."
+    "cannotJoin": "I can't join {name}. {why}. Try again shortly or ask if they're still available.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "debug": "Debug",
+    "reportTitle": "error report",
+    "theHost": "the host",
+    "unexpected": "Unexpected interface error",
+    "generic": "Something didn't work. The technical reason is: “{why}”. Try again; if it happens again press “Debug” and copy the details.",
+    "session": "The session didn't start. Reason: “{why}”. Check that the host is still available and try again.",
+    "hostNotReady": "Hosting isn't active. The streaming engine is off. Turn on “Available to friends” in Host and try again.",
+    "config": "Invalid setting: “{key}”. The value is out of range. Allowed values: {allowed}.",
+    "invalidParams": "Invalid request. Falco received unexpected data ({why}). Try again; if it happens again open “Debug”.",
+    "unknownMethod": "Feature not available. The Falco service is a different version from the window. Restart Falco.",
+    "background": {
+      "host_start": "I can't start hosting. Reason: “{why}”. Close other streaming apps using the same ports, then try again.",
+      "session_pair": "Pairing with the host failed. Reason: “{why}”. Check the host is online and the PIN is right, then try again.",
+      "session": "The session was interrupted. Reason: “{why}”. Check your connection and rejoin; if it happens often open the Network doctor.",
+      "update_install": "Update failed. Reason: “{why}”. Falco stays on the current version: try again from Settings → About.",
+      "invite_accept": "Invite not accepted. Reason: “{why}”. Ask for a new invite or try again shortly."
+    }
   },
   "ping": {
     "direct": "direct",
@@ -444,5 +463,30 @@
     "installing": "Updating…",
     "upToDate": "Falco {version} is up to date.",
     "disabled": "Automatic updates turn on once the first version is published on GitHub."
+  },
+  "debug": {
+    "title": "Error details",
+    "intro": "Everything needed to understand what happened. No secrets: no keys, passwords or invite links. Copy and paste it wherever you ask for help.",
+    "loading": "Collecting information from the Falco service…",
+    "copyAll": "Copy all",
+    "when": "When",
+    "context": "Context",
+    "message": "Message",
+    "source": "Source",
+    "technical": "Technical detail",
+    "coreUnavailable": "The Falco service isn't answering, so its details are missing: {why}",
+    "sections": {
+      "error": "Error",
+      "ui": "Interface",
+      "core": "Falco service",
+      "app": "Version and state",
+      "network": "Network",
+      "engines": "Engines",
+      "session": "Last session",
+      "coreErrors": "Recent service errors",
+      "config": "Settings",
+      "coreLog": "Service log",
+      "sunshineLog": "Host engine log"
+    }
   }
 }

@@ -82,6 +82,45 @@ fn system_offset_s() -> i64 {
         .unwrap_or(0)
 }
 
+/// Dispositivi che almeno un amico può usare: gli altri restano spenti in Sunshine.
+/// Default: nessuno, cioè ogni ospite può solo guardare (ADR 0015).
+pub fn wanted_inputs(c: &Core) -> falco_engines::sunshine::Inputs {
+    let mut i = falco_engines::sunshine::Inputs::default();
+    for f in c.db.friends().unwrap_or_default() {
+        if let Some(p) = effective(c, &f.id) {
+            i.keyboard |= p.keyboard;
+            i.mouse |= p.mouse;
+            i.controller |= p.gamepads > 0;
+        }
+    }
+    i
+}
+
+/// Riavvia Sunshine se gli input da accendere sono cambiati; con ospiti collegati aspetta la fine.
+pub async fn sync_inputs(shared: &Shared) {
+    let (restart, pending) = {
+        let mut c = shared.lock().await;
+        let wanted = wanted_inputs(&c);
+        let running = c.host.api().is_some();
+        let differs = running && wanted != c.host.inputs;
+        let busy = !c.guests.is_empty();
+        c.inputs_pending = differs && busy;
+        (differs && !busy, c.inputs_pending)
+    };
+    if pending {
+        shared
+            .lock()
+            .await
+            .emit(events::HOST_STATE, json!({ "state": "ready", "message": "inputs-pending" }));
+    }
+    if restart {
+        let user = shared.lock().await.user_available;
+        crate::core::set_available(shared.clone(), false).await;
+        crate::core::set_available(shared.clone(), true).await;
+        shared.lock().await.user_available = user;
+    }
+}
+
 /// Il client Sunshine di un amico deve essere abilitato adesso?
 fn should_enable(c: &Core, friend_id: &str, p: &Permissions) -> bool {
     let (day, minute) = local_time();
@@ -195,6 +234,10 @@ pub async fn leave(shared: &Shared, friend_id: &str) {
         emit_guests(&c);
     }
     apply_all(shared).await;
+    // Permessi cambiati durante la sessione: si applicano ora che è finita
+    if shared.lock().await.inputs_pending {
+        sync_inputs(shared).await;
+    }
 }
 
 /// «Espelli»: blocco immediato in Sunshine e fine della sua sessione.

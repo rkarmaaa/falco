@@ -208,7 +208,26 @@
   },
   "errors": {
     "notImplemented": "Questa funzione arriva con la milestone {milestone}.",
-    "cannotJoin": "Non riesco a entrare da {name}. {why}. Riprova tra poco o chiedigli se è ancora disponibile."
+    "cannotJoin": "Non riesco a entrare da {name}. {why}. Riprova tra poco o chiedigli se è ancora disponibile.",
+    "copy": "Copia",
+    "copied": "Copiato",
+    "debug": "Debug",
+    "reportTitle": "segnalazione di errore",
+    "theHost": "l'host",
+    "unexpected": "Errore imprevisto dell'interfaccia",
+    "generic": "Qualcosa non ha funzionato. Il motivo tecnico è: «{why}». Riprova; se succede ancora premi «Debug» e copia i dettagli.",
+    "session": "La sessione non è partita. Motivo: «{why}». Controlla che l'host sia ancora disponibile e riprova.",
+    "hostNotReady": "L'host non è attivo. Il motore di streaming è spento. Attiva «Disponibile per gli amici» in Ospita e riprova.",
+    "config": "Impostazione non valida: «{key}». Il valore è fuori dai limiti. Valori ammessi: {allowed}.",
+    "invalidParams": "Richiesta non valida. Falco ha ricevuto dati inattesi ({why}). Riprova; se succede ancora apri «Debug».",
+    "unknownMethod": "Funzione non disponibile. Il servizio di Falco è di una versione diversa dalla finestra. Riavvia Falco.",
+    "background": {
+      "host_start": "Non riesco ad avviare l'host. Motivo: «{why}». Chiudi altri programmi di streaming che usano le stesse porte, poi riprova.",
+      "session_pair": "Associazione con l'host non riuscita. Motivo: «{why}». Controlla che l'host sia online e che il PIN sia giusto, poi riprova.",
+      "session": "La sessione si è interrotta. Motivo: «{why}». Controlla la connessione e rientra; se succede spesso apri il Dottore di rete.",
+      "update_install": "Aggiornamento non riuscito. Motivo: «{why}». Falco resta alla versione attuale: riprova da Impostazioni → Info.",
+      "invite_accept": "Invito non accettato. Motivo: «{why}». Chiedi un nuovo invito o riprova tra poco."
+    }
   },
   "ping": {
     "direct": "diretto",
@@ -444,5 +463,30 @@
     "installing": "Aggiornamento in corso…",
     "upToDate": "Falco {version} è aggiornato.",
     "disabled": "Gli aggiornamenti automatici si attivano quando esce la prima versione su GitHub."
+  },
+  "debug": {
+    "title": "Dettagli dell'errore",
+    "intro": "Tutto quello che serve per capire cosa è successo. Nessun segreto: niente chiavi, password o link di invito. Copia e incolla dove ti chiedono aiuto.",
+    "loading": "Raccolgo le informazioni dal servizio di Falco…",
+    "copyAll": "Copia tutto",
+    "when": "Quando",
+    "context": "Contesto",
+    "message": "Messaggio",
+    "source": "Origine",
+    "technical": "Dettaglio tecnico",
+    "coreUnavailable": "Il servizio di Falco non risponde, quindi mancano i suoi dettagli: {why}",
+    "sections": {
+      "error": "Errore",
+      "ui": "Interfaccia",
+      "core": "Servizio di Falco",
+      "app": "Versione e stato",
+      "network": "Rete",
+      "engines": "Motori",
+      "session": "Ultima sessione",
+      "coreErrors": "Errori recenti del servizio",
+      "config": "Impostazioni",
+      "coreLog": "Log del servizio",
+      "sunshineLog": "Log del motore host"
+    }
   }
 }

@@ -21,7 +21,13 @@ export function getTransport(): Promise<Transport> {
 }
 
 export async function rpc<T = unknown>(method: string, params?: unknown): Promise<T> {
-  return (await getTransport()).call<T>(method, params);
+  try {
+    return await (await getTransport()).call<T>(method, params);
+  } catch (e) {
+    // Il metodo serve alla schermata «Debug»; i parametri no (possono contenere segreti)
+    if (isRpcError(e)) throw Object.assign({}, e, { method });
+    throw { code: -32603, message: e instanceof Error ? e.message : String(e), method };
+  }
 }
 
 export function isRpcError(e: unknown): e is RpcError {

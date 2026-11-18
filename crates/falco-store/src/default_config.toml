@@ -32,6 +32,9 @@ encoder = "auto"             # auto | amf | nvenc | quicksync | videotoolbox | s
 default_role = "spettatore"  # spettatore | giocatore | copilota | fidato
 knock_timeout_s = 30
 apps_autodetect = true
+profile = "latency"          # latency | balanced | slow | quality | custom
+max_bitrate_kbps = 0         # tetto per tutti gli ospiti, 0 = nessuno (solo con custom)
+encoder_quality = "speed"    # speed | balanced | quality (solo con custom)
 
 [network]
 provider = "tailscale"       # tailscale | lan | direct | headscale

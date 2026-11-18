@@ -30,6 +30,8 @@ pub struct Host {
     api: Option<Arc<SunshineApi>>,
     gpu: Option<GpuVendor>,
     dir: PathBuf,
+    /// Input accesi nell'istanza in esecuzione.
+    pub inputs: sunshine::Inputs,
 }
 
 fn encoder_pref(e: Encoder) -> &'static str {
@@ -58,6 +60,7 @@ impl Host {
             api: None,
             gpu: None,
             dir: data_dir.join("sunshine"),
+            inputs: sunshine::Inputs::default(),
         }
     }
 
@@ -71,12 +74,30 @@ impl Host {
         self.api.clone()
     }
 
-    pub fn settings(&self, cfg: &Config) -> HostSettings {
+    pub fn settings(&self, cfg: &Config, inputs: sunshine::Inputs) -> HostSettings {
+        let profile = serde_json::to_value(cfg.host.profile)
+            .ok()
+            .and_then(|v| v.as_str().map(str::to_owned))
+            .unwrap_or_default();
+        let (fec, cap, quality) = match sunshine::profile_params(&profile) {
+            Some((f, c, q)) => (f, c, q.to_owned()),
+            None => (
+                cfg.network.fec_percent,
+                cfg.host.max_bitrate_kbps,
+                serde_json::to_value(cfg.host.encoder_quality)
+                    .ok()
+                    .and_then(|v| v.as_str().map(str::to_owned))
+                    .unwrap_or_else(|| "speed".into()),
+            ),
+        };
         HostSettings {
+            max_bitrate_kbps: cap,
+            encoder_quality: quality,
+            inputs,
             encoder: encoder_pref(cfg.host.encoder).into(),
             max_guests: cfg.host.max_guests,
             upnp: cfg.network.upnp || cfg.network.provider == falco_store::config::Provider::Direct,
-            fec_percent: cfg.network.fec_percent,
+            fec_percent: fec,
             base_port: cfg.network.sunshine_base_port,
             // Nome distinto da un eventuale Sunshine già presente sullo stesso PC
             name: format!("{} (Falco)", device_name()),
@@ -101,12 +122,13 @@ impl Host {
     }
 
     /// Scrive la configurazione, imposta le credenziali e avvia Sunshine.
-    pub async fn start(&mut self, cfg: &Config) -> anyhow::Result<()> {
+    pub async fn start(&mut self, cfg: &Config, inputs: sunshine::Inputs) -> anyhow::Result<()> {
         if self.child.is_some() {
             return Ok(());
         }
         let bin = falco_engines::locate::sunshine().context("motore host non trovato")?;
-        let s = self.settings(cfg);
+        let s = self.settings(cfg, inputs);
+        self.inputs = inputs;
         if TcpListener::bind(("0.0.0.0", s.base_port)).is_err() {
             bail!("la porta {} è già usata da un altro programma", s.base_port);
         }

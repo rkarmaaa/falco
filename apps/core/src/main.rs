@@ -6,6 +6,7 @@
 mod access;
 mod bench;
 mod core;
+mod debug;
 mod doctor;
 mod fpp_server;
 mod guest;

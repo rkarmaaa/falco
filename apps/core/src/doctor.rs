@@ -31,7 +31,8 @@ pub fn last_session_check(raw: Option<&str>) -> Check {
     let total = v["latencyMs"].as_f64().unwrap_or(0.0);
     let host = st["hostLatencyMs"].as_f64().unwrap_or(0.0);
     let net = st["networkLatencyMs"].as_f64().unwrap_or(0.0);
-    let dropped = st["droppedNetworkPct"].as_f64().unwrap_or(0.0) + st["droppedJitterPct"].as_f64().unwrap_or(0.0);
+    let dropped = st["droppedNetworkPct"].as_f64().unwrap_or(0.0)
+        + st["droppedJitterPct"].as_f64().unwrap_or(0.0);
     let value = Some(format!("{total:.1} ms · {dropped:.1}%"));
     if dropped > 2.0 {
         with(check("lastSession", Level::Warn), value, Some("framesDropped"))
@@ -317,7 +318,10 @@ mod tests {
     #[test]
     fn last_session_thresholds() {
         let mk = |net: f64, host: f64, drop: f64| {
-            format!(r#"{{"latencyMs":{},"stats":{{"hostLatencyMs":{host},"networkLatencyMs":{net},"droppedNetworkPct":{drop},"droppedJitterPct":0}}}}"#, net + host + 1.0)
+            format!(
+                r#"{{"latencyMs":{},"stats":{{"hostLatencyMs":{host},"networkLatencyMs":{net},"droppedNetworkPct":{drop},"droppedJitterPct":0}}}}"#,
+                net + host + 1.0
+            )
         };
         assert_eq!(last_session_check(Some(&mk(1.0, 3.9, 0.2))).level, Level::Ok);
         assert_eq!(last_session_check(Some(&mk(40.0, 3.9, 0.2))).action, Some("networkLatency"));
