@@ -462,6 +462,27 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
         methods::NET_RUN_DOCTOR => {
             return Ok(crate::doctor::to_json(&crate::doctor::run(core).await));
         }
+        methods::UPDATE_CHECK => {
+            let a = crate::updater::check(core).await.map_err(anyhow_err(codes::INTERNAL))?;
+            return Ok(json!({
+                "available": a,
+                "current": env!("CARGO_PKG_VERSION"),
+                "enabled": !crate::updater::PUBLIC_KEY.is_empty(),
+            }));
+        }
+        methods::UPDATE_INSTALL => {
+            crate::updater::install(core).await.map_err(anyhow_err(codes::INTERNAL))?;
+            return Ok(Value::Null);
+        }
+        methods::TAILSCALE_INSTALL => {
+            let dir = core.lock().await.data_dir.join("downloads");
+            std::fs::create_dir_all(&dir).map_err(internal)?;
+            crate::platform::install_tailscale(&dir).await.map_err(anyhow_err(codes::INTERNAL))?;
+            let mut c = core.lock().await;
+            c.net = falco_net::tailscale::Tailscale::detect();
+            c.emit(events::PRESENCE_CHANGED, json!({ "self": { "tailscale": true } }));
+            return Ok(Value::Null);
+        }
         methods::NET_LOGIN_HEADSCALE => {
             // Stesso client Tailscale, server di controllo personalizzato (§9)
             let (ts, url) = {
@@ -605,6 +626,11 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
             if p.name.is_some() || p.avatar_base64.is_some() || p.clear_avatar {
                 c.emit(events::PRESENCE_CHANGED, json!({ "self": { "profile": true } }));
             }
+            Ok(Value::Null)
+        }
+        methods::APP_OPEN_LINK => {
+            let p: Link = params(req.params)?;
+            c.open_link(&p.link);
             Ok(Value::Null)
         }
         methods::APP_OPEN_UI => {

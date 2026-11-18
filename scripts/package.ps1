@@ -1,0 +1,35 @@
+# Costruisce il pacchetto di Falco per Windows: un solo installer con core, UI e motori.
+#   1. falco-core in release (LTO), copiato come sidecar di Tauri
+#   2. motori in target\release\engines (stage-engines.ps1; in CI i fork compilati)
+#   3. tauri build → installer NSIS in target\release\bundle\nsis
+# Uso: powershell -File scripts\package.ps1 [-SkipEngines]
+param([switch]$SkipEngines)
+$ErrorActionPreference = "Stop"
+$root = Split-Path -Parent $PSScriptRoot
+Set-Location $root
+
+Write-Host "==> falco-core (release)"
+cargo build --release -p falco-core
+if ($LASTEXITCODE -ne 0) { throw "build del core non riuscita" }
+
+$triple = (rustc -vV | Select-String "^host:").ToString().Split(" ")[1]
+$bin = Join-Path $root "apps\ui\src-tauri\binaries"
+New-Item -ItemType Directory -Force $bin | Out-Null
+Copy-Item "target\release\falco-core.exe" (Join-Path $bin "falco-core-$triple.exe") -Force
+
+if (-not $SkipEngines) {
+  Write-Host "==> motori"
+  & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "stage-engines.ps1") -Profile release
+}
+
+Write-Host "==> interfaccia e installer"
+Push-Location "apps\ui"
+npm ci
+npx tauri build --config src-tauri/tauri.bundle.json
+$code = $LASTEXITCODE
+Pop-Location
+if ($code -ne 0) { throw "tauri build non riuscito" }
+
+Get-ChildItem "target\release\bundle\nsis\*.exe" | ForEach-Object {
+  "{0}  {1:N1} MB" -f $_.FullName, ($_.Length / 1MB)
+}

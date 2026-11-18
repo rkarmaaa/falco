@@ -54,7 +54,10 @@ JSON-RPC 2.0, un messaggio JSON per riga, su named pipe `\\.\pipe\falco-core-<ut
 | `host.answerKnock` | `{ friendId, accept }` | `null` | M4 |
 | `host.kick` | `{ id }` | `null` | M4 |
 | `host.guests` | — | `{ guests: [{ friendId, name, since }] }` | M4 |
-| `update.check`, `update.install` | — | — | M6 ([ADR 0008](adr/0008-aggiornamenti-automatici.md)) |
+| `update.check` | — | `{ available: { version, notes } \| null, current, enabled }` | M6 ([ADR 0008](adr/0008-aggiornamenti-automatici.md)) |
+| `update.install` | — | `null`; scarica, verifica la firma, installa e riavvia | M6 |
+| `tailscale.install` | — | `null`; pacchetto ufficiale con firma verificata, una conferma di sistema | M6 ([ADR 0012](adr/0012-nessuna-installazione-manuale.md)) |
+| `app.openLink` | `{ link }` | `null`; apre «Accetta invito» (link `falco://` dal sistema) | M6 |
 
 ## Eventi
 
@@ -73,7 +76,9 @@ JSON-RPC 2.0, un messaggio JSON per riga, su named pipe `\\.\pipe\falco-core-<ut
 | `play.invite` | `{ friendId, name }` | M4 |
 | `ui.navigate` | `{ section }` | M4 |
 | `net.warning` | — | M5 |
-| `update.available` | — | M6 |
+| `update.available` | `{ version, notes }` | M6 |
+| `update.progress` | `{ step }` | M6 |
+| `ui.openLink` | `{ link }` | M6 |
 
 ## Codici di errore
 

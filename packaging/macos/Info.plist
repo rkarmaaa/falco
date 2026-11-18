@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleURLTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleURLName</key>
+      <string>app.falco.desktop</string>
+      <key>CFBundleURLSchemes</key>
+      <array><string>falco</string></array>
+    </dict>
+  </array>
+  <key>NSLocalNetworkUsageDescription</key>
+  <string>Falco cerca gli amici nella rete locale per giocare con la latenza più bassa.</string>
+  <key>NSBonjourServices</key>
+  <array><string>_falco._tcp</string></array>
+  <key>NSScreenCaptureUsageDescription</key>
+  <string>Falco trasmette lo schermo agli amici quando li ospiti.</string>
+</dict>
+</plist>

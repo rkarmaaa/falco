@@ -1,0 +1,10 @@
+{
+  "bundle": {
+    "externalBin": [
+      "binaries/falco-core"
+    ],
+    "resources": {
+      "../../../target/release/engines/": "engines/"
+    }
+  }
+}

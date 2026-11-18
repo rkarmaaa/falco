@@ -101,6 +101,21 @@ async function importConfig(e: Event): Promise<void> {
   }
 }
 
+const update = ref<{ available: { version: string; notes: string } | null; current: string; enabled: boolean } | null>(null);
+const updating = ref(false);
+async function checkUpdate(): Promise<void> {
+  update.value = await rpc('update.check');
+}
+async function installUpdate(): Promise<void> {
+  updating.value = true;
+  try {
+    await rpc('update.install');
+  } catch (err) {
+    importMsg.value = { ok: false, text: isRpcError(err) ? err.message : t('connect.genericError') };
+    updating.value = false;
+  }
+}
+
 async function headscaleLogin(): Promise<void> {
   try {
     await rpc('net.loginHeadscale');
@@ -257,6 +272,16 @@ function openTab(next: Tab): void {
       <template v-else-if="tab === 'about'">
         <p>{{ $t('settings.version', { version: core.snapshot?.version ?? '–', milestone: core.snapshot?.milestone ?? '–' }) }}</p>
         <p class="muted">{{ $t('settings.license') }}</p>
+        <div class="io">
+          <UiButton variant="secondary" :size="32" @click="checkUpdate">{{ $t('update.check') }}</UiButton>
+          <UiButton v-if="update?.available" variant="primary" :size="32" :disabled="updating" @click="installUpdate">
+            {{ updating ? $t('update.installing') : $t('update.installVersion', { version: update.available.version }) }}
+          </UiButton>
+        </div>
+        <p v-if="update && !update.enabled" class="muted">{{ $t('update.disabled') }}</p>
+        <p v-else-if="update && !update.available" class="ok">{{ $t('update.upToDate', { version: update.current }) }}</p>
+        <p v-if="update?.available?.notes" class="muted">{{ update.available.notes }}</p>
+        <p v-if="importMsg" :class="importMsg.ok ? 'ok' : 'error'" role="status">{{ importMsg.text }}</p>
       </template>
 
       <p v-else class="muted">{{ $t('settings.soon', { milestone: soon[tab] ?? 'M6' }) }}</p>

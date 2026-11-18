@@ -66,16 +66,21 @@ Fatto in anticipo, utile alle milestone successive:
 - [x] Eventi della LocalAPI di Tailscale (`debug watch-ipn`) al posto del solo polling
 - [ ] Provider Diretto e LAN da provare su reti vere (**Marco**)
 
-## M6 · Rilascio 1.0
+## M6 · Rilascio 1.0 (codice pronto: 1.0.0-rc.1)
 
-- [ ] Tutte le schermate del §13 rifinite secondo il design system, in tema scuro e chiaro
-- [ ] Italiano e inglese completi, accessibilità verificata
-- [ ] Budget del §10 rispettati in CI
-- [ ] Installer firmato per Windows, app notarizzata per macOS, aggiornamenti firmati
-- [ ] **Notifica di nuova versione** con pulsante «Aggiorna» (toast, voce nel tray, badge su Impostazioni → Info)
-- [ ] **Aggiornamento automatico** senza installazioni manuali: download in background e installazione silenziosa quando non c'è una sessione attiva ([ADR 0008](docs/adr/0008-aggiornamenti-automatici.md))
-- [ ] Pacchetto unico: Sunshine, Moonlight, driver dei controller e Tailscale arrivano con Falco, senza installazioni manuali ([ADR 0012](docs/adr/0012-nessuna-installazione-manuale.md))
-- [ ] Sorgenti GPL-3.0 pubblicati con il rilascio
+- [x] Installer NSIS per tutto il sistema con core, UI e motori; regole firewall limitate a Tailscale; chiusura dei processi prima di aggiornare o disinstallare (`scripts/package.ps1`, `packaging/windows/hooks.nsh`)
+- [x] Bundle macOS configurato: `Info.plist` con `falco://`, Bonjour e permessi spiegati, entitlements
+- [x] Avvio con il sistema nel tray, schema `falco://` registrato, apertura del link nella scheda «Accetta invito»
+- [x] Tailscale installato da Falco con un clic (MSI/PKG ufficiale, firma verificata), ADR 0012 opzione A
+- [x] **Notifica di nuova versione** con pulsante (toast, voce nel tray, Impostazioni → Info) e **aggiornamento automatico** silenzioso quando non si gioca; firma minisign verificata (ADR 0008)
+- [x] Workflow di rilascio: tag `v*` → pacchetti firmati per l'updater e `latest.json` su GitHub Releases
+- [x] Italiano e inglese completi (test di parità delle chiavi), errori in tre parti
+- [ ] **Marco**: chiave di firma degli aggiornamenti (`npx tauri signer generate`), da mettere nei segreti del repository e in `updater::PUBLIC_KEY`
+- [ ] **Marco**: certificato di firma del codice Windows e Apple Developer Program (notarizzazione)
+- [ ] **Marco**: organizzazione GitHub (ora segnaposto `falco-app/falco` nell'URL del manifest)
+- [ ] Fork dei motori compilati in CI al posto dei pacchetti ufficiali (`engines/`)
+- [ ] Budget del §10 misurati in CI (`falco-core bench`) e accessibilità verificata con screen reader
+- [ ] Rifinitura grafica delle schermate (fase dedicata)
 
 ## Decisioni da prendere (Marco)
 

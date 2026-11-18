@@ -22,6 +22,7 @@ pub struct Tray {
     playing: Vec<(MenuItem, String)>,
     nobody: MenuItem,
     shown: Vec<(String, String)>,
+    update: MenuItem,
     open: MenuItem,
     quit: MenuItem,
 }
@@ -37,6 +38,7 @@ impl Tray {
         let nobody = MenuItem::new(t.nobody, false, None);
         let playing_menu = Submenu::with_items(t.playing, true, &[&nobody])?;
         let open = MenuItem::new(t.open, true, None);
+        let update = MenuItem::new(t.up_to_date, false, None);
         let quit = MenuItem::new(t.quit, true, None);
 
         let menu = Menu::with_items(&[
@@ -45,6 +47,7 @@ impl Tray {
             &playing_menu,
             &PredefinedMenuItem::separator(),
             &open,
+            &update,
             &PredefinedMenuItem::separator(),
             &quit,
         ])?;
@@ -68,6 +71,7 @@ impl Tray {
             playing: Vec::new(),
             nobody,
             shown: Vec::new(),
+            update,
             open,
             quit,
         };
@@ -87,6 +91,8 @@ impl Tray {
             TrayCommand::SetAvailable(self.available.is_checked())
         } else if let Some((_, fid)) = self.playing.iter().find(|(item, _)| item.id() == id) {
             TrayCommand::Join(fid.clone())
+        } else if id == self.update.id() {
+            TrayCommand::Update
         } else if id == self.open.id() {
             TrayCommand::OpenUi
         } else if id == self.quit.id() {
@@ -99,6 +105,16 @@ impl Tray {
     pub fn apply(&mut self, u: &TrayUpdate) {
         let t = i18n::tray(u.language);
         self.playing_menu.set_text(t.playing);
+        match &u.update {
+            Some(v) => {
+                self.update.set_text(format!("{} {v}", t.update));
+                self.update.set_enabled(true);
+            }
+            None => {
+                self.update.set_text(t.up_to_date);
+                self.update.set_enabled(false);
+            }
+        }
         self.nobody.set_text(t.nobody);
         // Ricostruisce le voci solo se l'elenco è cambiato
         if self.shown != u.playing {

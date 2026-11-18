@@ -1,6 +1,6 @@
 # 0012 · Nessuna installazione manuale per l'utente
 
-- **Stato**: proposto (la scelta su Tailscale spetta a Marco)
+- **Stato**: accettato — opzione A implementata (`tailscale.install`: pacchetto ufficiale, firma verificata, una conferma di sistema); `tsnet` resta da valutare
 - **Data**: 2026-11-18
 - **Sezioni della specifica**: §1, §3, §9, §14, §19
 

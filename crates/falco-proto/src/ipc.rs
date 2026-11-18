@@ -50,6 +50,10 @@ pub mod methods {
     pub const CONFIG_IMPORT: &str = "config.import";
     pub const NET_LAN_PEERS: &str = "net.lanPeers";
     pub const NET_LOGIN_HEADSCALE: &str = "net.loginHeadscale";
+    pub const UPDATE_CHECK: &str = "update.check";
+    pub const UPDATE_INSTALL: &str = "update.install";
+    pub const TAILSCALE_INSTALL: &str = "tailscale.install";
+    pub const APP_OPEN_LINK: &str = "app.openLink";
 }
 
 pub mod events {
@@ -66,6 +70,9 @@ pub mod events {
     pub const HOST_GUESTS: &str = "host.guests";
     pub const PLAY_INVITE: &str = "play.invite";
     pub const UI_NAVIGATE: &str = "ui.navigate";
+    pub const UPDATE_AVAILABLE: &str = "update.available";
+    pub const UPDATE_PROGRESS: &str = "update.progress";
+    pub const UI_OPEN_LINK: &str = "ui.openLink";
 }
 
 pub mod codes {

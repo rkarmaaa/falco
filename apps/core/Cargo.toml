@@ -26,6 +26,9 @@ tray-icon.workspace = true
 tao.workspace = true
 global-hotkey.workspace = true
 mdns-sd = "0.13"
+auto-launch = "0.6"
+minisign-verify = "0.3"
+semver = "1"
 image.workspace = true
 webp.workspace = true
 sha2.workspace = true
@@ -43,3 +46,6 @@ workspace = true
 
 [build-dependencies]
 embed-manifest = "1"
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.56"

@@ -17,7 +17,7 @@ import { core, initCore } from '@/stores/core';
 import { answerKnock, answerRequest, dismissPlayInvite, findInviteLink, initSocial, previewInvite, social } from '@/stores/social';
 import { joinFriend } from '@/stores/core';
 import { setLocale } from '@/i18n';
-import { getTransport, isTauri } from '@/ipc';
+import { getTransport, isTauri, rpc } from '@/ipc';
 
 const { t } = useI18n();
 const section = ref<Section>('friends');
@@ -69,10 +69,17 @@ onMounted(async () => {
     const { invoke } = await import('@tauri-apps/api/core');
     const s = await invoke<string | null>('initial_section').catch(() => null);
     if (s) section.value = s as Section;
+    const l = await invoke<string | null>('initial_link').catch(() => null);
+    if (l) openAccept(l);
   }
-  const t = await getTransport();
-  t.onEvent((e) => {
+  const transport = await getTransport();
+  transport.onEvent((e) => {
     if (e.method === 'ui.navigate') section.value = (e.params as { section: Section }).section;
+    if (e.method === 'ui.openLink') openAccept((e.params as { link: string }).link);
+    if (e.method === 'update.available') {
+      const v = (e.params as { version: string }).version;
+      showToast(t('update.available', { version: v }), { label: t('update.install'), run: () => void rpc('update.install') });
+    }
   });
   await initCore();
   await initSocial();

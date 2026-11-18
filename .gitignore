@@ -7,3 +7,4 @@ apps/ui/src-tauri/gen/
 Thumbs.db
 .vscode/*
 !.vscode/extensions.json
+apps/ui/src-tauri/binaries/

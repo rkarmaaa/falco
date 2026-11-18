@@ -13,7 +13,7 @@ use falco_store::{ConfigFile, Db};
 use serde_json::json;
 use tokio::sync::{Mutex, broadcast, mpsc};
 
-pub const MILESTONE: &str = "M5";
+pub const MILESTONE: &str = "M6";
 
 /// Secondi Unix correnti.
 pub fn now() -> i64 {
@@ -33,6 +33,8 @@ pub enum TrayCommand {
     OpenHost,
     /// «Entra» dal menu del tray.
     Join(String),
+    /// «Aggiorna a X.Y» dal menu del tray.
+    Update,
     Quit,
 }
 
@@ -44,6 +46,8 @@ pub struct TrayUpdate {
     pub host_available: bool,
     /// Amici in gioco con posti liberi: (ID, nome).
     pub playing: Vec<(String, String)>,
+    /// Versione disponibile per l'aggiornamento.
+    pub update: Option<String>,
 }
 
 impl TrayUpdate {
@@ -53,6 +57,7 @@ impl TrayUpdate {
             status: from_cfg(c.profile.status),
             host_available: c.host.available_on_start,
             playing: Vec::new(),
+            update: None,
         }
     }
 }
@@ -104,6 +109,10 @@ pub struct Core {
     pub user_available: bool,
     /// Altri Falco visti nella rete locale (provider LAN), per ID.
     pub lan_peers: std::collections::HashMap<String, falco_net::lan::LanPeer>,
+    /// Aggiornamento disponibile (ADR 0008).
+    pub update: Option<crate::updater::Available>,
+    /// Cartella dei dati locali (motori, aggiornamenti).
+    pub data_dir: std::path::PathBuf,
     ui: Option<Child>,
     events: broadcast::Sender<Notification>,
     notify_tray: Notify,
@@ -139,6 +148,8 @@ impl Core {
             joined: None,
             user_available: false,
             lan_peers: std::collections::HashMap::new(),
+            update: None,
+            data_dir: data_dir.to_path_buf(),
             ui: None,
             events: broadcast::channel(64).0,
             notify_tray,
@@ -180,6 +191,7 @@ impl Core {
                 .filter(|f| f.state == crate::social::FriendLiveState::Playing)
                 .map(|f| (f.id, f.name))
                 .collect(),
+            update: self.update.as_ref().map(|u| u.version.clone()),
         });
     }
 
@@ -268,20 +280,35 @@ impl Core {
 
     /// Apre la UI su una sezione; se è già aperta, la porta su quella sezione.
     pub fn open_ui_at(&mut self, section: Option<&str>) {
-        if let Some(child) = self.ui.as_mut()
-            && matches!(child.try_wait(), Ok(None))
-        {
+        let args: Vec<String> =
+            section.map(|s| vec!["--section".into(), s.into()]).unwrap_or_default();
+        if self.ui_running() {
             if let Some(s) = section {
                 self.emit(events::UI_NAVIGATE, json!({ "section": s }));
             }
             return;
         }
+        self.spawn_ui(&args);
+    }
+
+    /// Link `falco://invite/…` aperto dal sistema: la UI mostra «Accetta invito».
+    pub fn open_link(&mut self, link: &str) {
+        if self.ui_running() {
+            self.emit(events::UI_OPEN_LINK, json!({ "link": link }));
+        } else {
+            self.spawn_ui(&["--link".into(), link.into()]);
+        }
+    }
+
+    fn ui_running(&mut self) -> bool {
+        self.ui.as_mut().is_some_and(|c| matches!(c.try_wait(), Ok(None)))
+    }
+
+    fn spawn_ui(&mut self, args: &[String]) {
         let exe = std::env::current_exe().ok().and_then(|p| {
             p.parent().map(|d| d.join(if cfg!(windows) { "falco-ui.exe" } else { "falco-ui" }))
         });
-        let args: Vec<String> =
-            section.map(|s| vec!["--section".into(), s.into()]).unwrap_or_default();
-        match exe.map(|p| std::process::Command::new(&p).args(&args).spawn()) {
+        match exe.map(|p| std::process::Command::new(&p).args(args).spawn()) {
             Some(Ok(child)) => self.ui = Some(child),
             Some(Err(e)) => tracing::warn!("UI non avviata: {e}"),
             None => tracing::warn!("percorso della UI non trovato"),
@@ -342,6 +369,7 @@ pub async fn run(core: Core, mut tray_rx: mpsc::UnboundedReceiver<TrayCommand>) 
     let access = tokio::spawn(crate::access::run(shared.clone()));
     // Eventi di Tailscale (LocalAPI): aggiornano subito la presenza invece di aspettare il timer
     let lan = tokio::spawn(crate::netmodes::lan_task(shared.clone()));
+    let updates = tokio::spawn(crate::updater::run(shared.clone()));
     let ipn = {
         let (ts, poke) = {
             let c = shared.lock().await;
@@ -369,6 +397,15 @@ pub async fn run(core: Core, mut tray_rx: mpsc::UnboundedReceiver<TrayCommand>) 
             });
             continue;
         }
+        if matches!(cmd, TrayCommand::Update) {
+            let s = shared.clone();
+            tokio::spawn(async move {
+                if let Err(e) = crate::updater::install(&s).await {
+                    s.lock().await.notify_user("Aggiornamento non riuscito", &format!("{e:#}"));
+                }
+            });
+            continue;
+        }
         if let TrayCommand::SetAvailable(a) = cmd {
             shared.lock().await.user_available = a;
             tokio::spawn(set_available(shared.clone(), a));
@@ -387,7 +424,7 @@ pub async fn run(core: Core, mut tray_rx: mpsc::UnboundedReceiver<TrayCommand>) 
                 core.shutdown().await;
                 break;
             }
-            TrayCommand::SetAvailable(_) | TrayCommand::Join(_) => {}
+            TrayCommand::SetAvailable(_) | TrayCommand::Join(_) | TrayCommand::Update => {}
         }
     }
     server.abort();
@@ -396,4 +433,5 @@ pub async fn run(core: Core, mut tray_rx: mpsc::UnboundedReceiver<TrayCommand>) 
     access.abort();
     ipn.abort();
     lan.abort();
+    updates.abort();
 }

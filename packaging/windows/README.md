@@ -1,10 +1,18 @@
 # Pacchetto Windows
 
-Da costruire in M6 (§14 della specifica).
+Installer NSIS di Tauri 2, per tutto il sistema (una richiesta UAC, necessaria per il firewall).
 
-- Installer NSIS per tutto il sistema, una sola richiesta UAC (da rivalutare per gli aggiornamenti silenziosi, [ADR 0008](../../docs/adr/0008-aggiornamenti-automatici.md)).
-- Contenuto: `falco-core.exe`, `falco-ui.exe`, `engines\moonlight\`, `falco-sunshine` installato come servizio con avvio «manuale», gestito dal core.
-- Regole firewall per `falco-sunshine.exe` limitate a `100.64.0.0/10` e `fd7a:115c:a1e0::/48` (più la LAN se il provider LAN è attivo).
-- Registrazione dello schema `falco://` e avvio con il sistema nel tray.
-- Firma del codice (per esempio Azure Trusted Signing).
-- Tailscale non è incluso: installazione guidata dell'MSI ufficiale.
+```bash
+powershell -File scripts/package.ps1
+```
+
+| Cosa | Dove |
+| --- | --- |
+| `falco-ui.exe` | Punto d'ingresso (collegamento nel menu Start); avvia il core se manca |
+| `falco-core.exe` | Sidecar: tray, IPC, motori, presenza; si registra per l'avvio con il sistema e per `falco://` |
+| `engines\sunshine`, `engines\moonlight` | Motori (in sviluppo copiati dalle installazioni ufficiali con `stage-engines.ps1`; in CI i fork) |
+| `hooks.nsh` | Regole firewall per Sunshine e la presenza limitate a `100.64.0.0/10` e `fd7a:115c:a1e0::/48`; chiusura dei processi prima di aggiornare o disinstallare |
+
+Configurazione: `apps/ui/src-tauri/tauri.conf.json` (installer) e `tauri.bundle.json` (sidecar e motori, solo per il pacchetto).
+
+Da fare: firma del codice (per esempio Azure Trusted Signing), altrimenti SmartScreen avvisa al primo avvio.

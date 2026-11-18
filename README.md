@@ -12,7 +12,7 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="Licenza GPL-3.0" src="https://img.shields.io/badge/licenza-GPL--3.0-32409A"></a>
-  <img alt="Stato: M3" src="https://img.shields.io/badge/stato-M3%20inviti-1A1E26">
+  <img alt="Versione 1.0.0-rc.1" src="https://img.shields.io/badge/versione-1.0.0--rc.1-32409A">
 </p>
 
 ---
@@ -27,7 +27,7 @@ Falco è un orchestratore: configura e avvia motori di streaming maturi (Sunshin
 - **Sicuro per costruzione**: nessuna porta esposta su Internet, ogni messaggio tra amici è firmato, i permessi si applicano sull'host.
 
 > [!NOTE]
-> Il progetto è alla milestone **M3 · Inviti**: Falco fa da host e da client, con profili firmati, amici, presenza, inviti con un link e pairing automatico. Permessi granulari, rete avanzata e pacchetto di installazione arrivano con M4–M6. Vedi [TODO.md](TODO.md).
+> **1.0.0-rc.1**: tutte le milestone M0–M6 sono implementate. Mancano le prove su hardware reale, la firma del codice e la rifinitura grafica: vedi [TODO.md](TODO.md).
 
 ## Documentazione
 
@@ -114,6 +114,16 @@ npm --prefix apps/ui run dev
 ```
 
 Con il core avviato, `node scripts/ipc-smoke.mjs` prova l'IPC, `node scripts/rpc.mjs <metodo> [json]` chiama un metodo e `node scripts/e2e-loopback.mjs [porta]` esegue la prova completa di M1 su un solo PC. `falco-core bench 60 tray` misura RAM e CPU.
+
+## Pacchetto e rilascio
+
+Installer per Windows (core, interfaccia, motori e regole firewall in un solo file):
+
+```bash
+powershell -File scripts/package.ps1
+```
+
+Un tag `vX.Y.Z` avvia [release.yml](.github/workflows/release.yml): pacchetti firmati per l'aggiornamento automatico e `latest.json` su GitHub Releases.
 
 ## Licenza
 

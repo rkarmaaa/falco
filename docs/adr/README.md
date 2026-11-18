@@ -11,9 +11,9 @@ Una decisione per file, numerate. Per un nuovo ADR copia [0000-modello.md](0000-
 | [0005](0005-tray-e-runtime.md) | Tray e runtime del core | accettato |
 | [0006](0006-spike-sunshine.md) | Spike: chiavi di sunshine.conf e API REST | accettato |
 | [0007](0007-spike-moonlight-cli.md) | Spike: CLI di moonlight-qt | accettato |
-| [0008](0008-aggiornamenti-automatici.md) | Notifica di aggiornamento e aggiornamento automatico | proposto |
+| [0008](0008-aggiornamenti-automatici.md) | Notifica di aggiornamento e aggiornamento automatico | accettato |
 | [0009](0009-spike-tailscale-inviti.md) | Spike: inviti Tailscale con OAuth client | da verificare |
 | [0010](0010-spike-webview2.md) | Spike: chiusura completa di WebView2 | da verificare |
 | [0011](0011-spike-apollo.md) | Spike: permessi di Apollo su Sunshine | da verificare |
-| [0012](0012-nessuna-installazione-manuale.md) | Nessuna installazione manuale per l'utente | proposto |
+| [0012](0012-nessuna-installazione-manuale.md) | Nessuna installazione manuale per l'utente | accettato |
 | [0013](0013-nome-e-marchio-falco.md) | Nome e marchio: Falco | accettato |

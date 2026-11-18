@@ -63,9 +63,28 @@ impl CoreLink {
 }
 
 /// Ciclo di vita del collegamento: connetti, leggi, riconnetti.
+/// Avvia il core accanto alla UI se non è in esecuzione (collegamento del menu Start).
+fn start_core() {
+    let exe = std::env::current_exe().ok().and_then(|p| {
+        p.parent().map(|d| d.join(if cfg!(windows) { "falco-core.exe" } else { "falco-core" }))
+    });
+    if let Some(exe) = exe.filter(|e| e.is_file()) {
+        // --autostart: il core non apre un'altra finestra
+        let _ = std::process::Command::new(exe).arg("--autostart").spawn();
+    }
+}
+
 pub async fn run(link: Arc<CoreLink>, app: AppHandle) {
+    let mut started = false;
     loop {
-        if let Ok(stream) = transport::connect().await {
+        let conn = transport::connect().await;
+        if conn.is_err() && !started {
+            started = true;
+            start_core();
+            tokio::time::sleep(Duration::from_millis(800)).await;
+            continue;
+        }
+        if let Ok(stream) = conn {
             let (rx, tx) = transport::split(stream);
             *link.writer.lock().await = Some(tx);
             link.connected.store(true, Ordering::Relaxed);

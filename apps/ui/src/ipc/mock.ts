@@ -7,8 +7,8 @@ export function createMockTransport(): Transport {
   const emit = (method: string, params: unknown) => listeners.forEach((cb) => cb({ method, params }));
 
   const state: StateSnapshot = {
-    version: '0.1.0',
-    milestone: 'M1',
+    version: '1.0.0-rc.1',
+    milestone: 'M6',
     host: { state: 'stopped' },
     status: 'online',
     hostAvailable: false,
@@ -47,6 +47,9 @@ export function createMockTransport(): Transport {
     ],
     'config.export': () => ({ text: 'schema = 1' }),
     'config.import': () => null,
+    'update.check': () => ({ available: { version: '1.0.0', notes: 'Prima versione stabile.' }, current: '1.0.0-rc.1', enabled: true }),
+    'update.install': () => null,
+    'tailscale.install': () => null,
     'config.set': ({ key, value }: { key: string; value: unknown }) => {
       const [section, name] = key.split('.') as [string, string];
       (config[section] ??= {})[name] = value;

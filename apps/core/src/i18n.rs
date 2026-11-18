@@ -14,6 +14,8 @@ pub struct TrayText {
     pub playing: &'static str,
     pub nobody: &'static str,
     pub join: &'static str,
+    pub update: &'static str,
+    pub up_to_date: &'static str,
 }
 
 pub fn tray(lang: Language) -> TrayText {
@@ -30,6 +32,8 @@ pub fn tray(lang: Language) -> TrayText {
             playing: "Amici in gioco",
             nobody: "Nessuno sta giocando",
             join: "Entra da",
+            update: "Aggiorna a",
+            up_to_date: "Falco è aggiornato",
         },
         Language::En => TrayText {
             tooltip: "Falco",
@@ -43,6 +47,8 @@ pub fn tray(lang: Language) -> TrayText {
             playing: "Friends playing",
             nobody: "Nobody is playing",
             join: "Join",
+            update: "Update to",
+            up_to_date: "Falco is up to date",
         },
     }
 }

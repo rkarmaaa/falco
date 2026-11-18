@@ -1,9 +1,8 @@
 # Pacchetto macOS
 
-Da costruire in M6 (§14 della specifica).
+`.app` e `.dmg` di Tauri 2 (workflow `release.yml`, `--bundles app,dmg`), macOS 14 o successivo.
 
-- `.app` universal (arm64 + x86_64) in un `.dmg`, macOS 14 o successivo (14.2 per ospitare).
-- `falco-moonlight` come app di supporto in `Contents/Helpers`, firmata a parte.
-- Hardened Runtime, entitlements per Registrazione schermo, Accessibilità, Rete locale e Notifiche; notarizzazione di ogni binario annidato.
-- `CFBundleURLTypes` per lo schema `falco://`; elemento di login con `SMAppService`.
-- Aggiornamenti: sostituzione del bundle firmato ([ADR 0008](../../docs/adr/0008-aggiornamenti-automatici.md)).
+- `Info.plist`: schema `falco://`, servizio Bonjour `_falco._tcp`, spiegazioni per Rete locale e Registrazione schermo.
+- `entitlements.plist`: rete client e server, audio, Apple Events.
+- Da fare: Moonlight come app di supporto in `Contents/Helpers` firmata a parte, Hardened Runtime e notarizzazione (serve Apple Developer Program).
+- Aggiornamenti: `.app.tar.gz` firmato, estratto al posto del bundle (ADR 0008).

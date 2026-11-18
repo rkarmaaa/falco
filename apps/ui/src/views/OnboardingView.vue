@@ -9,7 +9,7 @@ import UiField from '@/components/UiField.vue';
 import UiAvatar from '@/components/UiAvatar.vue';
 import { createProfile, setAvatar } from '@/stores/social';
 import { core } from '@/stores/core';
-import { isRpcError } from '@/ipc';
+import { isRpcError, rpc } from '@/ipc';
 
 const { t } = useI18n();
 const step = ref<'welcome' | 'profile'>('welcome');
@@ -26,6 +26,19 @@ function pick(e: Event): void {
   if (!f) return;
   file.value = f;
   preview.value = URL.createObjectURL(f);
+}
+
+const installing = ref(false);
+async function installTailscale(): Promise<void> {
+  installing.value = true;
+  error.value = null;
+  try {
+    await rpc('tailscale.install');
+  } catch (e) {
+    error.value = isRpcError(e) ? e.message : t('connect.genericError');
+  } finally {
+    installing.value = false;
+  }
 }
 
 async function finish(): Promise<void> {
@@ -62,6 +75,9 @@ async function finish(): Promise<void> {
       <UiField v-model="name" :label="$t('onboarding.name')" :placeholder="$t('onboarding.namePlaceholder')" :maxlength="24" />
       <p class="hint">{{ $t('onboarding.nameHint') }}</p>
       <p class="ts" :class="tailscale">{{ $t(`onboarding.tailscale.${tailscale}`) }}</p>
+      <UiButton v-if="tailscale === 'missing'" variant="secondary" :disabled="installing" @click="installTailscale">
+        {{ installing ? $t('onboarding.installing') : $t('onboarding.installTailscale') }}
+      </UiButton>
       <p v-if="error" class="error" role="alert">{{ error }}</p>
       <UiButton variant="primary" :size="48" type="submit" :disabled="!valid || busy">{{ $t('onboarding.done') }}</UiButton>
     </form>

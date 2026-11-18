@@ -15,9 +15,11 @@ mod identity;
 mod invites;
 mod ipc;
 mod netmodes;
+mod platform;
 mod secrets;
 mod social;
 mod tray;
+mod updater;
 
 use std::path::PathBuf;
 
@@ -75,8 +77,12 @@ fn main() -> anyhow::Result<()> {
         return Ok(());
     }
 
-    // Seconda istanza: chiede al core attivo di aprire la UI ed esce
-    if forward_to_running_core() {
+    // Link falco:// aperto dal sistema (§14)
+    let link = args.iter().position(|a| a == "--open-link").and_then(|i| args.get(i + 1).cloned());
+    let autostart = args.iter().any(|a| a == "--autostart");
+
+    // Seconda istanza: chiede al core attivo di aprire la UI (o il link) ed esce
+    if forward_to_running_core(link.as_deref()) {
         return Ok(());
     }
 
@@ -104,7 +110,25 @@ fn main() -> anyhow::Result<()> {
         }
     };
     let initial = TrayUpdate::from_config(config.config());
+    // Integrazione di sistema solo nelle build installate, non da `cargo run`
+    if !cfg!(debug_assertions) {
+        if let Err(e) = platform::sync_autostart(config.config().general.start_with_system) {
+            tracing::warn!("avvio con il sistema: {e:#}");
+        }
+        if let Err(e) = platform::register_url_scheme() {
+            tracing::warn!("schema falco://: {e:#}");
+        }
+    }
+    let open_at_start = link.is_none() && !autostart && !config.config().general.start_minimized;
     let core = Core::new(config, &paths.db, &paths.data, Box::new(notify))?;
+    let mut core = core;
+    // Avvio da menu Start o Launchpad: si apre la finestra; con --autostart resta nel tray
+    if open_at_start {
+        core.open_ui();
+    }
+    if let Some(l) = &link {
+        core.open_link(l);
+    }
 
     std::thread::Builder::new().name("falco-runtime".into()).spawn(move || {
         let rt = match tokio::runtime::Builder::new_current_thread().enable_all().build() {
@@ -167,15 +191,18 @@ fn register_hotkey(
     Some(manager)
 }
 
-fn forward_to_running_core() -> bool {
+fn forward_to_running_core(link: Option<&str>) -> bool {
     let Ok(rt) = tokio::runtime::Builder::new_current_thread().enable_all().build() else {
         return false;
     };
     rt.block_on(async {
         let Ok(stream) = falco_proto::transport::connect().await else { return false };
         let (_rx, mut tx) = falco_proto::transport::split(stream);
-        let Ok(line) = to_line(&Request::new(1, methods::APP_OPEN_UI, serde_json::Value::Null))
-        else {
+        let req = match link {
+            Some(l) => Request::new(1, methods::APP_OPEN_LINK, serde_json::json!({ "link": l })),
+            None => Request::new(1, methods::APP_OPEN_UI, serde_json::Value::Null),
+        };
+        let Ok(line) = to_line(&req) else {
             return false;
         };
         tx.write_all(&line).await.is_ok()

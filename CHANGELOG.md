@@ -2,6 +2,19 @@
 
 Formato [Keep a Changelog](https://keepachangelog.com/it/1.1.0/), versioni [SemVer](https://semver.org/lang/it/).
 
+## [1.0.0-rc.1] - 2026-11-18
+
+### Aggiunto
+
+- **Falco** (prima Falò): nuovo nome, logo e palette con accento indaco `#32409A`.
+- Host e client come Parsec: Sunshine dedicato e Moonlight portable pilotati dal core, pairing automatico.
+- Identità firmata, amici, presenza peer-to-peer (FPP) solo dentro la tailnet.
+- Inviti con un link `falco://`, anteprima dei permessi, rilevamento negli appunti.
+- Permessi per amico applicati sull'host: ruoli, bussa, fasce orarie, scadenza, espulsione.
+- Provider LAN (mDNS), Diretto e Headscale; Dottore di rete con banda, jitter, porte, NAT e postazione.
+- Impostazioni complete del §15 generate dallo schema, esporta e importa.
+- Aggiornamenti automatici firmati con notifica; installer Windows con firewall; Tailscale installato in un clic.
+
 ## [Non rilasciato]
 
 ### Aggiunto

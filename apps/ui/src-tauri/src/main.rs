@@ -20,11 +20,21 @@ async fn rpc(
     link.call(&method, params.unwrap_or(Value::Null)).await
 }
 
+fn arg(name: &str) -> Option<String> {
+    let args: Vec<String> = std::env::args().collect();
+    args.iter().position(|a| a == name).and_then(|i| args.get(i + 1).cloned())
+}
+
 /// Sezione richiesta all'avvio (`--section host` dalla scorciatoia del core).
 #[tauri::command]
 fn initial_section() -> Option<String> {
-    let args: Vec<String> = std::env::args().collect();
-    args.iter().position(|a| a == "--section").and_then(|i| args.get(i + 1).cloned())
+    arg("--section")
+}
+
+/// Link di invito con cui è stata aperta la finestra (`falco://invite/…`).
+#[tauri::command]
+fn initial_link() -> Option<String> {
+    arg("--link")
 }
 
 /// Il core è raggiungibile in questo momento?
@@ -42,7 +52,12 @@ fn main() {
             tauri::async_runtime::spawn(link::run(link, app.handle().clone()));
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![rpc, core_connected, initial_section])
+        .invoke_handler(tauri::generate_handler![
+            rpc,
+            core_connected,
+            initial_section,
+            initial_link
+        ])
         .run(tauri::generate_context!());
     if let Err(e) = result {
         eprintln!("falco-ui: {e}");

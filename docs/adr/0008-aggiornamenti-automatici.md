@@ -1,6 +1,6 @@
 # 0008 · Notifica di aggiornamento e aggiornamento automatico
 
-- **Stato**: proposto
+- **Stato**: accettato e implementato (`apps/core/src/updater.rs`); attivo dalla prima versione firmata
 - **Data**: 2026-11-18
 - **Sezioni della specifica**: §11, §13, §16 (M6)
 
