@@ -78,7 +78,8 @@ impl Host {
             upnp: cfg.network.upnp,
             fec_percent: cfg.network.fec_percent,
             base_port: cfg.network.sunshine_base_port,
-            name: device_name(),
+            // Nome distinto da un eventuale Sunshine già presente sullo stesso PC
+            name: format!("{} (Falco)", device_name()),
             dir: self.dir.clone(),
             overrides: cfg
                 .advanced

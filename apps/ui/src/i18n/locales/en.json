@@ -53,7 +53,8 @@
     "activity": {
       "playing": "Playing · no free seats | Playing · {n} free seat | Playing · {n} free seats",
       "seen": "Seen {when}"
-    }
+    },
+    "invitePlay": "Invite to play"
   },
   "host": {
     "title": "Host",
@@ -80,7 +81,11 @@
     "blocked": "Blocked",
     "block": "Block",
     "unblock": "Unblock",
-    "remove": "Remove"
+    "remove": "Remove",
+    "guests": "Connected guests",
+    "noGuests": "Nobody is connected.",
+    "since": "for {min} min",
+    "kick": "Kick"
   },
   "invites": {
     "title": "Invites",
@@ -280,5 +285,30 @@
       "stopped": "Tailscale is off: open it before inviting someone.",
       "missing": "Tailscale isn't there yet: Falco will install it with your first invite."
     }
+  },
+  "perms": {
+    "title": "Permissions",
+    "autoJoin": "Joins without asking",
+    "keyboard": "Keyboard",
+    "mouse": "Mouse",
+    "launchApps": "Launch or switch apps",
+    "gamepads": "Controllers",
+    "enforced": "Access, schedule and expiry are enforced by your host. Controller, keyboard and mouse filtering arrives with the Falco engine.",
+    "notPaired": "Your friend's device isn't paired with your host yet: permissions apply from the first connection."
+  },
+  "knock": {
+    "wants": "{name} wants to join",
+    "invited": "{name} invites you to play",
+    "later": "Later"
+  },
+  "joinError": {
+    "not-hosting": "{name} isn't hosting. They ended the session or aren't available anymore. Try again when you see them in “Playing now”.",
+    "no-access": "You can't join {name}. Your role doesn't allow access. Ask them to change it.",
+    "schedule": "You can't join {name} right now. You're outside the time window they gave you. Try again later.",
+    "full": "{name}'s session is full. All seats are taken. Try again when one frees up.",
+    "no-answer": "{name} didn't answer. Maybe they didn't see the request. Try again or message them.",
+    "declined": "{name} declined the request. It's not a good time. Try again later.",
+    "unknown": "{name} doesn't recognise you as a friend. The friendship may have been removed. Ask for a new invite.",
+    "offline": "I can't reach {name}. Their Falco or Tailscale seems to be off. Ask them to open Falco."
   }
 }

@@ -218,6 +218,8 @@ pub async fn host_pairing(
             json!({ "side": "host", "step": "paired", "ok": uuid.is_some(), "name": name }),
         );
         drop(c);
+        // L'ospite verifica il pairing collegandosi: un minuto prima di spegnere
+        tokio::time::sleep(Duration::from_secs(60)).await;
         // Si spegne solo se nel frattempo l'utente non l'ha reso disponibile
         let keep = {
             let c = core.lock().await;

@@ -64,6 +64,14 @@ fn main() -> anyhow::Result<()> {
     if args.get(1).map(String::as_str) == Some("bench") {
         return bench::run(&args[2..]);
     }
+    // Diagnostica: app viste da Moonlight su un host (`falco-core debug-list ip:porta`)
+    if args.get(1).map(String::as_str) == Some("debug-list") {
+        let bin = falco_engines::locate::moonlight().context("Moonlight non trovato")?;
+        let addr = args.get(2).cloned().unwrap_or_default();
+        let rt = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
+        println!("{:?}", rt.block_on(guest::list_apps(&bin, &addr)));
+        return Ok(());
+    }
 
     // Seconda istanza: chiede al core attivo di aprire la UI ed esce
     if forward_to_running_core() {
@@ -84,6 +92,9 @@ fn main() -> anyhow::Result<()> {
     }));
 
     let (cmd_tx, cmd_rx) = mpsc::unbounded_channel::<TrayCommand>();
+
+    // Barra rapida dell'host: Ctrl+Shift+F (Cmd+Shift+F su macOS), §7
+    let _hotkeys = register_hotkey(cmd_tx.clone());
     let notify = {
         let proxy = proxy.clone();
         move |u: TrayUpdate| {
@@ -131,6 +142,27 @@ fn main() -> anyhow::Result<()> {
             _ => {}
         }
     });
+}
+
+fn register_hotkey(
+    tx: mpsc::UnboundedSender<TrayCommand>,
+) -> Option<global_hotkey::GlobalHotKeyManager> {
+    use global_hotkey::hotkey::{Code, HotKey, Modifiers};
+    use global_hotkey::{GlobalHotKeyEvent, GlobalHotKeyManager, HotKeyState};
+    let manager = GlobalHotKeyManager::new().ok()?;
+    let mods = if cfg!(target_os = "macos") { Modifiers::SUPER } else { Modifiers::CONTROL };
+    let key = HotKey::new(Some(mods | Modifiers::SHIFT), Code::KeyF);
+    if let Err(e) = manager.register(key) {
+        tracing::warn!("scorciatoia non registrata: {e}");
+        return None;
+    }
+    let id = key.id();
+    GlobalHotKeyEvent::set_event_handler(Some(move |e: GlobalHotKeyEvent| {
+        if e.id == id && e.state == HotKeyState::Pressed {
+            let _ = tx.send(TrayCommand::OpenHost);
+        }
+    }));
+    Some(manager)
 }
 
 fn forward_to_running_core() -> bool {

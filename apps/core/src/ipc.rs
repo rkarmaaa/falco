@@ -218,6 +218,17 @@ struct KnockDecision {
     accept: bool,
 }
 
+/// «Entra» da un amico: bussa, poi avvia lo stream (usato da UI e tray).
+pub async fn join_friend(core: &Shared, id: &str, app: &str) -> Result<(), RpcError> {
+    let (host, port) = friend_target(core, id).await?;
+    knock_friend(core, id).await?;
+    core.lock().await.joined = Some(id.to_owned());
+    let address = crate::guest::moonlight_address(&host, port);
+    crate::guest::join(core.clone(), address, app.to_owned())
+        .await
+        .map_err(anyhow_err(codes::SESSION_FAILED))
+}
+
 /// Bussa all'host prima di avviare Moonlight (§7); errore con il motivo se rifiutato.
 async fn knock_friend(core: &Shared, id: &str) -> Result<(), RpcError> {
     let (me, addr, wait) = {
@@ -332,15 +343,11 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
         }
         methods::SESSION_JOIN => {
             let p: HostTarget = params(req.params)?;
-            let (host, port) = match &p.friend_id {
-                Some(id) => {
-                    let target = friend_target(core, id).await?;
-                    knock_friend(core, id).await?;
-                    core.lock().await.joined = Some(id.clone());
-                    target
-                }
-                None => (p.host.clone(), p.port.unwrap_or(47989)),
-            };
+            if let Some(id) = &p.friend_id {
+                join_friend(core, id, &p.app).await?;
+                return Ok(Value::Null);
+            }
+            let (host, port) = (p.host.clone(), p.port.unwrap_or(47989));
             let address = crate::guest::moonlight_address(&host, port);
             crate::guest::join(core.clone(), address, p.app)
                 .await

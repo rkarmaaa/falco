@@ -46,13 +46,17 @@ Fatto in anticipo, utile alle milestone successive:
 - [ ] Invito Tailscale inverso automatico (passo 9) e revoca della condivisione via API (ADR 0009)
 - [ ] **Marco**: un utente senza Tailscale passa dal link a «Siete amici» in meno di 3 minuti (serve l'installazione automatica)
 
-## M4 · Permessi e più ospiti
+## M4 · Permessi e più ospiti (fatto con Sunshine ufficiale; filtro input dal fork)
 
-- [ ] Permessi nel fork di Sunshine con l'endpoint del §7
-- [ ] Quattro ruoli, modifica granulare, scadenza e fasce orarie
-- [ ] Barra rapida dell'host e flusso «bussa»
-- [ ] Test con client modificato: nessun input non concesso arriva all'host
-- [ ] Tre ospiti contemporanei con controller separati
+- [x] Quattro ruoli, modifica granulare dal pannello dell'amico, scadenza e fasce orarie
+- [x] Applicazione lato host con l'API di Sunshine: chi non può entrare resta **bloccato in Sunshine** (non solo nella UI); verifica ogni minuto
+- [x] Flusso «bussa» con notifica e Accetta/Rifiuta, timeout, posti massimi; motivo del rifiuto in tre parti
+- [x] Ospiti collegati, «Espelli», «Invitalo a giocare», amici in gioco nel menu del tray
+- [x] Scorciatoia globale `Ctrl+Shift+F` / `Cmd+Shift+F` verso la vista Ospita
+- [x] Prova a due istanze con pairing reale: `node scripts/e2e-friends.mjs` (invito → presenza → entra → bussa → espelli → rifiuto → rimozione)
+- [ ] Filtro di controller, tastiera, mouse e qualità **dentro Sunshine** (endpoint `PUT /api/falco/clients/{uuid}/permissions`): serve il fork, ADR 0011
+- [ ] Barra rapida sovrapposta al gioco (ora la scorciatoia apre la finestra su Ospita)
+- [ ] **Marco**: test con client modificato e tre ospiti contemporanei con controller separati
 
 ## M5 · Rete e diagnostica
 

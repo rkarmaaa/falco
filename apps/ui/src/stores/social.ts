@@ -20,6 +20,12 @@ interface SocialStore {
   accept: { steps: Record<InviteStep, boolean | null>; error: string | null; done: boolean } | null;
   /** Richieste di ingresso in attesa (inviti a più usi). */
   requests: { requestId: string; name: string; tag: string }[];
+  /** Amici che bussano per entrare nella mia sessione. */
+  knocks: { friendId: string; name: string }[];
+  /** Ospiti collegati alla mia sessione. */
+  guests: { friendId: string; name: string; since: number }[];
+  /** Inviti a giocare ricevuti. */
+  playInvites: { friendId: string; name: string }[];
 }
 
 const state = reactive<SocialStore>({
@@ -28,6 +34,9 @@ const state = reactive<SocialStore>({
   invites: [],
   accept: null,
   requests: [],
+  knocks: [],
+  guests: [],
+  playInvites: [],
 });
 
 export async function loadProfile(): Promise<void> {
@@ -59,6 +68,9 @@ export async function initSocial(): Promise<void> {
     }
     if (e.method === 'invite.progress' && p.side === 'host') void loadInvites();
     if (e.method === 'invite.request') state.requests.push(p as SocialStore['requests'][number]);
+    if (e.method === 'session.knock') state.knocks.push(p as SocialStore['knocks'][number]);
+    if (e.method === 'host.guests') state.guests = (p.guests as SocialStore['guests']) ?? [];
+    if (e.method === 'play.invite') state.playInvites.push(p as SocialStore['playInvites'][number]);
   });
   await Promise.all([loadProfile(), loadFriends(), loadInvites()]).catch(() => {});
 }
@@ -117,11 +129,25 @@ export async function answerRequest(requestId: string, accept: boolean): Promise
   await rpc('invite.approve', { requestId, accept });
 }
 
+export async function answerKnock(friendId: string, accept: boolean): Promise<void> {
+  state.knocks = state.knocks.filter((k) => k.friendId !== friendId);
+  await rpc('host.answerKnock', { friendId, accept });
+}
+
+export function dismissPlayInvite(friendId: string): void {
+  state.playInvites = state.playInvites.filter((p) => p.friendId !== friendId);
+}
+
+export async function loadGuests(): Promise<void> {
+  state.guests = (await rpc<{ guests: SocialStore['guests'] }>('host.guests')).guests;
+}
+
 export const friendApi = {
   remove: (id: string) => rpc('friend.remove', { id }),
   block: (id: string) => rpc('friend.block', { id }),
   favorite: (id: string, favorite: boolean) => rpc('friend.favorite', { id, favorite }),
   join: (friendId: string) => rpc('session.join', { friendId }),
+  kick: (id: string) => rpc('host.kick', { id }),
   refresh: () => rpc('friends.refresh'),
 };
 

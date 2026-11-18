@@ -156,13 +156,19 @@ pub async fn pair(core: Shared, address: String, pin: String) -> anyhow::Result<
 
     // moonlight-qt resta aperto dopo il pairing: l'esito si verifica con `list`
     let mut ok = false;
-    for _ in 0..60 {
+    for attempt in 0..60 {
         tokio::time::sleep(Duration::from_secs(2)).await;
-        if !list_apps(&bin, &address).await.is_empty() {
+        let apps = list_apps(&bin, &address).await;
+        tracing::info!("pairing {address}: tentativo {attempt}, app {apps:?}");
+        if !apps.is_empty() {
             ok = true;
             break;
         }
-        if matches!(child.try_wait(), Ok(Some(_))) {
+        if let Ok(Some(st)) = child.try_wait() {
+            tracing::info!("pairing {address}: moonlight uscito ({st})");
+            // Uscito: ultimo controllo dopo che Moonlight ha salvato il certificato
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            ok = !list_apps(&bin, &address).await.is_empty();
             break;
         }
     }
@@ -175,14 +181,38 @@ pub async fn pair(core: Shared, address: String, pin: String) -> anyhow::Result<
 }
 
 /// App disponibili sull'host; vuoto se non associato o non raggiungibile.
+/// moonlight-qt può restare aperto dopo aver stampato l'elenco: si legge riga per riga
+/// e si chiude il processo appena l'elenco è finito.
 pub async fn list_apps(bin: &std::path::Path, address: &str) -> Vec<String> {
-    let run = command(bin, &moonlight::list_args(address), Priority::Normal).output();
-    match tokio::time::timeout(Duration::from_secs(10), run).await {
-        Ok(Ok(out)) if out.status.success() => {
-            moonlight::parse_list(&String::from_utf8_lossy(&out.stdout))
-        }
-        _ => Vec::new(),
+    use tokio::io::{AsyncBufReadExt, BufReader};
+    let mut cmd = command(bin, &moonlight::list_args(address), Priority::Normal);
+    cmd.stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::piped());
+    let Ok(mut child) = cmd.spawn() else { return Vec::new() };
+    let Some(out) = child.stdout.take() else { return Vec::new() };
+    // Moonlight scrive i log su stderr: va svuotato o il processo si blocca
+    if let Some(err) = child.stderr.take() {
+        tokio::spawn(async move {
+            let mut lines = BufReader::new(err).lines();
+            while let Ok(Some(_)) = lines.next_line().await {}
+        });
     }
+    let mut lines = BufReader::new(out).lines();
+    let mut apps = Vec::new();
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    loop {
+        // Dopo la prima app basta una breve pausa senza righe nuove
+        let wait = if apps.is_empty() {
+            deadline
+        } else {
+            tokio::time::Instant::now() + Duration::from_millis(400)
+        };
+        match tokio::time::timeout_at(wait.min(deadline), lines.next_line()).await {
+            Ok(Ok(Some(line))) => apps.extend(moonlight::parse_list(&line)),
+            _ => break,
+        }
+    }
+    let _ = child.kill().await;
+    apps
 }
 
 /// Avvia lo streaming; ritorna subito, la sessione prosegue in background.

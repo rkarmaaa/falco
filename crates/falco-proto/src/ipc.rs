@@ -60,6 +60,7 @@ pub mod events {
     pub const INVITE_REQUEST: &str = "invite.request";
     pub const HOST_GUESTS: &str = "host.guests";
     pub const PLAY_INVITE: &str = "play.invite";
+    pub const UI_NAVIGATE: &str = "ui.navigate";
 }
 
 pub mod codes {

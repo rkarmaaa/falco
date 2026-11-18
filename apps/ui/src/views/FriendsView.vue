@@ -31,7 +31,8 @@ async function enter(f: Friend): Promise<void> {
   try {
     await joinFriend(f.id, f.name);
   } catch (e) {
-    emit('error', isRpcError(e) ? t('errors.cannotJoin', { name: f.name, why: e.message }) : t('connect.genericError'));
+    const reason = isRpcError(e) ? String(e.data?.reason ?? '') : '';
+    emit('error', reason ? t(`joinError.${reason}`, { name: f.name }) : isRpcError(e) ? t('errors.cannotJoin', { name: f.name, why: e.message }) : t('connect.genericError'));
   }
 }
 </script>

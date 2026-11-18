@@ -348,6 +348,7 @@ pub async fn refresh_profile(shared: &Shared, me: &Identity, address: &str) -> b
 
 pub fn emit_friends(c: &Core) {
     c.emit(events::PRESENCE_CHANGED, json!({ "friends": friend_views(c) }));
+    c.refresh_tray();
 }
 
 /// Ciclo di presenza: 15 s a finestra aperta, 60 s in tray (solo preferiti), fermo in streaming.

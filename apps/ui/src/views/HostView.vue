@@ -6,6 +6,7 @@ import UiSwitch from '@/components/UiSwitch.vue';
 import UiButton from '@/components/UiButton.vue';
 import UiField from '@/components/UiField.vue';
 import { core, hostApi, setHostAvailable } from '@/stores/core';
+import { friendApi, loadGuests, social } from '@/stores/social';
 import type { PairedClient, PendingPairing } from '@/ipc';
 
 const { t } = useI18n();
@@ -33,6 +34,7 @@ watch(
     clearInterval(timer);
     if (r) {
       void load();
+      void loadGuests();
       timer = setInterval(() => void load(), 3000);
     } else {
       pairings.value = [];
@@ -66,6 +68,18 @@ async function approve(p: PendingPairing): Promise<void> {
     </div>
 
     <template v-if="ready">
+      <h2 class="group">{{ $t('host.guests') }}</h2>
+      <p v-if="social.guests.length === 0" class="muted">{{ $t('host.noGuests') }}</p>
+      <ul class="list">
+        <li v-for="g in social.guests" :key="g.friendId" class="item">
+          <div class="who">
+            <span class="name">{{ g.name }}</span>
+            <span class="meta">{{ $t('host.since', { min: Math.max(1, Math.round((Date.now() / 1000 - g.since) / 60)) }) }}</span>
+          </div>
+          <UiButton variant="danger" :size="32" @click="friendApi.kick(g.friendId)">{{ $t('host.kick') }}</UiButton>
+        </li>
+      </ul>
+
       <h2 class="group">{{ $t('host.requests') }}</h2>
       <p v-if="pairings.length === 0" class="muted">{{ $t('host.noRequests') }}</p>
       <ul class="list">

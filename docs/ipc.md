@@ -43,6 +43,12 @@ JSON-RPC 2.0, un messaggio JSON per riga, su named pipe `\\.\pipe\falco-core-<ut
 | `invite.approve` | `{ requestId, accept }` | `null` | M3 |
 | `tailscale.setOAuth` | `{ clientId, clientSecret }` | `null` (verifica e salva nel portachiavi) | M3 |
 | `friend.setPermissions` | — | — | M4 |
+| `friend.getPermissions` | `{ id }` | `{ role, overrides, effective, paired }` | M4 |
+| `friend.setPermissions` | `{ id, role?, overrides? }` | `null`; applicato subito in Sunshine | M4 |
+| `friend.notify` | `{ id }` | `null`; «ti invito a giocare» | M4 |
+| `host.answerKnock` | `{ friendId, accept }` | `null` | M4 |
+| `host.kick` | `{ id }` | `null` | M4 |
+| `host.guests` | — | `{ guests: [{ friendId, name, since }] }` | M4 |
 | `update.check`, `update.install` | — | — | M6 ([ADR 0008](adr/0008-aggiornamenti-automatici.md)) |
 
 ## Eventi
@@ -57,7 +63,10 @@ JSON-RPC 2.0, un messaggio JSON per riga, su named pipe `\\.\pipe\falco-core-<ut
 | `pair.result` | `{ host, ok }` | M1 |
 | `session.stats` | `{ phase: connecting \| connected \| stats, rttMs?, fps?, bitrateKbps?, path? }` | M1 |
 | `session.ended` | `{ host, reason, durationS }` | M1 |
-| `session.knock` | — | M4 |
+| `session.knock` | `{ friendId, name }` | M4 |
+| `host.guests` | `{ guests }` | M4 |
+| `play.invite` | `{ friendId, name }` | M4 |
+| `ui.navigate` | `{ section }` | M4 |
 | `net.warning` | — | M5 |
 | `update.available` | — | M6 |
 
@@ -72,7 +81,7 @@ JSON-RPC 2.0, un messaggio JSON per riga, su named pipe `\\.\pipe\falco-core-<ut
 | `-32001` | Previsto dalla specifica, non ancora implementato | `{ milestone }` |
 | `-32002` | Valore di configurazione non valido | `{ key, value, allowed, line }` |
 | `-32003` | L'host non è attivo | — |
-| `-32004` | Sessione non avviata | — |
+| `-32004` | Sessione non avviata | `{ reason }`: `not-hosting`, `no-access`, `schedule`, `full`, `no-answer`, `declined`, `unknown`, `offline` |
 | `-32099` | Solo lato UI: core non raggiungibile | — |
 
 ## Prova da riga di comando

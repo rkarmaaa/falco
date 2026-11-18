@@ -24,6 +24,7 @@ interprocess.workspace = true
 tokio = { workspace = true, features = ["rt", "macros", "sync", "io-util", "time", "net", "process"] }
 tray-icon.workspace = true
 tao.workspace = true
+global-hotkey.workspace = true
 image.workspace = true
 webp.workspace = true
 sha2.workspace = true

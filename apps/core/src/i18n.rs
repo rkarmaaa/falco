@@ -11,6 +11,9 @@ pub struct TrayText {
     pub available: &'static str,
     pub open: &'static str,
     pub quit: &'static str,
+    pub playing: &'static str,
+    pub nobody: &'static str,
+    pub join: &'static str,
 }
 
 pub fn tray(lang: Language) -> TrayText {
@@ -24,6 +27,9 @@ pub fn tray(lang: Language) -> TrayText {
             available: "Disponibile per gli amici",
             open: "Apri Falco",
             quit: "Esci",
+            playing: "Amici in gioco",
+            nobody: "Nessuno sta giocando",
+            join: "Entra da",
         },
         Language::En => TrayText {
             tooltip: "Falco",
@@ -34,6 +40,9 @@ pub fn tray(lang: Language) -> TrayText {
             available: "Available to friends",
             open: "Open Falco",
             quit: "Quit",
+            playing: "Friends playing",
+            nobody: "Nobody is playing",
+            join: "Join",
         },
     }
 }

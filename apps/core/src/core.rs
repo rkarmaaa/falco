@@ -29,6 +29,10 @@ pub enum TrayCommand {
     SetStatus(Status),
     SetAvailable(bool),
     OpenUi,
+    /// Scorciatoia globale: barra rapida dell'host (§7).
+    OpenHost,
+    /// «Entra» dal menu del tray.
+    Join(String),
     Quit,
 }
 
@@ -38,6 +42,8 @@ pub struct TrayUpdate {
     pub language: Language,
     pub status: Status,
     pub host_available: bool,
+    /// Amici in gioco con posti liberi: (ID, nome).
+    pub playing: Vec<(String, String)>,
 }
 
 impl TrayUpdate {
@@ -46,6 +52,7 @@ impl TrayUpdate {
             language: c.general.language,
             status: from_cfg(c.profile.status),
             host_available: c.host.available_on_start,
+            playing: Vec::new(),
         }
     }
 }
@@ -165,6 +172,11 @@ impl Core {
             language: self.config.config().general.language,
             status: self.status(),
             host_available: self.host_available,
+            playing: crate::social::friend_views(self)
+                .into_iter()
+                .filter(|f| f.state == crate::social::FriendLiveState::Playing)
+                .map(|f| (f.id, f.name))
+                .collect(),
         });
     }
 
@@ -248,15 +260,25 @@ impl Core {
 
     /// Apre la UI se non è già aperta. La UI è un processo separato (§10).
     pub fn open_ui(&mut self) {
+        self.open_ui_at(None);
+    }
+
+    /// Apre la UI su una sezione; se è già aperta, la porta su quella sezione.
+    pub fn open_ui_at(&mut self, section: Option<&str>) {
         if let Some(child) = self.ui.as_mut()
             && matches!(child.try_wait(), Ok(None))
         {
+            if let Some(s) = section {
+                self.emit(events::UI_NAVIGATE, json!({ "section": s }));
+            }
             return;
         }
         let exe = std::env::current_exe().ok().and_then(|p| {
             p.parent().map(|d| d.join(if cfg!(windows) { "falco-ui.exe" } else { "falco-ui" }))
         });
-        match exe.map(|p| std::process::Command::new(&p).spawn()) {
+        let args: Vec<String> =
+            section.map(|s| vec!["--section".into(), s.into()]).unwrap_or_default();
+        match exe.map(|p| std::process::Command::new(&p).args(&args).spawn()) {
             Some(Ok(child)) => self.ui = Some(child),
             Some(Err(e)) => tracing::warn!("UI non avviata: {e}"),
             None => tracing::warn!("percorso della UI non trovato"),
@@ -321,6 +343,15 @@ pub async fn run(core: Core, mut tray_rx: mpsc::UnboundedReceiver<TrayCommand>) 
     }
 
     while let Some(cmd) = tray_rx.recv().await {
+        if let TrayCommand::Join(id) = &cmd {
+            let (s, id) = (shared.clone(), id.clone());
+            tokio::spawn(async move {
+                if let Err(e) = crate::ipc::join_friend(&s, &id, "Desktop").await {
+                    s.lock().await.notify_user("Non sono riuscito a entrare", &e.message);
+                }
+            });
+            continue;
+        }
         if let TrayCommand::SetAvailable(a) = cmd {
             shared.lock().await.user_available = a;
             tokio::spawn(set_available(shared.clone(), a));
@@ -334,11 +365,12 @@ pub async fn run(core: Core, mut tray_rx: mpsc::UnboundedReceiver<TrayCommand>) 
                 }
             }
             TrayCommand::OpenUi => core.open_ui(),
+            TrayCommand::OpenHost => core.open_ui_at(Some("host")),
             TrayCommand::Quit => {
                 core.shutdown().await;
                 break;
             }
-            TrayCommand::SetAvailable(_) => {}
+            TrayCommand::SetAvailable(_) | TrayCommand::Join(_) => {}
         }
     }
     server.abort();

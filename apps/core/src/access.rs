@@ -167,13 +167,12 @@ pub async fn knock(shared: &Shared, friend_id: &str) -> KnockAnswer {
                 "Apri Falco per accettare o rifiutare.",
             );
         }
-        let ok = matches!(
-            tokio::time::timeout(Duration::from_secs(u64::from(timeout)), rx).await,
-            Ok(Ok(true))
-        );
+        let answer = tokio::time::timeout(Duration::from_secs(u64::from(timeout)), rx).await;
         shared.lock().await.knocks.remove(friend_id);
-        if !ok {
-            return declined("no-answer");
+        match answer {
+            Ok(Ok(true)) => {}
+            Ok(Ok(false)) => return declined("declined"),
+            _ => return declined("no-answer"),
         }
     }
     {

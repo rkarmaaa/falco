@@ -20,6 +20,13 @@ async fn rpc(
     link.call(&method, params.unwrap_or(Value::Null)).await
 }
 
+/// Sezione richiesta all'avvio (`--section host` dalla scorciatoia del core).
+#[tauri::command]
+fn initial_section() -> Option<String> {
+    let args: Vec<String> = std::env::args().collect();
+    args.iter().position(|a| a == "--section").and_then(|i| args.get(i + 1).cloned())
+}
+
 /// Il core è raggiungibile in questo momento?
 #[tauri::command]
 fn core_connected(link: State<'_, Arc<CoreLink>>) -> bool {
@@ -35,7 +42,7 @@ fn main() {
             tauri::async_runtime::spawn(link::run(link, app.handle().clone()));
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![rpc, core_connected])
+        .invoke_handler(tauri::generate_handler![rpc, core_connected, initial_section])
         .run(tauri::generate_context!());
     if let Err(e) = result {
         eprintln!("falco-ui: {e}");

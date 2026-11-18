@@ -14,9 +14,10 @@ import InvitesView from '@/views/InvitesView.vue';
 import SettingsView from '@/views/SettingsView.vue';
 import OnboardingView from '@/views/OnboardingView.vue';
 import { core, initCore } from '@/stores/core';
-import { answerRequest, findInviteLink, initSocial, previewInvite, social } from '@/stores/social';
+import { answerKnock, answerRequest, dismissPlayInvite, findInviteLink, initSocial, previewInvite, social } from '@/stores/social';
+import { joinFriend } from '@/stores/core';
 import { setLocale } from '@/i18n';
-import { isTauri } from '@/ipc';
+import { getTransport, isTauri } from '@/ipc';
 
 const { t } = useI18n();
 const section = ref<Section>('friends');
@@ -64,6 +65,15 @@ async function checkClipboard(): Promise<void> {
 useEventListener(window, 'focus', () => void checkClipboard());
 
 onMounted(async () => {
+  if (isTauri()) {
+    const { invoke } = await import('@tauri-apps/api/core');
+    const s = await invoke<string | null>('initial_section').catch(() => null);
+    if (s) section.value = s as Section;
+  }
+  const t = await getTransport();
+  t.onEvent((e) => {
+    if (e.method === 'ui.navigate') section.value = (e.params as { section: Section }).section;
+  });
   await initCore();
   await initSocial();
   void checkClipboard();
@@ -98,6 +108,25 @@ onMounted(async () => {
     <AcceptInviteModal v-if="modal === 'accept'" :initial-link="acceptLink" @close="modal = null" />
 
     <div class="toasts" aria-live="polite">
+      <div v-for="k in social.knocks" :key="k.friendId" class="toast request" role="alert">
+        <span>{{ $t('knock.wants', { name: k.name }) }}</span>
+        <UiButton variant="primary" :size="32" @click="answerKnock(k.friendId, true)">{{ $t('requests.accept') }}</UiButton>
+        <UiButton variant="ghost" :size="32" @click="answerKnock(k.friendId, false)">{{ $t('requests.decline') }}</UiButton>
+      </div>
+      <div v-for="p in social.playInvites" :key="p.friendId" class="toast request" role="alert">
+        <span>{{ $t('knock.invited', { name: p.name }) }}</span>
+        <UiButton
+          variant="primary"
+          :size="32"
+          @click="
+            dismissPlayInvite(p.friendId);
+            joinFriend(p.friendId, p.name).catch((e) => showToast(String(e?.message ?? e)));
+          "
+        >
+          {{ $t('friends.join') }}
+        </UiButton>
+        <UiButton variant="ghost" :size="32" @click="dismissPlayInvite(p.friendId)">{{ $t('knock.later') }}</UiButton>
+      </div>
       <div v-for="r in social.requests" :key="r.requestId" class="toast request" role="alert">
         <span>{{ $t('requests.wants', { name: r.name }) }} <span class="tag">{{ r.tag }}</span></span>
         <UiButton variant="primary" :size="32" @click="answerRequest(r.requestId, true)">{{ $t('requests.accept') }}</UiButton>

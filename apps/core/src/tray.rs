@@ -17,6 +17,11 @@ pub struct Tray {
     busy: CheckMenuItem,
     invisible: CheckMenuItem,
     available: CheckMenuItem,
+    playing_menu: Submenu,
+    /// Voci «Entra da …»: (voce, ID dell'amico)
+    playing: Vec<(MenuItem, String)>,
+    nobody: MenuItem,
+    shown: Vec<(String, String)>,
     open: MenuItem,
     quit: MenuItem,
 }
@@ -29,12 +34,15 @@ impl Tray {
         let invisible = CheckMenuItem::new(t.invisible, true, false, None);
         let status_menu = Submenu::with_items(t.status, true, &[&online, &busy, &invisible])?;
         let available = CheckMenuItem::new(t.available, true, false, None);
+        let nobody = MenuItem::new(t.nobody, false, None);
+        let playing_menu = Submenu::with_items(t.playing, true, &[&nobody])?;
         let open = MenuItem::new(t.open, true, None);
         let quit = MenuItem::new(t.quit, true, None);
 
         let menu = Menu::with_items(&[
             &status_menu,
             &available,
+            &playing_menu,
             &PredefinedMenuItem::separator(),
             &open,
             &PredefinedMenuItem::separator(),
@@ -49,8 +57,20 @@ impl Tray {
             .with_icon(Icon::from_rgba(img.into_raw(), w, h)?)
             .build()?;
 
-        let mut tray =
-            Self { _icon: icon, status_menu, online, busy, invisible, available, open, quit };
+        let mut tray = Self {
+            _icon: icon,
+            status_menu,
+            online,
+            busy,
+            invisible,
+            available,
+            playing_menu,
+            playing: Vec::new(),
+            nobody,
+            shown: Vec::new(),
+            open,
+            quit,
+        };
         tray.apply(state);
         Ok(tray)
     }
@@ -65,6 +85,8 @@ impl Tray {
             TrayCommand::SetStatus(Status::Invisible)
         } else if id == self.available.id() {
             TrayCommand::SetAvailable(self.available.is_checked())
+        } else if let Some((_, fid)) = self.playing.iter().find(|(item, _)| item.id() == id) {
+            TrayCommand::Join(fid.clone())
         } else if id == self.open.id() {
             TrayCommand::OpenUi
         } else if id == self.quit.id() {
@@ -76,6 +98,24 @@ impl Tray {
 
     pub fn apply(&mut self, u: &TrayUpdate) {
         let t = i18n::tray(u.language);
+        self.playing_menu.set_text(t.playing);
+        self.nobody.set_text(t.nobody);
+        // Ricostruisce le voci solo se l'elenco è cambiato
+        if self.shown != u.playing {
+            for (item, _) in self.playing.drain(..) {
+                let _ = self.playing_menu.remove(&item);
+            }
+            let _ = self.playing_menu.remove(&self.nobody);
+            if u.playing.is_empty() {
+                let _ = self.playing_menu.append(&self.nobody);
+            }
+            for (fid, name) in &u.playing {
+                let item = MenuItem::new(format!("{} {name}", t.join), true, None);
+                let _ = self.playing_menu.append(&item);
+                self.playing.push((item, fid.clone()));
+            }
+            self.shown.clone_from(&u.playing);
+        }
         self.status_menu.set_text(t.status);
         self.online.set_text(t.online);
         self.busy.set_text(t.busy);

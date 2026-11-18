@@ -53,7 +53,8 @@
     "activity": {
       "playing": "Sta giocando · nessun posto libero | Sta giocando · {n} posto libero | Sta giocando · {n} posti liberi",
       "seen": "Visto {when}"
-    }
+    },
+    "invitePlay": "Invitalo a giocare"
   },
   "host": {
     "title": "Ospita",
@@ -80,7 +81,11 @@
     "blocked": "Bloccato",
     "block": "Blocca",
     "unblock": "Sblocca",
-    "remove": "Rimuovi"
+    "remove": "Rimuovi",
+    "guests": "Ospiti collegati",
+    "noGuests": "Nessuno è collegato.",
+    "since": "da {min} min",
+    "kick": "Espelli"
   },
   "invites": {
     "title": "Inviti",
@@ -280,5 +285,30 @@
       "stopped": "Tailscale è spento: aprilo prima di invitare qualcuno.",
       "missing": "Tailscale non c'è ancora: Falco lo installerà al primo invito."
     }
+  },
+  "perms": {
+    "title": "Permessi",
+    "autoJoin": "Entra senza chiedere",
+    "keyboard": "Tastiera",
+    "mouse": "Mouse",
+    "launchApps": "Avviare o cambiare app",
+    "gamepads": "Controller",
+    "enforced": "Ingresso, orari e scadenza sono applicati dal tuo host. Il filtro di controller, tastiera e mouse arriva con il motore Falco.",
+    "notPaired": "Il dispositivo dell'amico non è ancora associato al tuo host: i permessi valgono dal primo collegamento."
+  },
+  "knock": {
+    "wants": "{name} vuole entrare",
+    "invited": "{name} ti invita a giocare",
+    "later": "Più tardi"
+  },
+  "joinError": {
+    "not-hosting": "{name} non sta ospitando. Ha chiuso la sessione o non è più disponibile. Riprova quando lo vedi in «In gioco ora».",
+    "no-access": "Non puoi entrare da {name}. Il tuo ruolo non prevede l'accesso. Chiedigli di cambiarlo.",
+    "schedule": "Non puoi entrare da {name} adesso. Sei fuori dalla fascia oraria che ti ha concesso. Riprova più tardi.",
+    "full": "La sessione di {name} è piena. Tutti i posti sono occupati. Riprova quando se ne libera uno.",
+    "no-answer": "{name} non ha risposto. Forse non ha visto la richiesta. Riprova o scrivigli.",
+    "declined": "{name} ha rifiutato la richiesta. Non è il momento giusto. Riprova più tardi.",
+    "unknown": "{name} non ti riconosce come amico. L'amicizia potrebbe essere stata rimossa. Chiedigli un nuovo invito.",
+    "offline": "Non riesco a raggiungere {name}. Il suo Falco o Tailscale sembra spento. Chiedigli di aprire Falco."
   }
 }

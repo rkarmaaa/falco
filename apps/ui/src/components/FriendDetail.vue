@@ -4,6 +4,8 @@ import { ref } from 'vue';
 import { Ban, Monitor, Play, Star, Trash2, X } from 'lucide-vue-next';
 import UiAvatar from './UiAvatar.vue';
 import UiButton from './UiButton.vue';
+import PermissionEditor from './PermissionEditor.vue';
+import { rpc } from '@/ipc';
 import { friendApi } from '@/stores/social';
 import type { Friend } from '@/ipc';
 
@@ -34,6 +36,12 @@ async function act(): Promise<void> {
       {{ $t('friends.join') }}
     </UiButton>
     <p v-else class="muted">{{ $t(`friends.state.${friend.state}`) }}</p>
+
+    <UiButton v-if="!friend.canJoin && friend.state !== 'offline'" variant="secondary" :size="32" @click="rpc('friend.notify', { id: friend.id })">
+      {{ $t('friends.invitePlay') }}
+    </UiButton>
+
+    <PermissionEditor :friend-id="friend.id" />
 
     <h3 class="group">{{ $t('friends.devices') }}</h3>
     <ul class="devices">

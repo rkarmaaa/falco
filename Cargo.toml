@@ -36,6 +36,7 @@ which = "7"
 interprocess = { version = "2", features = ["tokio"] }
 tray-icon = "0.25"
 tao = "0.37"
+global-hotkey = "0.7"
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp", "gif"] }
 webp = "0.3"
 axum = { version = "0.8", default-features = false, features = ["http1", "tokio", "json", "query"] }
