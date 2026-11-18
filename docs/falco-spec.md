@@ -415,8 +415,8 @@ Il core avvia Moonlight dalla riga di comando, per esempio:
 ```bash
 falco-moonlight stream 100.101.102.103 "Desktop" \
   --resolution 1920x1080 --fps 60 --bitrate 30000 \
-  --video-codec HEVC --display-mode borderless \
-  --frame-pacing --quit-after
+  --video-codec HEVC --display-mode fullscreen \
+  --no-frame-pacing --quit-after
 ```
 
 I nomi dei flag vanno verificati con `moonlight stream --help` sulla versione forkata.
@@ -862,9 +862,9 @@ fps = "auto"                 # auto | 30 | 60 | 90 | 120
 codec = "auto"               # auto | h264 | hevc | av1
 bitrate_mode = "auto"        # auto | fixed
 bitrate_kbps = 30000
-display_mode = "borderless"  # fullscreen | borderless | windowed
+display_mode = "fullscreen"  # fullscreen | borderless | windowed (schermo intero = latenza minima)
 vsync = false
-frame_pacing = true
+frame_pacing = false          # acceso: più fluido, qualche ms in più
 audio = "stereo"             # stereo | 5.1 | 7.1
 capture_system_keys = "fullscreen"  # never | fullscreen | always
 overlay = "auto"             # auto | always | never

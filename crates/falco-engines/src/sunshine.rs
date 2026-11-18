@@ -124,6 +124,19 @@ pub fn generate_conf(s: &HostSettings, gpu: GpuVendor, platform: Platform) -> St
         put("amd_quality", "speed".into());
         put("amd_preanalysis", "disabled".into());
     }
+    // Preset a latenza minima per gli altri encoder (valori verificati su Sunshine 2026.914)
+    if gpu == GpuVendor::Nvidia || s.encoder == "nvenc" {
+        put("nvenc_preset", "1".into()); // P1, il più veloce
+        put("nvenc_twopass", "disabled".into());
+        put("nvenc_latency_over_power", "enabled".into());
+    }
+    if gpu == GpuVendor::Intel || s.encoder == "quicksync" {
+        put("qsv_preset", "veryfast".into());
+    }
+    if s.encoder == "software" {
+        put("sw_preset", "ultrafast".into());
+        put("sw_tune", "zerolatency".into());
+    }
     match platform {
         Platform::MacOs => put("vt_realtime", "enabled".into()),
         Platform::Windows => put("gamepad", "x360".into()),

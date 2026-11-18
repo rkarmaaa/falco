@@ -22,6 +22,30 @@ fn with(mut c: Check, value: Option<String>, action: Option<&'static str>) -> Ch
     c
 }
 
+/// Latenza misurata nell'ultima sessione da ospite (statistiche di Moonlight).
+pub fn last_session_check(raw: Option<&str>) -> Check {
+    let Some(v) = raw.and_then(|r| serde_json::from_str::<serde_json::Value>(r).ok()) else {
+        return with(check("lastSession", Level::Pending), None, Some("playOnce"));
+    };
+    let st = &v["stats"];
+    let total = v["latencyMs"].as_f64().unwrap_or(0.0);
+    let host = st["hostLatencyMs"].as_f64().unwrap_or(0.0);
+    let net = st["networkLatencyMs"].as_f64().unwrap_or(0.0);
+    let dropped = st["droppedNetworkPct"].as_f64().unwrap_or(0.0) + st["droppedJitterPct"].as_f64().unwrap_or(0.0);
+    let value = Some(format!("{total:.1} ms · {dropped:.1}%"));
+    if dropped > 2.0 {
+        with(check("lastSession", Level::Warn), value, Some("framesDropped"))
+    } else if net > 30.0 {
+        with(check("lastSession", Level::Warn), value, Some("networkLatency"))
+    } else if host > 12.0 {
+        with(check("lastSession", Level::Warn), value, Some("hostLatency"))
+    } else if total > 25.0 {
+        with(check("lastSession", Level::Warn), value, Some("clientLatency"))
+    } else {
+        with(check("lastSession", Level::Ok), value, None)
+    }
+}
+
 /// Controlli sulla postazione locale.
 pub fn local_checks(l: &LocalSetup) -> Vec<Check> {
     let mut out = vec![if l.wifi {
@@ -276,6 +300,8 @@ pub async fn run(shared: &Shared) -> Vec<Check> {
     }
 
     out.extend(local_checks(&diagnostics::local_setup().await));
+    let last = shared.lock().await.db.meta("last_session").ok().flatten();
+    out.push(last_session_check(last.as_deref()));
     out
 }
 
@@ -287,6 +313,18 @@ pub fn to_json(checks: &[Check]) -> serde_json::Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn last_session_thresholds() {
+        let mk = |net: f64, host: f64, drop: f64| {
+            format!(r#"{{"latencyMs":{},"stats":{{"hostLatencyMs":{host},"networkLatencyMs":{net},"droppedNetworkPct":{drop},"droppedJitterPct":0}}}}"#, net + host + 1.0)
+        };
+        assert_eq!(last_session_check(Some(&mk(1.0, 3.9, 0.2))).level, Level::Ok);
+        assert_eq!(last_session_check(Some(&mk(40.0, 3.9, 0.2))).action, Some("networkLatency"));
+        assert_eq!(last_session_check(Some(&mk(5.0, 15.0, 0.2))).action, Some("hostLatency"));
+        assert_eq!(last_session_check(Some(&mk(5.0, 3.0, 5.0))).action, Some("framesDropped"));
+        assert_eq!(last_session_check(None).level, Level::Pending);
+    }
 
     #[test]
     fn local_warnings() {

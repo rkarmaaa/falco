@@ -171,6 +171,95 @@ pub enum EngineEvent {
     Ended {
         reason: String,
     },
+    /// Statistiche globali stampate da Moonlight a fine sessione.
+    Summary(VideoStats),
+}
+
+/// «Global video stats» di moonlight-qt: la misura della latenza di ogni sessione.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VideoStats {
+    pub network_fps: f32,
+    pub decode_fps: f32,
+    pub render_fps: f32,
+    /// Cattura e codifica sull'host (media).
+    pub host_latency_ms: f32,
+    pub host_latency_max_ms: f32,
+    pub network_latency_ms: f32,
+    pub network_variance_ms: f32,
+    pub decode_ms: f32,
+    pub queue_ms: f32,
+    /// Rendering, compresa l'attesa del V-sync del monitor.
+    pub render_ms: f32,
+    pub dropped_network_pct: f32,
+    pub dropped_jitter_pct: f32,
+}
+
+impl VideoStats {
+    /// Stima della latenza dallo schermo dell'host al monitor dell'ospite, senza la cattura.
+    pub fn total_ms(&self) -> f32 {
+        self.host_latency_ms + self.network_latency_ms + self.decode_ms + self.queue_ms + self.render_ms
+    }
+}
+
+fn first_number(s: &str) -> Option<f32> {
+    let start = s.find(|c: char| c.is_ascii_digit())?;
+    let tail = &s[start..];
+    let end = tail.find(|c: char| !(c.is_ascii_digit() || c == '.')).unwrap_or(tail.len());
+    tail[..end].parse().ok()
+}
+
+/// Raccoglie il blocco «Global video stats» riga per riga.
+#[derive(Debug, Default)]
+pub struct StatsCollector {
+    active: bool,
+    stats: VideoStats,
+}
+
+impl StatsCollector {
+    /// Restituisce le statistiche quando il blocco è completo.
+    pub fn feed(&mut self, line: &str) -> Option<VideoStats> {
+        let l = line.trim();
+        if l.contains("Global video stats") {
+            self.active = true;
+            self.stats = VideoStats::default();
+            return None;
+        }
+        if !self.active {
+            return None;
+        }
+        let s = &mut self.stats;
+        let (key, value) = l.split_once(':').unwrap_or((l, ""));
+        let n = first_number(value);
+        match key {
+            "Incoming frame rate from network" => s.network_fps = n.unwrap_or(0.0),
+            "Decoding frame rate" => s.decode_fps = n.unwrap_or(0.0),
+            "Rendering frame rate" => s.render_fps = n.unwrap_or(0.0),
+            "Host processing latency min/max/average" => {
+                let parts: Vec<f32> = value.trim().trim_end_matches("ms").split('/').filter_map(|p| p.trim().parse().ok()).collect();
+                if let [_, max, avg] = parts[..] {
+                    s.host_latency_max_ms = max;
+                    s.host_latency_ms = avg;
+                }
+            }
+            "Frames dropped by your network connection" => s.dropped_network_pct = n.unwrap_or(0.0),
+            "Frames dropped due to network jitter" => s.dropped_jitter_pct = n.unwrap_or(0.0),
+            "Average network latency" => {
+                s.network_latency_ms = n.unwrap_or(0.0);
+                s.network_variance_ms = value.split("variance:").nth(1).and_then(first_number).unwrap_or(0.0);
+            }
+            "Average decoding time" => s.decode_ms = n.unwrap_or(0.0),
+            "Average frame queue delay" => s.queue_ms = n.unwrap_or(0.0),
+            k if k.starts_with("Average rendering time") => {
+                s.render_ms = n.unwrap_or(0.0);
+                // Ultima riga del blocco
+                self.active = false;
+                return Some(s.clone());
+            }
+            _ => {}
+        }
+        None
+    }
 }
 
 /// Righe JSON del fork, oppure i log di moonlight-qt ufficiale come ripiego.
@@ -264,6 +353,17 @@ Desktop
 Steam Big Picture
 ";
         assert_eq!(parse_list(out), ["Desktop", "Steam Big Picture"]);
+    }
+
+    #[test]
+    fn collects_global_video_stats() {
+        let block = "00:00:14 - SDL Info (0): \nGlobal video stats\n------------------\nIncoming frame rate from network: 60.14 FPS\nDecoding frame rate: 60.14 FPS\nRendering frame rate: 59.94 FPS\nHost processing latency min/max/average: 2.6/24.8/2.8 ms\nFrames dropped by your network connection: 0.00%\nFrames dropped due to network jitter: 0.33%\nAverage network latency: 1 ms (variance: 0 ms)\nAverage decoding time: 0.21 ms\nAverage frame queue delay: 0.01 ms\nAverage rendering time (including monitor V-sync latency): 0.32 ms\n00:00:14 - SDL Info (0): Stopping input stream...";
+        let mut c = StatsCollector::default();
+        let s = block.lines().find_map(|l| c.feed(l)).unwrap();
+        assert!((s.host_latency_ms - 2.8).abs() < 1e-3 && (s.host_latency_max_ms - 24.8).abs() < 1e-3);
+        assert!((s.network_latency_ms - 1.0).abs() < 1e-3);
+        assert!((s.dropped_jitter_pct - 0.33).abs() < 1e-3);
+        assert!((s.total_ms() - 4.34).abs() < 0.01);
     }
 
     #[test]

@@ -173,7 +173,8 @@
       "wifi": "Connessione",
       "battery": "Alimentazione",
       "powerSaver": "Piano energetico",
-      "otherVpn": "Altre VPN attive"
+      "otherVpn": "Altre VPN attive",
+      "lastSession": "Latenza dell'ultima partita"
     },
     "action": {
       "installTailscale": "Installa Tailscale dal sito ufficiale, poi riapri Falco.",
@@ -192,7 +193,12 @@
       "cableBetter": "Va bene, ma il cavo è più stabile per giocare.",
       "plugIn": "Il portatile è a batteria: collegalo alla corrente per le prestazioni migliori.",
       "highPerformance": "Piano «risparmio energia» attivo: passa a «bilanciato» o «prestazioni elevate».",
-      "disableVpn": "Un'altra VPN può aggiungere latenza: disattivala durante il gioco."
+      "disableVpn": "Un'altra VPN può aggiungere latenza: disattivala durante il gioco.",
+      "playOnce": "Gioca una sessione: Falco misura la latenza reale.",
+      "framesDropped": "Fotogrammi persi: usa il cavo, chiudi download e streaming, o abbassa il bitrate.",
+      "networkLatency": "Rete lenta verso l'host: controlla che il percorso sia diretto e non via relay.",
+      "hostLatency": "L'host impiega troppo a codificare: abbassa risoluzione o fps, o chiudi programmi pesanti sull'host.",
+      "clientLatency": "Il tuo PC impiega troppo a mostrare i fotogrammi: usa lo schermo intero e tieni spento il V-Sync."
     }
   },
   "core": {
@@ -437,6 +443,6 @@
     "installVersion": "Aggiorna a {version}",
     "installing": "Aggiornamento in corso…",
     "upToDate": "Falco {version} è aggiornato.",
-    "disabled": "Gli aggiornamenti automatici si attivano con la prima versione firmata."
+    "disabled": "Gli aggiornamenti automatici si attivano quando esce la prima versione su GitHub."
   }
 }

@@ -75,9 +75,10 @@ Fatto in anticipo, utile alle milestone successive:
 - [x] **Notifica di nuova versione** con pulsante (toast, voce nel tray, Impostazioni → Info) e **aggiornamento automatico** silenzioso quando non si gioca; firma minisign verificata (ADR 0008)
 - [x] Workflow di rilascio: tag `v*` → pacchetti firmati per l'updater e `latest.json` su GitHub Releases
 - [x] Italiano e inglese completi (test di parità delle chiavi), errori in tre parti
-- [ ] **Marco**: chiave di firma degli aggiornamenti (`npx tauri signer generate`), da mettere nei segreti del repository e in `updater::PUBLIC_KEY`
-- [ ] **Marco**: certificato di firma del codice Windows e Apple Developer Program (notarizzazione)
-- [ ] **Marco**: organizzazione GitHub (ora segnaposto `falco-app/falco` nell'URL del manifest)
+- [x] Chiave di firma degli aggiornamenti generata (fuori dal repository) e chiave pubblica nel core; guida in [docs/releasing.md](docs/releasing.md)
+- [ ] **Marco**: copia di sicurezza della chiave e segreti del repository (`gh secret set`, vedi docs/releasing.md)
+- [x] Niente firma del codice per ora (budget): SmartScreen e Gatekeeper avvisano al primo avvio, gli aggiornamenti restano verificati con minisign
+- [x] Repository sull'account personale: `rkarmaaa/falco`
 - [ ] Fork dei motori compilati in CI al posto dei pacchetti ufficiali (`engines/`)
 - [ ] Budget del §10 misurati in CI (`falco-core bench`) e accessibilità verificata con screen reader
 - [ ] Rifinitura grafica delle schermate (fase dedicata)
@@ -88,6 +89,4 @@ Fatto in anticipo, utile alle milestone successive:
 - [ ] Contrasto di `$text-3` e valori del tema chiaro ([DESIGN_SYSTEM.md](DESIGN_SYSTEM.md#questioni-aperte))
 - [ ] Verifica del marchio «Falco» nel settore
 - [ ] Base dell'host: Sunshine con i permessi di Apollo, oppure Apollo direttamente
-- [ ] Budget per la firma del codice su Windows e macOS (serve anche agli aggiornamenti automatici)
 - [ ] Supporto ARM64 per Windows in v1 o in v2
-- [ ] Nome dell'organizzazione GitHub (ora segnaposto `falco-app/falco` in `Cargo.toml`)

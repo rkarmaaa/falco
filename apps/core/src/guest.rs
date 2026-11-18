@@ -241,7 +241,11 @@ pub async fn join(core: Shared, address: String, app: String) -> anyhow::Result<
 
     tokio::spawn(async move {
         let mut reason = "closed".to_owned();
+        let mut summary: Option<moonlight::VideoStats> = None;
+        let mut ending: Option<tokio::time::Instant> = None;
         loop {
+            // Dopo «Connection terminated» Moonlight stampa ancora le statistiche: 3 s per leggerle
+            let wait = ending.map(|t| t + Duration::from_secs(3));
             tokio::select! {
                 ev = events.recv() => match ev {
                     Some(EngineEvent::Connecting) => core.lock().await.emit(events::SESSION_STATS, json!({ "phase": "connecting" })),
@@ -250,15 +254,23 @@ pub async fn join(core: Shared, address: String, app: String) -> anyhow::Result<
                         events::SESSION_STATS,
                         json!({ "phase": "stats", "rttMs": rtt_ms, "fps": fps, "bitrateKbps": bitrate_kbps, "path": path }),
                     ),
-                    // Moonlight resta aperto con un messaggio: lo chiudiamo noi
                     Some(EngineEvent::Ended { reason: r }) => {
                         reason = r;
+                        ending.get_or_insert_with(tokio::time::Instant::now);
+                    }
+                    Some(EngineEvent::Summary(s)) => {
+                        summary = Some(s);
+                        // Moonlight resta aperto con un messaggio: lo chiudiamo noi
                         let _ = child.kill().await;
                         break;
                     }
                     None => {}
                 },
                 _ = child.wait() => break,
+                _ = async { match wait { Some(t) => tokio::time::sleep_until(t).await, None => std::future::pending().await } } => {
+                    let _ = child.kill().await;
+                    break;
+                }
             }
         }
         let mut c = core.lock().await;
@@ -286,12 +298,22 @@ pub async fn join(core: Shared, address: String, app: String) -> anyhow::Result<
             role: "guest".into(),
             started_at: started,
             ended_at: now(),
-            avg_rtt_ms: None,
+            avg_rtt_ms: summary.as_ref().map(|v| f64::from(v.network_latency_ms)),
             path: "direct".into(),
         });
+        if let Some(s) = &summary {
+            let last = json!({ "host": address, "at": now(), "stats": s, "latencyMs": s.total_ms() });
+            let _ = c.db.set_meta("last_session", &last.to_string());
+        }
         c.emit(
             events::SESSION_ENDED,
-            json!({ "host": address, "reason": reason, "durationS": now() - started }),
+            json!({
+                "host": address,
+                "reason": reason,
+                "durationS": now() - started,
+                "stats": summary,
+                "latencyMs": summary.as_ref().map(moonlight::VideoStats::total_ms),
+            }),
         );
         c.open_ui();
     });

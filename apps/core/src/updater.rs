@@ -14,10 +14,11 @@ use crate::core::Shared;
 
 /// Manifest pubblicato con ogni rilascio (GitHub Releases).
 pub const MANIFEST_URL: &str =
-    "https://github.com/falco-app/falco/releases/latest/download/latest.json";
+    "https://github.com/rkarmaaa/falco/releases/latest/download/latest.json";
 /// Chiave pubblica minisign degli aggiornamenti (base64 del file `.pub`).
-/// Vuota finché non viene generata la chiave di rilascio: aggiornamenti spenti.
-pub const PUBLIC_KEY: &str = "";
+/// Vuota finchÃ© non viene generata la chiave di rilascio: aggiornamenti spenti.
+pub const PUBLIC_KEY: &str =
+    "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDM1MkM1QTE3Q0NCMDdERUUKUldUdWZiRE1GMW9zTlZGbXMyWnZKbmUrS1p6V1RWU2s2ZDRiVWFtdEk0ZUFtL1RmNzJScnF2dFIK";
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Manifest {
@@ -52,7 +53,7 @@ fn platform_key() -> &'static str {
     }
 }
 
-/// Versione più recente del manifest rispetto a quella installata?
+/// Versione piÃ¹ recente del manifest rispetto a quella installata?
 pub fn newer(manifest: &Manifest, current: &str) -> bool {
     let parse = |v: &str| semver::Version::parse(v.trim_start_matches('v')).ok();
     matches!((parse(&manifest.version), parse(current)), (Some(m), Some(c)) if m > c)
@@ -93,7 +94,7 @@ pub async fn check(shared: &Shared) -> anyhow::Result<Option<Available>> {
     if c.update.as_ref() != Some(&a) {
         c.emit(events::UPDATE_AVAILABLE, json!(a));
         c.notify_user(
-            &format!("È disponibile Falco {}", a.version),
+            &format!("Ãˆ disponibile Falco {}", a.version),
             "Apri Falco per aggiornare con un clic.",
         );
         c.update = Some(a.clone());
@@ -105,7 +106,7 @@ pub async fn check(shared: &Shared) -> anyhow::Result<Option<Available>> {
 /// Scarica, verifica e avvia l'installer silenzioso; poi il core si chiude.
 pub async fn install(shared: &Shared) -> anyhow::Result<()> {
     if shared.lock().await.streaming {
-        bail!("c'è una sessione in corso: l'aggiornamento partirà alla fine");
+        bail!("c'Ã¨ una sessione in corso: l'aggiornamento partirÃ  alla fine");
     }
     let dir = shared.lock().await.data_dir.join("updates");
     std::fs::create_dir_all(&dir)?;
@@ -122,7 +123,7 @@ pub async fn install(shared: &Shared) -> anyhow::Result<()> {
     std::fs::write(&file, &bytes)?;
     shared.lock().await.emit(events::UPDATE_PROGRESS, json!({ "step": "installing" }));
     if cfg!(windows) {
-        // NSIS in modalità silenziosa: l'installer chiude e riavvia Falco
+        // NSIS in modalitÃ  silenziosa: l'installer chiude e riavvia Falco
         std::process::Command::new(&file).arg("/S").spawn().context("installer non avviato")?;
     } else {
         let app = std::env::current_exe()?
@@ -144,7 +145,7 @@ pub async fn install(shared: &Shared) -> anyhow::Result<()> {
     std::process::exit(0);
 }
 
-/// All'avvio e ogni 6 ore; in modalità automatica installa quando non si gioca.
+/// All'avvio e ogni 6 ore; in modalitÃ  automatica installa quando non si gioca.
 pub async fn run(shared: Shared) {
     tokio::time::sleep(Duration::from_secs(20)).await;
     loop {
@@ -183,6 +184,17 @@ mod tests {
         assert!(!newer(&manifest("1.0.0"), "1.0.0"));
         assert!(!newer(&manifest("0.9.0"), "1.0.0"));
         assert!(!newer(&manifest("non-una-versione"), "1.0.0"));
+    }
+
+    #[test]
+    fn real_release_key_verifies_signed_sample() {
+        let bin = include_bytes!("../tests/fixtures/update-sample.bin");
+        let sig = include_str!("../tests/fixtures/update-sample.bin.sig");
+        verify(bin, sig, PUBLIC_KEY).unwrap();
+        // Un solo byte cambiato e la firma non vale più
+        let mut tampered = bin.to_vec();
+        tampered[0] ^= 1;
+        assert!(verify(&tampered, sig, PUBLIC_KEY).is_err());
     }
 
     #[test]

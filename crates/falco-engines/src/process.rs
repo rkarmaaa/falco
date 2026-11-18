@@ -7,7 +7,7 @@ use tokio::io::{AsyncBufReadExt, AsyncRead, BufReader};
 use tokio::process::{Child, Command};
 use tokio::sync::mpsc;
 
-use crate::moonlight::{EngineEvent, parse_event};
+use crate::moonlight::{EngineEvent, StatsCollector, parse_event};
 
 /// Priorità del processo su Windows (§10 «Durante lo streaming»).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -51,8 +51,10 @@ pub struct EngineProcess {
 fn forward<R: AsyncRead + Unpin + Send + 'static>(reader: R, tx: mpsc::Sender<EngineEvent>) {
     tokio::spawn(async move {
         let mut lines = BufReader::new(reader).lines();
+        let mut stats = StatsCollector::default();
         while let Ok(Some(line)) = lines.next_line().await {
-            if let Some(ev) = parse_event(&line)
+            let ev = stats.feed(&line).map(EngineEvent::Summary).or_else(|| parse_event(&line));
+            if let Some(ev) = ev
                 && tx.send(ev).await.is_err()
             {
                 break;

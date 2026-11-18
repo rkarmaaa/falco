@@ -173,7 +173,8 @@
       "wifi": "Connection",
       "battery": "Power",
       "powerSaver": "Power plan",
-      "otherVpn": "Other active VPNs"
+      "otherVpn": "Other active VPNs",
+      "lastSession": "Latency of your last game"
     },
     "action": {
       "installTailscale": "Install Tailscale from the official site, then reopen Falco.",
@@ -192,7 +193,12 @@
       "cableBetter": "Fine, but a cable is steadier for gaming.",
       "plugIn": "The laptop is on battery: plug it in for the best performance.",
       "highPerformance": "Power saver is on: switch to “balanced” or “high performance”.",
-      "disableVpn": "Another VPN can add latency: turn it off while playing."
+      "disableVpn": "Another VPN can add latency: turn it off while playing.",
+      "playOnce": "Play one session: Falco measures the real latency.",
+      "framesDropped": "Dropped frames: use a cable, stop downloads and streams, or lower the bitrate.",
+      "networkLatency": "Slow network to the host: check the path is direct and not via relay.",
+      "hostLatency": "The host takes too long to encode: lower resolution or fps, or close heavy apps on the host.",
+      "clientLatency": "Your PC takes too long to show frames: use full screen and keep V-Sync off."
     }
   },
   "core": {
@@ -437,6 +443,6 @@
     "installVersion": "Update to {version}",
     "installing": "Updating…",
     "upToDate": "Falco {version} is up to date.",
-    "disabled": "Automatic updates turn on with the first signed release."
+    "disabled": "Automatic updates turn on once the first version is published on GitHub."
   }
 }

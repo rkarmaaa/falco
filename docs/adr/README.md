@@ -17,3 +17,4 @@ Una decisione per file, numerate. Per un nuovo ADR copia [0000-modello.md](0000-
 | [0011](0011-spike-apollo.md) | Spike: permessi di Apollo su Sunshine | da verificare |
 | [0012](0012-nessuna-installazione-manuale.md) | Nessuna installazione manuale per l'utente | accettato |
 | [0013](0013-nome-e-marchio-falco.md) | Nome e marchio: Falco | accettato |
+| [0014](0014-latenza-minima.md) | Profilo a latenza minima | accettato |
