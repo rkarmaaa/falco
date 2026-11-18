@@ -123,7 +123,8 @@ onMounted(async () => {
     void getCurrentWindow().onCloseRequested(async () => {
       if (core.session.phase !== 'idle') {
         await leaveSession().catch(() => {});
-        await resetStage();
+        // Un errore qui non deve impedire la chiusura
+        await resetStage().catch(() => {});
       }
     });
   }
