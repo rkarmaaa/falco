@@ -17,11 +17,18 @@ JSON-RPC 2.0, un messaggio JSON per riga, su named pipe `\\.\pipe\falo-core-<ute
 | `config.set` | `{ key: "sezione.chiave", value }` | `{ applyAt: "now" \| "nextSession" \| "hostRestart" }` | M0 |
 | `config.reset` | `{ section }` | `null` | M0 |
 | `profile.update` | `{ status? }` (nome e avatar in M2) | `null` | M0 parziale |
-| `host.setAvailable` | `{ available }` | `{ available }` (avvio di Sunshine in M1) | M0 parziale |
+| `host.setAvailable` | `{ available }` | `{ available }`; avvia o ferma Sunshine, avanzamento con `host.state` | M1 |
 | `friends.list` | — | elenco di amici dal database | M0 (vuoto fino a M2) |
 | `net.runDoctor` | — | `{ checks: [{ id, level, value, action }] }` | M0 parziale |
 | `app.openUi` | — | `null`; usato dalla seconda istanza del core | M0 |
-| `session.join` | — | — | M1 |
+| `host.pairings` | — | richieste di pairing in attesa `[{ id, name, address }]` | M1 |
+| `host.approvePairing` | `{ id, pin, name }` | `null` | M1 |
+| `host.clients` | — | dispositivi associati `[{ uuid, name, enabled }]` | M1 |
+| `host.unpair` | `{ uuid }` | `null` | M1 |
+| `host.setClientEnabled` | `{ uuid, enabled }` | `null` | M1 |
+| `host.endSession` | — | `null` | M1 |
+| `session.pair` | `{ host, port? }` | `{ pin, host }`; esito con l'evento `pair.result` | M1 |
+| `session.join` | `{ host, port?, app? }` | `null`; la UI si chiude, lo stato arriva con `session.stats` e `session.ended` | M1 |
 | `invite.create`, `invite.accept` | — | — | M3 |
 | `friend.setPermissions` | — | — | M4 |
 | `update.check`, `update.install` | — | — | M6 ([ADR 0008](adr/0008-aggiornamenti-automatici.md)) |
@@ -33,7 +40,11 @@ JSON-RPC 2.0, un messaggio JSON per riga, su named pipe `\\.\pipe\falo-core-<ute
 | `presence.changed` | `{ self: { status?, hostAvailable? } }`; in M2 anche gli amici | M0 |
 | `config.changed` | `{ key, value }` oppure `{ section }` | M0 |
 | `invite.progress` | — | M3 |
-| `session.knock`, `session.stats`, `session.ended` | — | M1–M4 |
+| `host.state` | `{ state: stopped \| starting \| ready \| error, message? }` | M1 |
+| `pair.result` | `{ host, ok }` | M1 |
+| `session.stats` | `{ phase: connecting \| connected \| stats, rttMs?, fps?, bitrateKbps?, path? }` | M1 |
+| `session.ended` | `{ host, reason, durationS }` | M1 |
+| `session.knock` | — | M4 |
 | `net.warning` | — | M5 |
 | `update.available` | — | M6 |
 
@@ -47,6 +58,8 @@ JSON-RPC 2.0, un messaggio JSON per riga, su named pipe `\\.\pipe\falo-core-<ute
 | `-32603` | Errore interno | — |
 | `-32001` | Previsto dalla specifica, non ancora implementato | `{ milestone }` |
 | `-32002` | Valore di configurazione non valido | `{ key, value, allowed, line }` |
+| `-32003` | L'host non è attivo | — |
+| `-32004` | Sessione non avviata | — |
 | `-32099` | Solo lato UI: core non raggiungibile | — |
 
 ## Prova da riga di comando

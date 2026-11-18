@@ -1,5 +1,5 @@
-//! Client: argomenti della CLI di Moonlight, parametri automatici e stato JSON (§8.2).
-//! I nomi dei flag vanno verificati con `moonlight stream --help` (spike M0, ADR 0007).
+//! Client: argomenti della CLI di Moonlight, parametri automatici e stato (§8.2).
+//! Flag verificati su moonlight-qt 6.2.0 (ADR 0007).
 
 use serde::{Deserialize, Serialize};
 
@@ -34,6 +34,11 @@ pub struct StreamRequest {
     pub display_mode: String,
     pub vsync: bool,
     pub frame_pacing: bool,
+    /// `stereo` | `5.1-surround` | `7.1-surround`
+    pub audio: String,
+    /// `never` | `fullscreen` | `always`
+    pub capture_system_keys: String,
+    pub performance_overlay: bool,
     pub extra_args: Vec<String>,
 }
 
@@ -54,6 +59,15 @@ pub fn stream_args(r: &StreamRequest) -> Vec<String> {
         r.display_mode.clone(),
         if r.vsync { "--vsync" } else { "--no-vsync" }.into(),
         if r.frame_pacing { "--frame-pacing" } else { "--no-frame-pacing" }.into(),
+        "--audio-config".into(),
+        r.audio.clone(),
+        "--capture-system-keys".into(),
+        r.capture_system_keys.clone(),
+        if r.performance_overlay { "--performance-overlay" } else { "--no-performance-overlay" }
+            .into(),
+        "--game-optimization".into(),
+        "--keep-awake".into(),
+        "--multi-controller".into(),
         "--quit-after".into(),
     ];
     a.extend(r.extra_args.iter().cloned());
@@ -62,6 +76,21 @@ pub fn stream_args(r: &StreamRequest) -> Vec<String> {
 
 pub fn pair_args(host: &str, pin: &str) -> Vec<String> {
     vec!["pair".into(), host.into(), "--pin".into(), pin.into()]
+}
+
+pub fn list_args(host: &str) -> Vec<String> {
+    vec!["list".into(), host.into()]
+}
+
+/// App dell'host dall'output di `moonlight list`, escluse le righe di log.
+pub fn parse_list(output: &str) -> Vec<String> {
+    output
+        .lines()
+        .map(str::trim)
+        .filter(|l| !l.is_empty())
+        .filter(|l| !(l.len() > 11 && l.as_bytes()[2] == b':' && l.contains(" - ")))
+        .map(str::to_owned)
+        .collect()
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -144,13 +173,22 @@ pub enum EngineEvent {
     },
 }
 
-/// Le righe non JSON (log di Qt, ecc.) vengono ignorate.
+/// Righe JSON del fork, oppure i log di moonlight-qt ufficiale come ripiego.
 pub fn parse_event(line: &str) -> Option<EngineEvent> {
     let line = line.trim();
-    if !line.starts_with('{') {
-        return None;
+    if line.starts_with('{') {
+        return serde_json::from_str(line).ok();
     }
-    serde_json::from_str(line).ok()
+    if line.contains("Starting RTSP handshake") {
+        Some(EngineEvent::Connecting)
+    } else if line.contains("Starting input stream") {
+        Some(EngineEvent::Connected)
+    } else if line.contains("Connection terminated") || line.contains("Starting connection failed")
+    {
+        Some(EngineEvent::Ended { reason: line.rsplit(": ").next().unwrap_or(line).to_owned() })
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]
@@ -185,6 +223,9 @@ mod tests {
             display_mode: "borderless".into(),
             vsync: false,
             frame_pacing: true,
+            audio: "stereo".into(),
+            capture_system_keys: "fullscreen".into(),
+            performance_overlay: false,
             extra_args: vec![],
         });
         let joined = a.join(" ");
@@ -217,6 +258,15 @@ mod tests {
     }
 
     #[test]
+    fn list_output_skips_logs() {
+        let out = "00:00:00 - Qt Info: Discovered mDNS host
+Desktop
+Steam Big Picture
+";
+        assert_eq!(parse_list(out), ["Desktop", "Steam Big Picture"]);
+    }
+
+    #[test]
     fn parses_engine_events() {
         assert_eq!(parse_event(r#"{"event":"connected"}"#), Some(EngineEvent::Connected));
         let s = parse_event(
@@ -224,5 +274,13 @@ mod tests {
         );
         assert!(matches!(s, Some(EngineEvent::Stats { bitrate_kbps: 28000, .. })));
         assert_eq!(parse_event("Qt: qualcosa"), None);
+        assert_eq!(
+            parse_event("00:00:03 - SDL Info (0): Starting RTSP handshake..."),
+            Some(EngineEvent::Connecting)
+        );
+        assert_eq!(
+            parse_event("00:00:03 - SDL Info (0): Starting input stream..."),
+            Some(EngineEvent::Connected)
+        );
     }
 }

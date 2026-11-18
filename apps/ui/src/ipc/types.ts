@@ -3,8 +3,26 @@
 export type Status = 'online' | 'busy' | 'invisible';
 export type TailscaleState = 'missing' | 'stopped' | 'needsLogin' | 'running';
 
+export interface HostState {
+  state: 'stopped' | 'starting' | 'ready' | 'error';
+  message?: string;
+}
+
+export interface PendingPairing {
+  id: string;
+  name: string;
+  address: string;
+}
+
+export interface PairedClient {
+  uuid: string;
+  name: string;
+  enabled: boolean;
+}
+
 export interface StateSnapshot {
   version: string;
+  host: HostState;
   milestone: string;
   status: Status;
   hostAvailable: boolean;
@@ -59,3 +77,5 @@ export interface FaloConfig {
 
 export const CORE_UNREACHABLE = -32099;
 export const NOT_IMPLEMENTED = -32001;
+export const HOST_NOT_READY = -32003;
+export const SESSION_FAILED = -32004;

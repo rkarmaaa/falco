@@ -31,7 +31,26 @@
     "availableHint": "Friends can see you and ask to join. When you're not available, the streaming engine is off.",
     "apps": "Games and apps",
     "desktop": "Desktop",
-    "noSession": "No active session"
+    "noSession": "No active session",
+    "state": {
+      "stopped": "Off",
+      "starting": "Starting the engine… the first time takes about half a minute",
+      "ready": "Ready: friends can connect",
+      "error": "I couldn't start hosting"
+    },
+    "endSession": "End session",
+    "requests": "Pairing requests",
+    "noRequests": "No requests. When a friend presses “Pair”, it shows up here.",
+    "deviceName": "Device name",
+    "pin": "PIN",
+    "approve": "Pair",
+    "devices": "Paired devices",
+    "noDevices": "No paired devices yet.",
+    "enabled": "Can connect",
+    "blocked": "Blocked",
+    "block": "Block",
+    "unblock": "Unblock",
+    "remove": "Remove"
   },
   "invites": {
     "title": "Invites",
@@ -107,5 +126,23 @@
   "ping": {
     "direct": "direct",
     "relay": "relay"
+  },
+  "connect": {
+    "title": "Connect to a host",
+    "provisional": "Provisional",
+    "hint": "Enter the host's Tailscale or local network address. From milestone M3 an invite will be enough.",
+    "address": "Host address",
+    "pair": "Pair",
+    "join": "Join",
+    "pinPrompt": "Ask the host to enter this PIN:",
+    "paired": "Paired with {host}. You can join now.",
+    "pairFailed": "Pairing failed. The PIN may be wrong: try again.",
+    "genericError": "Something went wrong. Try again shortly.",
+    "phase": {
+      "starting": "Starting the stream…",
+      "connecting": "Connecting to the host…",
+      "connected": "Playing"
+    },
+    "ended": "Session ended after {minutes} min."
   }
 }

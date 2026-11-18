@@ -1,10 +1,15 @@
 //! falo-core: demone sempre attivo. Tray sul thread principale (tao),
 //! IPC e logica su un runtime tokio single-thread separato.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+#![cfg_attr(test, allow(clippy::unwrap_used))]
 
+mod bench;
 mod core;
+mod guest;
+mod host;
 mod i18n;
 mod ipc;
+mod secrets;
 mod tray;
 
 use std::path::PathBuf;
@@ -27,6 +32,7 @@ pub enum UserEvent {
 }
 
 pub struct Paths {
+    pub data: PathBuf,
     pub config: PathBuf,
     pub db: PathBuf,
     pub logs: PathBuf,
@@ -36,6 +42,7 @@ impl Paths {
     fn resolve() -> anyhow::Result<Self> {
         let dirs = falo_proto::endpoint::project_dirs().context("cartella utente non trovata")?;
         Ok(Self {
+            data: dirs.data_local_dir().to_path_buf(),
             config: dirs.config_dir().join("config.toml"),
             db: dirs.data_dir().join("falo.db"),
             logs: dirs.data_local_dir().join("logs"),
@@ -44,9 +51,13 @@ impl Paths {
 }
 
 fn main() -> anyhow::Result<()> {
-    if std::env::args().any(|a| a == "--version") {
+    let args: Vec<String> = std::env::args().collect();
+    if args.iter().any(|a| a == "--version") {
         println!("falo-core {}", env!("CARGO_PKG_VERSION"));
         return Ok(());
+    }
+    if args.get(1).map(String::as_str) == Some("bench") {
+        return bench::run(&args[2..]);
     }
 
     // Seconda istanza: chiede al core attivo di aprire la UI ed esce
@@ -75,7 +86,7 @@ fn main() -> anyhow::Result<()> {
         }
     };
     let initial = TrayUpdate::from_config(config.config());
-    let core = Core::new(config, &paths.db, Box::new(notify))?;
+    let core = Core::new(config, &paths.db, &paths.data, Box::new(notify))?;
 
     std::thread::Builder::new().name("falo-runtime".into()).spawn(move || {
         let rt = match tokio::runtime::Builder::new_current_thread().enable_all().build() {

@@ -21,10 +21,13 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 tracing-appender.workspace = true
 interprocess.workspace = true
-tokio = { workspace = true, features = ["rt", "macros", "sync", "io-util", "time", "net"] }
+tokio = { workspace = true, features = ["rt", "macros", "sync", "io-util", "time", "net", "process"] }
 tray-icon.workspace = true
 tao.workspace = true
 image.workspace = true
+keyring.workspace = true
+sysinfo.workspace = true
+display-info = "0.5"
 
 [lints]
 workspace = true

@@ -3,6 +3,7 @@
 import { UserPlus } from 'lucide-vue-next';
 import EmptyState from '@/components/EmptyState.vue';
 import UiButton from '@/components/UiButton.vue';
+import ConnectCard from '@/components/ConnectCard.vue';
 
 const emit = defineEmits<{ invite: [] }>();
 </script>
@@ -21,6 +22,7 @@ const emit = defineEmits<{ invite: [] }>();
         {{ $t('friends.emptyAction') }}
       </UiButton>
     </EmptyState>
+    <ConnectCard />
   </section>
 </template>
 

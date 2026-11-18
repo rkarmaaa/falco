@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="Licenza GPL-3.0" src="https://img.shields.io/badge/licenza-GPL--3.0-FF6A2B"></a>
-  <img alt="Stato: M0" src="https://img.shields.io/badge/stato-M0%20fondamenta-1F1C19">
+  <img alt="Stato: M1" src="https://img.shields.io/badge/stato-M1%20streaming-1F1C19">
 </p>
 
 ---
@@ -26,7 +26,7 @@ Falò è un orchestratore: configura e avvia motori di streaming maturi (Sunshin
 - **Sicuro per costruzione**: nessuna porta esposta su Internet, ogni messaggio tra amici è firmato, i permessi si applicano sull'host.
 
 > [!NOTE]
-> Il progetto è alla milestone **M0 · Fondamenta**: c'è lo scheletro funzionante (core nel tray, IPC, configurazione, UI con design system), ma non si può ancora giocare. Lo streaming arriva con M1. Vedi [TODO.md](TODO.md).
+> Il progetto è alla milestone **M1 · Streaming orchestrato**: Falò fa da host (Sunshine dedicato) e da client (Moonlight), con pairing e streaming pilotati dal core. Amici, inviti e permessi arrivano con M2–M4. Vedi [TODO.md](TODO.md).
 
 ## Documentazione
 
@@ -90,6 +90,12 @@ cargo clippy --workspace --all-targets -- -D warnings
 npm --prefix apps/ui run typecheck && npm --prefix apps/ui test
 ```
 
+Motori in sviluppo: copia Sunshine e Moonlight installati accanto ai binari, con lo stesso layout del pacchetto finale.
+
+```bash
+powershell -File scripts/stage-engines.ps1
+```
+
 Avvio in sviluppo: prima il core (icona nel tray), poi la finestra.
 
 ```bash
@@ -106,7 +112,7 @@ Solo interfaccia nel browser, con un core simulato:
 npm --prefix apps/ui run dev
 ```
 
-Con il core avviato, `node scripts/ipc-smoke.mjs` prova l'IPC dalla riga di comando.
+Con il core avviato, `node scripts/ipc-smoke.mjs` prova l'IPC, `node scripts/rpc.mjs <metodo> [json]` chiama un metodo e `node scripts/e2e-loopback.mjs [porta]` esegue la prova completa di M1 su un solo PC. `falo-core bench 60 tray` misura RAM e CPU.
 
 ## Licenza
 

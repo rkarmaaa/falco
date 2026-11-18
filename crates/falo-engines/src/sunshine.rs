@@ -1,8 +1,9 @@
 //! Host: generazione di `sunshine.conf` e `apps.json` (§8.1).
-//! I nomi delle chiavi vanno verificati sulla versione del fork (spike M0, ADR 0006).
+//! Chiavi verificate su Sunshine 2026.914 (ADR 0006).
 
 use std::collections::BTreeMap;
 use std::fmt::Write;
+use std::path::PathBuf;
 
 use serde::Serialize;
 
@@ -36,7 +37,48 @@ pub struct HostSettings {
     pub upnp: bool,
     pub fec_percent: u8,
     pub base_port: u16,
+    /// Nome mostrato agli ospiti.
+    pub name: String,
+    /// Cartella con conf, apps, credenziali, stato e certificati di questa istanza.
+    pub dir: PathBuf,
     pub overrides: BTreeMap<String, String>,
+}
+
+impl HostSettings {
+    pub fn web_port(&self) -> u16 {
+        self.base_port + 1
+    }
+    pub fn conf_path(&self) -> PathBuf {
+        self.dir.join("sunshine.conf")
+    }
+    pub fn apps_path(&self) -> PathBuf {
+        self.dir.join("apps.json")
+    }
+}
+
+/// Rileva il produttore della GPU principale (una volta, all'avvio dell'host).
+pub fn detect_gpu() -> GpuVendor {
+    if cfg!(target_os = "macos") {
+        return GpuVendor::Apple;
+    }
+    let out = std::process::Command::new("powershell")
+        .args(["-NoProfile", "-Command", "(Get-CimInstance Win32_VideoController).Name"])
+        .output();
+    let names = out.map(|o| String::from_utf8_lossy(&o.stdout).to_lowercase()).unwrap_or_default();
+    vendor_from_names(&names)
+}
+
+fn vendor_from_names(names: &str) -> GpuVendor {
+    // Ordine: una GPU dedicata vince sull'integrata
+    if names.contains("nvidia") || names.contains("geforce") {
+        GpuVendor::Nvidia
+    } else if names.contains("radeon") || names.contains("amd") {
+        GpuVendor::Amd
+    } else if names.contains("intel") {
+        GpuVendor::Intel
+    } else {
+        GpuVendor::Unknown
+    }
 }
 
 /// Nome dell'encoder per Sunshine. `auto` sceglie in base alla GPU.
@@ -61,13 +103,22 @@ pub fn generate_conf(s: &HostSettings, gpu: GpuVendor, platform: Platform) -> St
         put("encoder", enc.into());
     }
     put("port", s.base_port.to_string());
+    put("sunshine_name", s.name.clone());
+    put("system_tray", "disabled".into());
+    let path = |f: &str| s.dir.join(f).to_string_lossy().replace('\\', "/");
+    put("file_apps", path("apps.json"));
+    put("credentials_file", path("credentials.json"));
+    put("file_state", path("state.json"));
+    put("log_path", path("sunshine.log"));
+    put("pkey", path("key.pem"));
+    put("cert", path("cert.pem"));
     put("channels", s.max_guests.to_string());
     put("upnp", if s.upnp { "enabled" } else { "disabled" }.into());
     put("fec_percentage", s.fec_percent.to_string());
     put("origin_web_ui_allowed", "pc".into());
     put("hevc_mode", "0".into()); // 0 = decide la capacità del client
     put("av1_mode", "0".into());
-    put("min_log_level", "warning".into());
+    put("min_log_level", "3".into()); // 3 = warning
     if gpu == GpuVendor::Amd || s.encoder == "amf" {
         put("amd_usage", "ultralowlatency".into());
         put("amd_rc", "cbr".into());
@@ -122,6 +173,8 @@ mod tests {
             upnp: false,
             fec_percent: 20,
             base_port: 47989,
+            name: "marco-pc".into(),
+            dir: PathBuf::from("C:/dati/sunshine"),
             overrides: BTreeMap::new(),
         }
     }
@@ -138,11 +191,33 @@ mod tests {
             "amd_rc = cbr",
             "gamepad = x360",
             "origin_web_ui_allowed = pc",
-            "min_log_level = warning",
+            "min_log_level = 3",
+            "system_tray = disabled",
+            "sunshine_name = marco-pc",
+            "file_apps = C:/dati/sunshine/apps.json",
         ] {
             assert!(conf.lines().any(|l| l == line), "manca «{line}»\n{conf}");
         }
         assert!(!conf.contains("vt_realtime"));
+    }
+
+    #[test]
+    fn gpu_vendor_from_names() {
+        assert_eq!(
+            vendor_from_names(
+                "amd radeon rx 7800 xt
+amd radeon(tm) graphics"
+            ),
+            GpuVendor::Amd
+        );
+        assert_eq!(
+            vendor_from_names(
+                "intel uhd
+nvidia geforce rtx 4070"
+            ),
+            GpuVendor::Nvidia
+        );
+        assert_eq!(vendor_from_names("microsoft basic display"), GpuVendor::Unknown);
     }
 
     #[test]

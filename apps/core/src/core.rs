@@ -13,7 +13,15 @@ use falo_store::{ConfigFile, Db};
 use serde_json::json;
 use tokio::sync::{Mutex, broadcast, mpsc};
 
-pub const MILESTONE: &str = "M0";
+pub const MILESTONE: &str = "M1";
+
+/// Secondi Unix correnti.
+pub fn now() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
+}
 
 /// Comandi dal menu del tray.
 #[derive(Debug, Clone)]
@@ -66,21 +74,29 @@ pub struct Core {
     pub db: Db,
     pub net: Tailscale,
     pub host_available: bool,
+    pub host: crate::host::Host,
     pub streaming: bool,
+    pub last_self_ips: Vec<std::net::IpAddr>,
     ui: Option<Child>,
     events: broadcast::Sender<Notification>,
     notify_tray: Notify,
 }
 
 impl Core {
-    pub fn new(config: ConfigFile, db_path: &Path, notify_tray: Notify) -> anyhow::Result<Self> {
-        let host_available = config.config().host.available_on_start;
+    pub fn new(
+        config: ConfigFile,
+        db_path: &Path,
+        data_dir: &Path,
+        notify_tray: Notify,
+    ) -> anyhow::Result<Self> {
         Ok(Self {
             config,
             db: Db::open(db_path)?,
             net: Tailscale::detect(),
-            host_available,
+            host_available: false,
+            host: crate::host::Host::new(data_dir),
             streaming: false,
+            last_self_ips: Vec::new(),
             ui: None,
             events: broadcast::channel(64).0,
             notify_tray,
@@ -116,8 +132,10 @@ impl Core {
         })
     }
 
-    pub fn snapshot(&self, net: &falo_net::NetStatus) -> StateSnapshot {
+    pub fn snapshot(&mut self, net: &falo_net::NetStatus) -> StateSnapshot {
+        self.last_self_ips.clone_from(&net.self_ips);
         StateSnapshot {
+            host: serde_json::to_value(&self.host.state).unwrap_or_default(),
             version: env!("CARGO_PKG_VERSION").into(),
             milestone: MILESTONE.into(),
             status: self.status(),
@@ -140,11 +158,43 @@ impl Core {
         Ok(())
     }
 
-    /// In M1 qui si avvia o si ferma Sunshine; per ora cambia solo lo stato.
-    pub fn set_available(&mut self, available: bool) {
-        self.host_available = available;
-        self.emit(events::PRESENCE_CHANGED, json!({ "self": { "hostAvailable": available } }));
+    fn publish_host(&self) {
+        self.emit(events::HOST_STATE, serde_json::to_value(&self.host.state).unwrap_or_default());
+        self.emit(
+            events::PRESENCE_CHANGED,
+            json!({ "self": { "hostAvailable": self.host_available } }),
+        );
         self.refresh_tray();
+    }
+
+    /// Percorso di rete verso un host, per scegliere il bitrate (§8.2).
+    pub fn path_to(
+        &self,
+        address: &str,
+        net: &falo_net::NetStatus,
+    ) -> falo_engines::moonlight::NetPath {
+        use falo_engines::moonlight::NetPath;
+        let host = address.rsplit_once(':').map_or(address, |(h, _)| h);
+        let Ok(ip) = host.parse::<std::net::IpAddr>() else { return NetPath::Lan };
+        let cap = self.config.config().network.relay_bitrate_cap_kbps;
+        let relayed = net
+            .peers
+            .iter()
+            .any(|p| p.ips.contains(&ip) && matches!(p.path, falo_net::PeerPath::Relay { .. }));
+        match ip {
+            _ if relayed => NetPath::Relay { cap_kbps: cap },
+            std::net::IpAddr::V4(v4) if v4.is_loopback() || v4.is_private() => NetPath::Lan,
+            _ if net.self_ips.contains(&ip) => NetPath::Lan,
+            // Banda in upload dell'host ignota fino al test di banda (M5)
+            _ => NetPath::Internet { host_upload_kbps: 50_000 },
+        }
+    }
+
+    /// Chiude la UI prima dello streaming: nessuna webview durante il gioco (§10).
+    pub fn close_ui(&mut self) {
+        if let Some(mut ui) = self.ui.take() {
+            let _ = ui.kill();
+        }
     }
 
     /// Apre la UI se non è già aperta. La UI è un processo separato (§10).
@@ -164,10 +214,42 @@ impl Core {
         }
     }
 
-    pub fn shutdown(&mut self) {
-        if let Some(mut ui) = self.ui.take() {
-            let _ = ui.kill();
-        }
+    pub async fn shutdown(&mut self) {
+        self.close_ui();
+        self.host.stop().await;
+    }
+}
+
+/// «Disponibile»: avvia o ferma Sunshine e segue l'avvio fino a «pronto».
+pub async fn set_available(shared: Shared, available: bool) {
+    let mut c = shared.lock().await;
+    c.host_available = available;
+    if !available {
+        c.host.stop().await;
+        c.publish_host();
+        return;
+    }
+    let cfg = c.config.config().clone();
+    if let Err(e) = c.host.start(&cfg).await {
+        tracing::warn!("host non avviato: {e:#}");
+        c.host.state = crate::host::HostState::Error(format!("{e:#}"));
+        c.host_available = false;
+        c.publish_host();
+        return;
+    }
+    c.publish_host();
+    let Some(api) = c.host.api_any() else { return };
+    drop(c);
+    let ready = crate::host::Host::wait_ready(api).await;
+    let mut c = shared.lock().await;
+    if c.host_available {
+        let alive = c.host.alive();
+        c.host.state = if ready && alive {
+            crate::host::HostState::Ready
+        } else {
+            crate::host::HostState::Error("il motore host non risponde".into())
+        };
+        c.publish_host();
     }
 }
 
@@ -177,8 +259,16 @@ pub async fn run(core: Core, mut tray_rx: mpsc::UnboundedReceiver<TrayCommand>) 
     shared.lock().await.refresh_tray();
 
     let server = tokio::spawn(crate::ipc::serve(shared.clone()));
+    let available = shared.lock().await.config.config().host.available_on_start;
+    if available {
+        tokio::spawn(set_available(shared.clone(), true));
+    }
 
     while let Some(cmd) = tray_rx.recv().await {
+        if let TrayCommand::SetAvailable(a) = cmd {
+            tokio::spawn(set_available(shared.clone(), a));
+            continue;
+        }
         let mut core = shared.lock().await;
         match cmd {
             TrayCommand::SetStatus(s) => {
@@ -186,12 +276,12 @@ pub async fn run(core: Core, mut tray_rx: mpsc::UnboundedReceiver<TrayCommand>) 
                     tracing::error!("stato non salvato: {e}");
                 }
             }
-            TrayCommand::SetAvailable(a) => core.set_available(a),
             TrayCommand::OpenUi => core.open_ui(),
             TrayCommand::Quit => {
-                core.shutdown();
+                core.shutdown().await;
                 break;
             }
+            TrayCommand::SetAvailable(_) => {}
         }
     }
     server.abort();

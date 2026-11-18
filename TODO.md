@@ -2,12 +2,12 @@
 
 Stato delle milestone del §16 di [docs/falo-spec.md](docs/falo-spec.md). Una milestone si chiude solo con tutti i criteri spuntati.
 
-## M0 · Fondamenta (in corso)
+## M0 · Fondamenta
 
 - [x] Monorepo come nel §3 (workspace Cargo + app Tauri/Vue)
 - [ ] CI su Windows e macOS (arm64 e x86_64): workflow scritto in `.github/workflows/ci.yml`, da verificare al primo push
 - [ ] Fork di Sunshine e moonlight-qt compilati in CI, con lo script di sincronizzazione (servono i repository dei fork: vedi [engines/README.md](engines/README.md))
-- [ ] Spike chiusi, ognuno con un ADR (aperti: [0006](docs/adr/0006-spike-sunshine.md), [0007](docs/adr/0007-spike-moonlight-cli.md), [0009](docs/adr/0009-spike-tailscale-inviti.md), [0010](docs/adr/0010-spike-webview2.md), [0011](docs/adr/0011-spike-apollo.md))
+- [ ] Spike chiusi, ognuno con un ADR (chiusi: 0006, 0007; aperti: [0009](docs/adr/0009-spike-tailscale-inviti.md), [0010](docs/adr/0010-spike-webview2.md), [0011](docs/adr/0011-spike-apollo.md))
 - [x] Core minimo: icona nel tray, IPC verso la UI, config TOML
 
 Fatto in anticipo, utile alle milestone successive:
@@ -18,13 +18,14 @@ Fatto in anticipo, utile alle milestone successive:
 - [x] `falo-engines`: generazione di `sunshine.conf` e `apps.json`, argomenti e parametri automatici di Moonlight, lettura degli eventi JSON
 - [x] UI: design system, barra del titolo, barra laterale, stati vuoti, Ospita, Impostazioni con Dottore di rete, italiano e inglese, core simulato nel browser
 
-## M1 · Streaming orchestrato
+## M1 · Streaming orchestrato (codice completo, manca la prova su hardware)
 
-- [ ] Il core genera `sunshine.conf`, avvia e ferma Sunshine (servizio su Windows)
-- [ ] Il core lancia Moonlight verso un IP Tailscale e legge lo stato JSON
-- [ ] Pairing con PIN da una UI provvisoria
-- [ ] 1080p60 HEVC da Windows con GPU AMD a MacBook M1, latenza uguale ai motori originali
-- [ ] Comando `falo bench` (§10)
+- [x] Il core genera `sunshine.conf`, avvia e ferma un'istanza Sunshine dedicata (processo con priorità alta; il **servizio di Windows** arriva con l'installer, M6)
+- [x] Il core lancia Moonlight e ne legge lo stato (dai log fino allo stato JSON del fork)
+- [x] Pairing con PIN dalla UI provvisoria; con l'host sullo stesso PC il PIN si conferma da solo
+- [x] Prova end-to-end in loopback solo via IPC: `node scripts/e2e-loopback.mjs` (HEVC, encoder AMD)
+- [x] Comando `falo-core bench [secondi] [stato]` (§10)
+- [ ] **Marco**: 1080p60 HEVC da Windows con GPU AMD a MacBook M1 via Tailscale, latenza uguale ai motori originali (telecamera a 240 fps, §17)
 
 ## M2 · Identità e amici
 

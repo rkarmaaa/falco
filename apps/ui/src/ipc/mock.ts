@@ -8,7 +8,8 @@ export function createMockTransport(): Transport {
 
   const state: StateSnapshot = {
     version: '0.1.0',
-    milestone: 'M0',
+    milestone: 'M1',
+    host: { state: 'stopped' },
     status: 'online',
     hostAvailable: false,
     streaming: false,
@@ -41,8 +42,31 @@ export function createMockTransport(): Transport {
     },
     'host.setAvailable': ({ available }: { available: boolean }) => {
       state.hostAvailable = available;
+      state.host = { state: available ? 'starting' : 'stopped' };
+      emit('host.state', state.host);
       emit('presence.changed', { self: { hostAvailable: available } });
+      if (available)
+        setTimeout(() => {
+          state.host = { state: 'ready' };
+          emit('host.state', state.host);
+        }, 1500);
       return { available };
+    },
+    'host.pairings': () => (state.host.state === 'ready' ? [{ id: 'p1', name: 'roth', address: '100.64.0.2' }] : []),
+    'host.clients': () => [{ uuid: 'c1', name: 'MacBook di Luca', enabled: true }],
+    'host.approvePairing': () => null,
+    'host.unpair': () => null,
+    'host.setClientEnabled': () => null,
+    'host.endSession': () => null,
+    'session.pair': ({ host, port }: { host: string; port?: number }) => {
+      setTimeout(() => emit('pair.result', { host, ok: true }), 2500);
+      return { pin: '4821', host: port ? `${host}:${port}` : host };
+    },
+    'session.join': ({ host }: { host: string }) => {
+      setTimeout(() => emit('session.stats', { phase: 'connecting' }), 400);
+      setTimeout(() => emit('session.stats', { phase: 'connected' }), 1200);
+      setTimeout(() => emit('session.ended', { host, durationS: 5, reason: '0' }), 5000);
+      return null;
     },
     'friends.list': () => [],
     'net.runDoctor': () => ({

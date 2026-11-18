@@ -1,21 +1,24 @@
 # 0006 · Spike: chiavi di sunshine.conf e API REST
 
-- **Stato**: proposto (da verificare)
-- **Data**: 2026-11-17
+- **Stato**: accettato (verificato su Sunshine 2026.914 il 2026-11-18)
 - **Sezioni della specifica**: §8.1, §18
 
-## Domanda
+## Risultati
 
-Quali sono i nomi esatti delle chiavi di `sunshine.conf` e degli endpoint REST nella versione di Sunshine da forkare?
+- **Istanza dedicata**: Falò avvia `sunshine.exe <cartella-dati>/sunshine/sunshine.conf` come processo proprio, con file isolati tramite `file_apps`, `credentials_file`, `file_state`, `log_path`, `pkey`, `cert`. Non tocca un Sunshine già installato. `system_tray = disabled` nasconde l'icona di Sunshine.
+- **Credenziali**: `sunshine.exe <conf> --creds falo <password>`; la password è casuale e sta nel portachiavi (`app.falo.desktop` / `sunshine-web`).
+- **Chiavi verificate**: tutte quelle del §8.1 esistono. Correzione: `min_log_level` è **numerico** (0–6), `3` = warning. Valori ammessi verificati: `amd_usage` (`ultralowlatency`…), `amd_rc` (`cbr`, `vbr_latency`, `cqp`), `amd_quality` (`speed`, `balanced`, `quality`), `gamepad` (`x360`, `ds4`, `ds5`, `auto`).
+- **Porte**: API web su porta base + 1 (`https://localhost:47990`), certificato autofirmato, autenticazione Basic.
+- **Avvio**: la prima volta Sunshine prova gli encoder (circa 15–20 s); il core attende che l'API risponda prima di segnare l'host «pronto».
+- **API usate** (`falo-engines::sunshine_api`):
+  - `GET /api/pin` → richieste di pairing in attesa `{ pairings: [{ id, name, address }] }`
+  - `POST /api/pin` `{ pairing_id, pin, name }` → conferma (nelle versioni recenti serve `pairing_id`)
+  - `GET /api/clients/list`, `POST /api/clients/unpair` `{ uuid }`
+  - `POST /api/clients/update` `{ uuid, enabled }` → blocca o sblocca un client **senza fork**
+  - `POST /api/apps/close` → termina la sessione
 
-## Stato attuale
+## Ancora aperto
 
-`falo-engines::sunshine` genera le chiavi della tabella del §8.1: `encoder`, `port`, `channels`, `upnp`, `fec_percentage`, `origin_web_ui_allowed`, `hevc_mode`, `av1_mode`, `min_log_level`, `amd_usage`, `amd_rc`, `amd_quality`, `amd_preanalysis`, `vt_realtime`, `gamepad`. `hevc_mode` e `av1_mode` sono scritti come `0` (automatico).
-
-## Da verificare
-
-- [ ] Scegliere il tag di Sunshine e creare il fork `falo-sunshine`.
-- [ ] Confrontare ogni chiave con la documentazione di configurazione di quel tag; correggere `generate_conf` e i test.
-- [ ] Endpoint per il PIN (`POST /api/pin`), elenco e revoca dei client, credenziali (`sunshine --creds`).
-- [ ] Avvio con file di configurazione esterno e come servizio su Windows.
-- [ ] Porte effettive rispetto a `port` (§9).
+- [ ] Sunshine come **servizio di Windows** per catturare UAC e schermata di blocco: va creato dall'installer (M6) con un descrittore che permetta all'utente di avviarlo e fermarlo. In M1 Sunshine gira come processo utente con priorità alta: funziona per giochi e desktop, non per la schermata UAC.
+- [ ] Permessi per client (§7) oltre ad abilita/blocca: richiedono il fork (ADR 0011).
+- [ ] Con più istanze sulla stessa macchina entrambe si annunciano via mDNS: innocuo, da disattivare nel fork.

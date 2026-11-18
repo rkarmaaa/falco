@@ -120,7 +120,108 @@ struct ProfileUpdate {
     status: Option<falo_proto::Status>,
 }
 
+#[derive(Deserialize)]
+struct Approve {
+    id: String,
+    pin: String,
+    name: String,
+}
+
+#[derive(Deserialize)]
+struct ClientRef {
+    uuid: String,
+    #[serde(default)]
+    enabled: bool,
+}
+
+#[derive(Deserialize)]
+struct HostTarget {
+    host: String,
+    #[serde(default)]
+    port: Option<u16>,
+    #[serde(default = "desktop")]
+    app: String,
+}
+
+fn desktop() -> String {
+    "Desktop".into()
+}
+
+/// Chiamata bloccante all'API di Sunshine, fuori dal runtime.
+async fn sunshine<T: Send + 'static>(
+    core: &Shared,
+    f: impl FnOnce(
+        &falo_engines::sunshine_api::SunshineApi,
+    ) -> Result<T, falo_engines::sunshine_api::ApiError>
+    + Send
+    + 'static,
+) -> Result<T, RpcError> {
+    let api = core
+        .lock()
+        .await
+        .host
+        .api()
+        .ok_or_else(|| RpcError::new(codes::HOST_NOT_READY, "l'host non è attivo"))?;
+    tokio::task::spawn_blocking(move || f(&api)).await.map_err(internal)?.map_err(internal)
+}
+
 async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
+    // Metodi che gestiscono da soli il lock o lavorano in background
+    match req.method.as_str() {
+        methods::HOST_SET_AVAILABLE => {
+            let p: SetAvailable = params(req.params)?;
+            tokio::spawn(crate::core::set_available(core.clone(), p.available));
+            return Ok(json!({ "available": p.available }));
+        }
+        methods::HOST_PAIRINGS => {
+            return serde_json::to_value(sunshine(core, |a| a.pending_pairings()).await?)
+                .map_err(internal);
+        }
+        methods::HOST_APPROVE => {
+            let p: Approve = params(req.params)?;
+            sunshine(core, move |a| a.submit_pin(&p.id, &p.pin, &p.name)).await?;
+            return Ok(Value::Null);
+        }
+        methods::HOST_CLIENTS => {
+            return serde_json::to_value(sunshine(core, |a| a.clients()).await?).map_err(internal);
+        }
+        methods::HOST_UNPAIR => {
+            let p: ClientRef = params(req.params)?;
+            sunshine(core, move |a| a.unpair(&p.uuid)).await?;
+            return Ok(Value::Null);
+        }
+        methods::HOST_SET_CLIENT_ENABLED => {
+            let p: ClientRef = params(req.params)?;
+            sunshine(core, move |a| a.set_enabled(&p.uuid, p.enabled)).await?;
+            return Ok(Value::Null);
+        }
+        methods::HOST_END_SESSION => {
+            sunshine(core, |a| a.close_app()).await?;
+            return Ok(Value::Null);
+        }
+        methods::SESSION_PAIR => {
+            let p: HostTarget = params(req.params)?;
+            let address = crate::guest::moonlight_address(&p.host, p.port.unwrap_or(47989));
+            let pin = crate::guest::new_pin();
+            let (core2, pin2, addr2) = (core.clone(), pin.clone(), address.clone());
+            tokio::spawn(async move {
+                if let Err(e) = crate::guest::pair(core2, addr2, pin2).await {
+                    tracing::warn!("pairing: {e:#}");
+                }
+            });
+            return Ok(json!({ "pin": pin, "host": address }));
+        }
+        methods::SESSION_JOIN => {
+            let p: HostTarget = params(req.params)?;
+            let address = crate::guest::moonlight_address(&p.host, p.port.unwrap_or(47989));
+            crate::guest::join(core.clone(), address, p.app)
+                .await
+                .map_err(|e| RpcError::new(codes::SESSION_FAILED, format!("{e:#}")))?;
+            return Ok(Value::Null);
+        }
+        _ => {}
+    }
+
     let mut c = core.lock().await;
     match req.method.as_str() {
         methods::STATE_SNAPSHOT => {
@@ -152,11 +253,6 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
             }
             Ok(Value::Null)
         }
-        methods::HOST_SET_AVAILABLE => {
-            let p: SetAvailable = params(req.params)?;
-            c.set_available(p.available);
-            Ok(json!({ "available": p.available }))
-        }
         methods::FRIENDS_LIST => {
             serde_json::to_value(c.db.friends().map_err(internal)?).map_err(internal)
         }
@@ -171,7 +267,6 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
         }
         methods::FRIEND_SET_PERMISSIONS => Err(not_yet("M4")),
         methods::INVITE_CREATE | methods::INVITE_ACCEPT => Err(not_yet("M3")),
-        methods::SESSION_JOIN => Err(not_yet("M1")),
         other => {
             Err(RpcError::new(codes::METHOD_NOT_FOUND, format!("metodo sconosciuto: {other}")))
         }

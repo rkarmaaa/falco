@@ -31,7 +31,26 @@
     "availableHint": "Gli amici ti vedono e possono chiedere di entrare. Quando non lo sei, il motore di streaming è spento.",
     "apps": "Giochi e app",
     "desktop": "Desktop",
-    "noSession": "Nessuna sessione attiva"
+    "noSession": "Nessuna sessione attiva",
+    "state": {
+      "stopped": "Spento",
+      "starting": "Avvio del motore… la prima volta serve circa mezzo minuto",
+      "ready": "Pronto: gli amici possono collegarsi",
+      "error": "Non sono riuscito ad avviare l'host"
+    },
+    "endSession": "Termina sessione",
+    "requests": "Richieste di associazione",
+    "noRequests": "Nessuna richiesta. Quando un amico preme «Associa», compare qui.",
+    "deviceName": "Nome del dispositivo",
+    "pin": "PIN",
+    "approve": "Associa",
+    "devices": "Dispositivi associati",
+    "noDevices": "Ancora nessun dispositivo associato.",
+    "enabled": "Può collegarsi",
+    "blocked": "Bloccato",
+    "block": "Blocca",
+    "unblock": "Sblocca",
+    "remove": "Rimuovi"
   },
   "invites": {
     "title": "Inviti",
@@ -107,5 +126,23 @@
   "ping": {
     "direct": "diretto",
     "relay": "relay"
+  },
+  "connect": {
+    "title": "Connettiti a un host",
+    "provisional": "Provvisorio",
+    "hint": "Inserisci l'indirizzo Tailscale o di rete locale dell'host. Dalla milestone M3 basterà un invito.",
+    "address": "Indirizzo dell'host",
+    "pair": "Associa",
+    "join": "Entra",
+    "pinPrompt": "Chiedi all'host di inserire questo PIN:",
+    "paired": "Associato a {host}. Ora puoi entrare.",
+    "pairFailed": "Associazione non riuscita. Il PIN potrebbe essere sbagliato: riprova.",
+    "genericError": "Qualcosa è andato storto. Riprova tra poco.",
+    "phase": {
+      "starting": "Avvio dello streaming…",
+      "connecting": "Collegamento all'host…",
+      "connected": "In gioco"
+    },
+    "ended": "Sessione finita dopo {minutes} min."
   }
 }

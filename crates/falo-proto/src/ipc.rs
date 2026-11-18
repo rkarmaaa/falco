@@ -21,6 +21,14 @@ pub mod methods {
     pub const HOST_SET_AVAILABLE: &str = "host.setAvailable";
     pub const NET_RUN_DOCTOR: &str = "net.runDoctor";
     pub const APP_OPEN_UI: &str = "app.openUi";
+    pub const HOST_PAIRINGS: &str = "host.pairings";
+    pub const HOST_APPROVE: &str = "host.approvePairing";
+    pub const HOST_CLIENTS: &str = "host.clients";
+    pub const HOST_UNPAIR: &str = "host.unpair";
+    pub const HOST_SET_CLIENT_ENABLED: &str = "host.setClientEnabled";
+    pub const HOST_END_SESSION: &str = "host.endSession";
+    pub const SESSION_PAIR: &str = "session.pair";
+    pub const SESSION_LEAVE: &str = "session.leave";
 }
 
 pub mod events {
@@ -31,6 +39,8 @@ pub mod events {
     pub const SESSION_STATS: &str = "session.stats";
     pub const SESSION_ENDED: &str = "session.ended";
     pub const NET_WARNING: &str = "net.warning";
+    pub const HOST_STATE: &str = "host.state";
+    pub const PAIR_RESULT: &str = "pair.result";
 }
 
 pub mod codes {
@@ -42,6 +52,8 @@ pub mod codes {
     /// Metodo previsto dalla specifica ma non ancora implementato.
     pub const NOT_IMPLEMENTED: i32 = -32001;
     pub const CONFIG_INVALID: i32 = -32002;
+    pub const HOST_NOT_READY: i32 = -32003;
+    pub const SESSION_FAILED: i32 = -32004;
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -152,6 +164,8 @@ pub struct NetworkSummary {
 #[serde(rename_all = "camelCase")]
 pub struct StateSnapshot {
     pub version: String,
+    /// `{ state: "stopped" | "starting" | "ready" | "error", message? }`
+    pub host: serde_json::Value,
     pub milestone: String,
     pub status: Status,
     pub host_available: bool,
