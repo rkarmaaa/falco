@@ -13,7 +13,8 @@ database_id = "2f44cb94-05ab-4e66-bd5a-988c875b8d6c"
 # Pulizia oraria di link e richieste scaduti
 crons = ["17 * * * *"]
 
-# Segreti (wrangler secret put): TS_OAUTH_ID, TS_OAUTH_SECRET — rete Falco su Tailscale
+# Segreti (wrangler secret put): TS_OAUTH_ID, TS_OAUTH_SECRET (rete Falco su Tailscale),
+# GITHUB_TOKEN (sola lettura dei contenuti del repository, per /download)
 [vars]
 TS_TAG = "tag:falco"
-DOWNLOAD_URL = "https://github.com/rkarmaaa/falco/releases"
+RELEASES_REPO = "rkarmaaa/falco"

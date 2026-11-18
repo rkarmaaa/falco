@@ -2,14 +2,18 @@
 // link di stream e chiavi monouso per la rete Falco. Non vede gli stream e non decide i permessi:
 // l'invito allegato è firmato dall'host e il core lo verifica nell'handshake (§6).
 import { codeOf, displayCode, normalizeCode, randomCode, validName, verify } from './auth';
-import { addPage, joinPage, missingPage } from './pages';
+import { installerUrl } from './download';
+import { addPage, homePage, joinPage, missingPage } from './pages';
 import { ensureSchema } from './schema';
 import { authKey } from './tailscale';
 
 export interface Env {
   DB: D1Database;
   TS_TAG: string;
-  DOWNLOAD_URL: string;
+  /** Repository delle release (privato): `owner/nome`. */
+  RELEASES_REPO: string;
+  /** Token GitHub di sola lettura sui contenuti del repository. */
+  GITHUB_TOKEN?: string;
   TS_OAUTH_ID?: string;
   TS_OAUTH_SECRET?: string;
 }
@@ -221,18 +225,28 @@ async function api(request: Request, env: Env, url: URL): Promise<Response> {
   return handler({ env, me: auth.id, raw, origin: url.origin }, re.exec(url.pathname)?.[1] ?? '');
 }
 
+async function download(env: Env): Promise<Response> {
+  if (!env.GITHUB_TOKEN) throw new HttpError(503, 'download non ancora disponibile');
+  const location = await installerUrl(env.RELEASES_REPO, env.GITHUB_TOKEN).catch((e) => {
+    console.error('download', e);
+    throw new HttpError(502, 'download non disponibile, riprova tra poco');
+  });
+  if (!location) throw new HttpError(404, 'nessun installer pubblicato');
+  return Response.redirect(location, 302);
+}
+
 async function pages(env: Env, url: URL): Promise<Response> {
   const [, kind, raw = ''] = url.pathname.split('/');
   const code = normalizeCode(raw);
   if (code && kind === 'a') {
     const u = await env.DB.prepare('SELECT name, code FROM users WHERE code = ?1').bind(code).first<UserRef>();
-    if (u) return html(addPage(u.name, u.code, env.DOWNLOAD_URL));
+    if (u) return html(addPage(u.name, u.code, `${url.origin}/download`));
   }
   if (code && kind === 'j') {
     const l = await link(env.DB, code);
-    if (l) return html(joinPage(l.name, code, env.DOWNLOAD_URL));
+    if (l) return html(joinPage(l.name, code, `${url.origin}/download`));
   }
-  return html(missingPage(env.DOWNLOAD_URL), 404);
+  return html(missingPage(`${url.origin}/download`), 404);
 }
 
 export default {
@@ -240,6 +254,8 @@ export default {
     const url = new URL(request.url);
     try {
       if (url.pathname === '/healthz') return new Response('ok');
+      if (url.pathname === '/') return html(homePage(`${url.origin}/download`));
+      if (url.pathname === '/download') return await download(env);
       await ensureSchema(env.DB);
       if (url.pathname.startsWith('/v1/')) return await api(request, env, url);
       if (request.method === 'GET') return await pages(env, url);

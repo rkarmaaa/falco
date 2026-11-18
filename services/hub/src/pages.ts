@@ -19,7 +19,7 @@ h1{margin:0;font-size:22px;line-height:30px}p{margin:0;color:var(--muted)}
 .btn{display:inline-flex;justify-content:center;align-items:center;height:48px;border-radius:10px;background:var(--accent);color:#fff;font-weight:600;text-decoration:none}
 .alt{font-size:13px}.alt a{color:#9da9ff}
 </style></head><body><main class="card"><span class="beta">BETA</span><h1>${title}</h1>${body}${btn}
-<p class="alt">Non hai ancora Falco? <a href="${esc(download)}">Scaricalo gratis</a>, poi riapri questo link.</p>
+${open ? `<p class="alt">Non hai ancora Falco? <a href="${esc(download)}">Scaricalo gratis</a>, poi riapri questo link.</p>` : ''}
 </main>${auto}</body></html>`;
 }
 
@@ -40,4 +40,19 @@ export const joinPage = (name: string, code: string, download: string) =>
   );
 
 export const missingPage = (download: string) =>
-  page('Link non valido', '<p>Il link è scaduto o è stato revocato. Chiedine uno nuovo.</p>', null, download);
+  page(
+    'Link non valido',
+    `<p>Il link è scaduto o è stato revocato. Chiedine uno nuovo.</p><a class="btn" href="${esc(download)}">Scarica Falco</a>`,
+    null,
+    download,
+  );
+
+export const homePage = (download: string) =>
+  page(
+    'Falco',
+    `<p>Gioca in streaming con i tuoi amici, come fossero sul divano accanto a te. Niente account, niente configurazione.</p>
+<a class="btn" href="${esc(download)}">Scarica Falco Beta per Windows</a>
+<p class="alt">Windows 10/11 a 64 bit. SmartScreen può avvisare: «Ulteriori informazioni» → «Esegui comunque».</p>`,
+    null,
+    download,
+  );

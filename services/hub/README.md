@@ -39,6 +39,16 @@ Gli utenti entrano in un'unica tailnet di Falco con chiavi monouso: l'unico acco
    npx wrangler secret put TS_OAUTH_SECRET
    ```
 
+## Download dell'installer (repository privato)
+
+`https://falco-hub.<sottodominio>.workers.dev/download` rimanda all'installer dell'ultima release. Il Worker
+lo trova con un token GitHub **fine-grained** di sola lettura (solo il repository `falco`, permesso
+*Contents: Read-only*):
+
+```powershell
+npx.cmd wrangler secret put GITHUB_TOKEN
+```
+
 ## Collegare l'app
 
 L'indirizzo entra nell'app in fase di build: `FALCO_HUB_URL=https://falco-hub.<sottodominio>.workers.dev`
