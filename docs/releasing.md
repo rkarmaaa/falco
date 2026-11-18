@@ -39,6 +39,19 @@ Account personale `rkarmaaa`, repository `rkarmaaa/falco` (nessuna organizzazion
 2. Crea il tag e fai push: `git tag v1.0.0 && git push origin v1.0.0`.
 3. `release.yml` costruisce i pacchetti, li firma per l'updater e pubblica `latest.json`.
 
+### Beta senza CI (come la 1.0.0-rc.2)
+
+Finché i segreti del workflow non sono impostati, si rilascia da questo PC:
+
+1. `powershell -File scripts/package.ps1 -HubUrl https://falco-hub.luccimarco176.workers.dev`
+2. Firma per l'updater (da `apps/ui`, la password si legge dal file, non va scritta a mano):
+   `TAURI_SIGNING_PRIVATE_KEY_PASSWORD="$(cat ~/.falco/falco-updater.password.txt)" npx.cmd tauri signer sign -f ~/.falco/falco-updater.key <installer>.exe`
+3. `latest.json` con `version`, `notes` e `platforms.windows-x86_64` = `{ signature: <contenuto del .sig>, url: <link dell'installer nella release> }`.
+4. `gh release create beta-<versione> <installer>.exe <installer>.exe.sig latest.json --latest --title "Falco 1.0 Beta (<versione>)"`.
+   Il tag non inizia con `v`, così non parte `release.yml`. La release deve essere **latest**, non pre-release: l'updater legge `releases/latest/download/latest.json`.
+
+Il sito `https://falco-hub.luccimarco176.workers.dev/download` porta sempre all'installer dell'ultima release.
+
 Prova locale dell'installer Windows:
 
 1. Sunshine di Falco (patch in `engines/patches/sunshine`, [ADR 0016](adr/0016-audio-solo-a-schermo.md)). Serve [MSYS2](https://www.msys2.org) in `C:\msys64`; lo script installa da solo le dipendenze. La prima volta richiede circa 20 minuti.
