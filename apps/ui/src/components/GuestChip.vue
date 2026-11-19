@@ -3,7 +3,7 @@
 // «Solo guardare», «Espelli». Di default ogni ospite può solo guardare.
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { Check, Eye, Gamepad2, Keyboard, Mouse, UserX } from 'lucide-vue-next';
+import { Check, Eye, Gamepad2, Keyboard, LoaderCircle, Mouse, UserX } from 'lucide-vue-next';
 import UiAvatar from './UiAvatar.vue';
 import DeviceIcons from './DeviceIcons.vue';
 import ContextMenu from './ContextMenu.vue';
@@ -38,8 +38,16 @@ const devices = [
   { id: 'controller' as const, icon: Gamepad2 },
 ];
 
-function toggle(d: Device): void {
-  void attempt(t('errors.context.permissions', { name: props.guest.name }), () => setDevice(props.guest.friendId, d, !allowed.value[d]));
+// Dispositivo in corso di applicazione: rotella finché l'host non conferma
+const pending = ref<Device | null>(null);
+async function toggle(d: Device): Promise<void> {
+  if (pending.value) return;
+  pending.value = d;
+  try {
+    await attempt(t('errors.context.permissions', { name: props.guest.name }), () => setDevice(props.guest.friendId, d, !allowed.value[d]));
+  } finally {
+    pending.value = null;
+  }
 }
 
 function only(): void {
@@ -86,11 +94,14 @@ function kick(): void {
         class="item"
         role="menuitemcheckbox"
         :aria-checked="allowed[d.id]"
+        :aria-busy="pending === d.id"
+        :disabled="pending !== null"
         @click="toggle(d.id)"
       >
         <component :is="d.icon" :size="16" :stroke-width="1.9" aria-hidden="true" />
         <span class="grow">{{ t(`devices.${d.id}`) }}</span>
-        <Check v-if="allowed[d.id]" class="check" :size="16" :stroke-width="2.4" aria-hidden="true" />
+        <LoaderCircle v-if="pending === d.id" class="check spin" :size="16" :stroke-width="2.4" aria-hidden="true" />
+        <Check v-else-if="allowed[d.id]" class="check" :size="16" :stroke-width="2.4" aria-hidden="true" />
       </button>
       <hr />
       <button type="button" class="item" role="menuitem" :disabled="watching" @click="only">
@@ -152,6 +163,20 @@ function kick(): void {
         color: $text-3;
       }
     }
+  }
+}
+
+.spin {
+  animation: guest-spin 0.9s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@keyframes guest-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 </style>

@@ -35,3 +35,23 @@ if (Test-Path $fork) {
 } else {
   Write-Warning "target\sunshine\sunshine.exe assente: uso Sunshine ufficiale, l'audio sarà quello di tutto il PC. Compila con scripts/build-sunshine.sh"
 }
+
+# ViGEmBus: driver dei controller virtuali (Xbox 360 / DualShock 4) che Sunshine usa per i gamepad
+# degli ospiti. Installer ufficiale firmato da Nefarius (licenza BSD-3), scaricato una volta e
+# verificato con lo SHA-256 fissato qui; l'installer di Falco lo installa in silenzio se manca.
+$vigemVersion = "1.22.0"
+$vigemSha256 = "89220A7865076B342892F98865F3499FB7C4CFD673159E89D352C360FD014C6A"
+$vigemCache = Join-Path $root "target\vigembus\ViGEmBus_${vigemVersion}_x64_x86_arm64.exe"
+if (-not (Test-Path $vigemCache)) {
+  New-Item -ItemType Directory -Force (Split-Path $vigemCache) | Out-Null
+  $url = "https://github.com/nefarius/ViGEmBus/releases/download/v$vigemVersion/ViGEmBus_${vigemVersion}_x64_x86_arm64.exe"
+  Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $vigemCache
+}
+if ((Get-FileHash $vigemCache -Algorithm SHA256).Hash -ne $vigemSha256) {
+  Remove-Item -Force $vigemCache
+  throw "ViGEmBus scaricato non corrisponde allo SHA-256 atteso: file rifiutato"
+}
+$vigemOut = Join-Path $dest "vigembus"
+New-Item -ItemType Directory -Force $vigemOut | Out-Null
+Copy-Item $vigemCache (Join-Path $vigemOut "ViGEmBus-setup.exe") -Force
+Write-Host "ok  vigembus $vigemVersion (SHA-256 verificato)"

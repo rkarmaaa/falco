@@ -2,6 +2,13 @@
 
 Formato [Keep a Changelog](https://keepachangelog.com/it/1.1.0/), versioni [SemVer](https://semver.org/lang/it/).
 
+## [1.0.0-rc.7] - 2026-11-19 · Beta
+
+### Aggiunto
+
+- Controller degli ospiti pronti da subito: l'installer di Falco installa in silenzio il driver ViGEmBus (ufficiale, firmato da Nefarius) se manca. Nessun passaggio in più per l'utente.
+- Menu dell'ospite: mentre un permesso viene applicato compare la rotella, poi la spunta.
+
 ## [1.0.0-rc.6] - 2026-11-19 · Beta
 
 ### Migliorato

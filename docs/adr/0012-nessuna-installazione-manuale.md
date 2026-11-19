@@ -13,7 +13,7 @@ Requisito di Marco: l'utente finale scarica Falco e lo usa subito, senza install
 | Componente | Come arriva all'utente |
 | --- | --- |
 | `falco-sunshine`, `falco-moonlight` | Dentro il pacchetto di Falco (fork compilati in CI) |
-| Driver dei controller virtuali (Windows) | Installato in silenzio dall'installer di Falco, come fa Sunshine |
+| Driver dei controller virtuali (Windows) | ViGEmBus 1.22.0 incluso nel pacchetto (SHA-256 fissato in `scripts/stage-engines.ps1`) e installato in silenzio dall'installer di Falco se manca (`/exenoui /qn /norestart`) |
 | WebView2 (Windows) | Già presente in Windows 11; in mancanza, bootstrapper incluso nell'installer NSIS di Tauri |
 | Tailscale | **Da decidere**, vedi sotto |
 

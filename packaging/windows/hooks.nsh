@@ -16,6 +16,14 @@
   ; normale e non può scrivere in Program Files: la crea l'installer (basta che esista, i dati
   ; veri stanno in %LOCALAPPDATA%\Falco)
   CreateDirectory "$INSTDIR\engines\sunshine\config"
+  ; Controller degli ospiti: driver ViGEmBus in silenzio, solo se il servizio non c'è già.
+  ; Stessa conferma di Windows dell'installer di Falco, nessuna finestra in più.
+  ClearErrors
+  ReadRegStr $0 HKLM "SYSTEM\CurrentControlSet\Services\ViGEmBus" "ImagePath"
+  IfErrors 0 falco_vigem_done
+  IfFileExists "$INSTDIR\engines\vigembus\ViGEmBus-setup.exe" 0 falco_vigem_done
+  ExecWait '"$INSTDIR\engines\vigembus\ViGEmBus-setup.exe" /exenoui /qn /norestart'
+  falco_vigem_done:
   ; Streaming in ingresso solo dagli intervalli di Tailscale (100.64.0.0/10, fd7a:115c:a1e0::/48)
   nsExec::Exec 'netsh advfirewall firewall delete rule name="Falco Sunshine"'
   nsExec::Exec 'netsh advfirewall firewall add rule name="Falco Sunshine" dir=in action=allow program="$INSTDIR\engines\sunshine\sunshine.exe" remoteip=100.64.0.0/10,fd7a:115c:a1e0::/48 enable=yes'
