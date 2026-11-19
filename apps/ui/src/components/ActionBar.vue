@@ -10,6 +10,7 @@ import {
   Check,
   LogOut,
   Maximize2,
+  MonitorCog,
   Power,
   Radio,
   Link2,
@@ -22,7 +23,7 @@ import UiAvatar from './UiAvatar.vue';
 import UiButton from './UiButton.vue';
 import ContextMenu from './ContextMenu.vue';
 import StreamVolume from './StreamVolume.vue';
-import { core, hostApi, leaveSession, setHostAvailable } from '@/stores/core';
+import { core, hostApi, leaveSession, reconnectSession, setConfig, setHostAvailable } from '@/stores/core';
 import { social } from '@/stores/social';
 import { attempt } from '@/stores/errors';
 import { openModal } from '@/stores/ui';
@@ -57,6 +58,26 @@ const pingLevel = computed(() => {
   const ms = core.session.stats?.rttMs ?? 0;
   return ms < 30 ? 'good' : ms <= 60 ? 'fair' : 'bad';
 });
+
+// Qualità dello stream da ospite: a portata di mano nella barra, si ricollega da sola
+const QUALITIES = ['light', 'good', 'max', 'custom'] as const;
+type Quality = (typeof QUALITIES)[number];
+const qualityMenu = ref<{ x: number; y: number } | null>(null);
+const quality = computed(() => (core.config?.stream.quality ?? 'light') as Quality);
+
+function openQuality(e: MouseEvent): void {
+  const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+  qualityMenu.value = { x: r.left, y: r.top - 8 };
+}
+
+async function pickQuality(q: Quality): Promise<void> {
+  qualityMenu.value = null;
+  if (q === quality.value) return;
+  await attempt(t('errors.context.quality'), async () => {
+    await setConfig('stream.quality', q);
+    await reconnectSession();
+  });
+}
 
 function openProfiles(e: MouseEvent): void {
   const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -129,6 +150,11 @@ const applyInputs = () => attempt(t('errors.context.applyInputs'), () => hostApi
     <div class="actions">
       <template v-if="inSession">
         <StreamVolume v-if="info?.pid" :pid="info.pid" />
+        <UiButton variant="ghost" :size="40" :aria-haspopup="'menu'" @click="openQuality">
+          <MonitorCog :size="17" :stroke-width="1.9" aria-hidden="true" />
+          {{ t(`quality.short.${quality}`) }}
+          <ChevronUp :size="14" :stroke-width="2" aria-hidden="true" />
+        </UiButton>
         <UiButton variant="ghost" :size="40" :aria-pressed="stage.stats" :class="{ on: stage.stats }" @click="toggleStats">
           <Activity :size="17" :stroke-width="1.9" aria-hidden="true" />
           {{ t('session.stats') }}
@@ -176,6 +202,29 @@ const applyInputs = () => attempt(t('errors.context.applyInputs'), () => hostApi
         </UiButton>
       </template>
     </div>
+
+    <ContextMenu v-if="qualityMenu" :x="qualityMenu.x" :y="qualityMenu.y" :label="t('quality.title')" @close="qualityMenu = null">
+      <div class="head">
+        <strong>{{ t('quality.title') }}</strong>
+        <span>{{ t('quality.hint') }}</span>
+      </div>
+      <hr />
+      <button
+        v-for="q in QUALITIES"
+        :key="q"
+        type="button"
+        class="item"
+        role="menuitemradio"
+        :aria-checked="quality === q"
+        @click="pickQuality(q)"
+      >
+        <span class="grow">
+          {{ t(`quality.short.${q}`) }}
+          <span class="hint">· {{ t(`quality.hints.${q}`) }}</span>
+        </span>
+        <Check v-if="quality === q" class="check" :size="16" :stroke-width="2.4" aria-hidden="true" />
+      </button>
+    </ContextMenu>
 
     <ContextMenu v-if="profileMenu" :x="profileMenu.x" :y="profileMenu.y" :label="t('share.title')" @close="profileMenu = null">
       <div class="head">

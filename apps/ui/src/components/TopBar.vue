@@ -39,7 +39,7 @@ async function win() {
 </script>
 
 <template>
-  <header class="top" :class="{ mac: isMac }" data-tauri-drag-region>
+  <header class="top" :class="{ mac: isMac, quiet: inSession }" data-tauri-drag-region>
     <div class="brand" data-tauri-drag-region>
       <img :src="logo" alt="" width="22" height="22" />
       <span data-tauri-drag-region>Falco</span>
@@ -103,6 +103,15 @@ async function win() {
   border-bottom: 1px solid $line;
   background: rgba(9, 10, 18, 0.7);
   backdrop-filter: blur(16px);
+  transition:
+    background $t-panel $ease,
+    opacity $t-panel $ease;
+
+  // Durante uno stream la barra si fa da parte finché non ci passi sopra
+  &.quiet:not(:hover, :focus-within) {
+    background: rgba(9, 10, 18, 0.35);
+    opacity: 0.55;
+  }
 
   .brand {
     display: flex;

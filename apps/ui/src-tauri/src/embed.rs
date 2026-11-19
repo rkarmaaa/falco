@@ -125,6 +125,51 @@ mod win32 {
     pub fn conceal(child: isize) {
         hide(child);
     }
+
+    /// Scorciatoia di Moonlight sul flusso (es. Ctrl+Alt+Maiusc+S per le statistiche): focus
+    /// alla finestra, poi tasti premuti e rilasciati in ordine inverso.
+    pub fn shortcut(child: isize, key: u16) {
+        use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
+            INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, SendInput, VK_CONTROL,
+            VK_MENU, VK_SHIFT,
+        };
+        focus(child);
+        let ev = |vk: u16, up: bool| INPUT {
+            r#type: INPUT_KEYBOARD,
+            Anonymous: INPUT_0 {
+                ki: KEYBDINPUT {
+                    wVk: vk,
+                    wScan: 0,
+                    dwFlags: if up { KEYEVENTF_KEYUP } else { 0 },
+                    time: 0,
+                    dwExtraInfo: 0,
+                },
+            },
+        };
+        let keys = [VK_CONTROL, VK_MENU, VK_SHIFT, key];
+        let mut seq: Vec<INPUT> = keys.iter().map(|&k| ev(k, false)).collect();
+        seq.extend(keys.iter().rev().map(|&k| ev(k, true)));
+        // SAFETY: array di INPUT valido per tutta la chiamata, dimensione della struttura corretta
+        unsafe { SendInput(seq.len() as u32, seq.as_ptr(), std::mem::size_of::<INPUT>() as i32) };
+    }
+
+    /// Focus della tastiera al flusso: senza, i tasti restano alla pagina di Falco e non
+    /// arrivano a Moonlight (clic e movimenti sì, perché vanno alla finestra sotto il cursore).
+    pub fn focus(child: isize) {
+        use windows_sys::Win32::System::Threading::{AttachThreadInput, GetCurrentThreadId};
+        use windows_sys::Win32::UI::Input::KeyboardAndMouse::SetFocus;
+        let c = child as HWND;
+        // SAFETY: thread della finestra figlia collegato al nostro solo per la durata di SetFocus
+        unsafe {
+            let target = GetWindowThreadProcessId(c, std::ptr::null_mut());
+            let me = GetCurrentThreadId();
+            let attached = target != me && AttachThreadInput(me, target, 1) != 0;
+            SetFocus(c);
+            if attached {
+                AttachThreadInput(me, target, 0);
+            }
+        }
+    }
 }
 
 /// Aspetta la finestra del flusso di `pid` e la incorpora. `false` se non compare.
@@ -180,6 +225,48 @@ pub fn stream_place(window: WebviewWindow, state: State<'_, Embedded>, rect: Rec
     #[cfg(not(windows))]
     {
         let _ = (window, state, rect);
+        false
+    }
+}
+
+/// Dà la tastiera al flusso incorporato. Sincrono: gira sul thread della finestra di Falco.
+#[tauri::command]
+pub fn stream_focus(state: State<'_, Embedded>) -> bool {
+    #[cfg(windows)]
+    {
+        let Ok(guard) = state.0.lock() else { return false };
+        match *guard {
+            Some(child) if win32::alive(child) => {
+                win32::focus(child);
+                true
+            }
+            _ => false,
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = state;
+        false
+    }
+}
+
+/// Statistiche di Moonlight sopra il video (Ctrl+Alt+Maiusc+S): l'unico modo di vederle dal vivo.
+#[tauri::command]
+pub fn stream_stats(state: State<'_, Embedded>) -> bool {
+    #[cfg(windows)]
+    {
+        let Ok(guard) = state.0.lock() else { return false };
+        match *guard {
+            Some(child) if win32::alive(child) => {
+                win32::shortcut(child, u16::from(b'S'));
+                true
+            }
+            _ => false,
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = state;
         false
     }
 }

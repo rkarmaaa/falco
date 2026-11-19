@@ -81,8 +81,8 @@
     "approve": "Associa",
     "devices": "Dispositivi associati",
     "noDevices": "Ancora nessun dispositivo associato.",
-    "enabled": "Può collegarsi",
-    "blocked": "Bloccato",
+    "enabled": "Può entrare adesso",
+    "blocked": "Entra quando lo accetti",
     "block": "Blocca",
     "unblock": "Sblocca",
     "remove": "Rimuovi",
@@ -253,7 +253,8 @@
       "pairing": "Associare il dispositivo",
       "device": "Gestire il dispositivo",
       "joinLink": "Aprire il link di stream",
-      "invite": "Invitare {name}"
+      "invite": "Invitare {name}",
+      "quality": "Cambiare la qualità dello stream"
     }
   },
   "ping": {
@@ -327,9 +328,9 @@
     "noShare": "Tailscale non è configurato per gli inviti: l'amico deve essere già nella tua rete. Configuralo in Impostazioni → Host."
   },
   "accept": {
-    "title": "Accetta invito",
+    "title": "Hai un invito?",
     "friends": "Siete amici",
-    "paste": "Link dell'invito",
+    "paste": "Link o codice",
     "invalid": "Questo link non sembra un invito di Falco.",
     "accept": "Accetta",
     "browserNote": "Si aprirà il browser per confermare la condivisione su Tailscale: basta un clic.",
@@ -341,7 +342,18 @@
     },
     "doneBody": "Tu e {name} siete amici. Quando ospita, lo trovi in «In gioco ora».",
     "clipboard": "Hai un invito di {name} negli appunti",
-    "open": "Apri"
+    "open": "Apri",
+    "intro": "Incolla quello che ti hanno mandato: un codice amico, un link amico, un link di stream o un invito.",
+    "placeholder": "K7QM-2XPA oppure https://falcoapp.pages.dev/…",
+    "pasteButton": "Incolla",
+    "unknown": "Non riconosco questo testo: controlla di averlo copiato tutto.",
+    "kind": {
+      "friend": "Codice amico",
+      "friendLink": "Link amico",
+      "stream": "Link di stream",
+      "streamBody": "Entri subito nella sua sessione",
+      "invite": "Invito"
+    }
   },
   "requests": {
     "wants": "{name} vuole unirsi",
@@ -412,7 +424,8 @@
       "frame_pacing": "Frame pacing",
       "audio": "Audio",
       "capture_system_keys": "Cattura scorciatoie di sistema",
-      "overlay": "Statistiche a schermo"
+      "overlay": "Statistiche a schermo",
+      "quality": "Qualità dello stream"
     },
     "host": {
       "available_on_start": "Disponibile all'avvio",
@@ -481,7 +494,10 @@
       "giocatore": "Giocatore",
       "copilota": "Co-pilota",
       "fidato": "Fidato",
-      "falco": "Rete Falco (consigliata)"
+      "falco": "Rete Falco (consigliata)",
+      "good": "Buona · 1080p 60",
+      "max": "Massima · come il tuo schermo",
+      "custom": "Personalizzata"
     }
   },
   "update": {
@@ -610,16 +626,16 @@
     "advice": "Ti consiglio «{profile}»",
     "apply": "Usa questo",
     "alreadyBest": "Stai già usando il migliore",
-    "noCap": "nessun limite",
-    "cap": "Bitrate massimo",
-    "capHint": "Tetto per tutti gli ospiti. Abbassalo se la tua connessione in upload è lenta.",
-    "fec": "Correzione degli errori",
-    "fecHint": "Più alta regge meglio le perdite di pacchetti, ma usa più banda.",
-    "encoder": "Encoder",
+    "noCap": "Nessun limite",
+    "cap": "Limite di banda per ogni ospite",
+    "capHint": "Abbassalo se il tuo upload è lento o se più amici guardano insieme.",
+    "fec": "Protezione dalle perdite",
+    "fecHint": "Più alta regge meglio una rete instabile, ma usa un po' più di banda.",
+    "encoder": "Nitidezza dell'immagine",
     "quality": {
-      "speed": "Veloce",
-      "balanced": "Bilanciato",
-      "quality": "Bello"
+      "speed": "Più fluida",
+      "balanced": "Bilanciata",
+      "quality": "Più nitida"
     },
     "profiles": {
       "latency": {
@@ -669,7 +685,21 @@
       "all": "Tutto il PC",
       "onscreenHint": "Gli ospiti sentono solo le app con una finestra visibile sullo schermo condiviso. Discord e le altre chat vocali non passano mai, così nessuno sente la propria voce tornare indietro.",
       "allHint": "Gli ospiti sentono tutto l'audio del PC, compresi Discord, le notifiche e la musica in sottofondo."
-    }
+    },
+    "fecLevel": {
+      "low": "Bassa",
+      "medium": "Media",
+      "high": "Alta"
+    },
+    "qualityHint": {
+      "speed": "Immagine pronta prima: la scelta migliore per giocare.",
+      "balanced": "Un compromesso tra reattività e dettaglio.",
+      "quality": "Più dettaglio, un filo di ritardo in più: ideale per film e video."
+    },
+    "guests": "Ospiti insieme",
+    "guestsHint": "Quante persone possono guardare o giocare nello stesso momento.",
+    "defaultRole": "Ruolo dei nuovi amici",
+    "defaultRoleHint": "Cosa può fare chi accetta la tua amicizia: lo cambi poi per ognuno."
   },
   "avatar": {
     "change": "Cambia foto",
@@ -708,5 +738,21 @@
     "wants": "vuole essere tuo amico",
     "cancel": "Annulla",
     "noHub": "Il server di Falco non è configurato in questa versione: usa «Condividi stream» o un invito."
+  },
+  "quality": {
+    "short": {
+      "light": "Leggera",
+      "good": "Buona",
+      "max": "Massima",
+      "custom": "Personalizzata"
+    },
+    "title": "Qualità dello stream",
+    "hint": "Si ricollega in un paio di secondi",
+    "hints": {
+      "light": "720p · 30 fps · 6 Mbps. Va bene anche con connessioni lente.",
+      "good": "1080p · 60 fps · 15 Mbps. Serve una buona connessione da entrambe le parti.",
+      "max": "La risoluzione del tuo schermo. Solo con connessioni molto veloci.",
+      "custom": "Risoluzione, fps e bitrate da Impostazioni → Streaming."
+    }
   }
 }

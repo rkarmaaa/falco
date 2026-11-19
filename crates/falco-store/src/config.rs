@@ -76,6 +76,7 @@ str_enum!(Language { It = "it", En = "en" } default It);
 str_enum!(Updates { Auto = "auto", Notify = "notify", Off = "off" } default Auto);
 str_enum!(Codec { Auto = "auto", H264 = "h264", Hevc = "hevc", Av1 = "av1" } default Auto);
 str_enum!(BitrateMode { Auto = "auto", Fixed = "fixed" } default Auto);
+str_enum!(StreamQuality { Light = "light", Good = "good", Max = "max", Custom = "custom" } default Light);
 str_enum!(DisplayMode { Fullscreen = "fullscreen", Borderless = "borderless", Windowed = "windowed" } default Borderless);
 str_enum!(Audio { Stereo = "stereo", Surround51 = "5.1", Surround71 = "7.1" } default Stereo);
 str_enum!(CaptureKeys { Never = "never", Fullscreen = "fullscreen", Always = "always" } default Fullscreen);
@@ -127,6 +128,9 @@ pub struct ProfileCfg {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Stream {
+    /// Qualità a colpo d'occhio: leggera 720p 30, buona 1080p 60, massima (schermo), o personalizzata
+    /// con risoluzione, fps e bitrate qui sotto.
+    pub quality: StreamQuality,
     pub resolution: String,
     pub fps: Auto<u16>,
     pub codec: Codec,
@@ -225,6 +229,7 @@ impl Default for General {
 impl Default for Stream {
     fn default() -> Self {
         Self {
+            quality: StreamQuality::Light,
             resolution: "auto".into(),
             fps: Auto::AUTO,
             codec: Codec::Auto,

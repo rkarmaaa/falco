@@ -57,6 +57,7 @@ export async function attach(pid: number, rect: StageRect): Promise<void> {
     state.embedded = ok === true;
     state.external = ok !== true;
     if (ok && state.rect) place(state.rect);
+    if (ok) focusStream();
   } catch (e) {
     // Finestra non trovata: lo stream resta nella finestra di Moonlight; il motivo va nel report
     state.external = true;
@@ -64,6 +65,11 @@ export async function attach(pid: number, rect: StageRect): Promise<void> {
   } finally {
     state.attaching = false;
   }
+}
+
+/** Tastiera allo stream incorporato (all'aggancio e quando la finestra di Falco torna attiva). */
+export function focusStream(): void {
+  if (state.embedded && state.covers === 0) void invoke('stream_focus');
 }
 
 /** Nuova posizione del flusso; nascosto se qualcosa lo copre. */
@@ -98,8 +104,10 @@ export async function setFullscreen(on: boolean): Promise<void> {
   }
 }
 
+/** Statistiche: nello stream incorporato si accende l'overlay di Moonlight sopra il video. */
 export function toggleStats(): void {
   state.stats = !state.stats;
+  if (state.embedded) void invoke('stream_stats');
 }
 
 /** Da chiamare in ogni pannello che si apre sopra il palco. */

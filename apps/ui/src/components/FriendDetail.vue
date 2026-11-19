@@ -86,7 +86,13 @@ async function act(): Promise<void> {
   width: $detail-w;
   flex: 0 0 $detail-w;
   padding: $sp-7 $sp-5;
-  overflow-y: auto;
+  // Solo in verticale: niente contenuto più largo del pannello
+  overflow: hidden auto;
+
+  > * {
+    max-width: 100%;
+    min-width: 0;
+  }
   background: $bg-1;
   border-left: 1px solid $line;
 

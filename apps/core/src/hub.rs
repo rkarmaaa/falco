@@ -253,6 +253,11 @@ pub async fn unfriend(core: &Shared, id: &str) {
 
 /// Collega Tailscale alla rete Falco con una chiave monouso: niente account, niente browser.
 pub async fn join_network(core: &Shared) -> anyhow::Result<()> {
+    // Già sulla rete Falco: un nuovo login creerebbe un dispositivo doppione nella tailnet
+    let ts = core.lock().await.net.clone();
+    if on_falco_network(&ts).await {
+        return Ok(());
+    }
     let key: NetKey = request(core, "POST", "/v1/net/key".into(), None).await?;
     let (ts, code) = {
         let c = core.lock().await;
@@ -277,6 +282,15 @@ pub async fn join_network(core: &Shared) -> anyhow::Result<()> {
     c.poke.notify_one();
     c.emit(events::PRESENCE_CHANGED, json!({ "self": { "tailscale": true } }));
     Ok(())
+}
+
+/// Questo PC è collegato alla tailnet di Falco (il suo nodo ha il tag `tag:falco`)?
+async fn on_falco_network(ts: &falco_net::tailscale::Tailscale) -> bool {
+    let Ok(out) = ts.run(&["status", "--json"]).await else { return false };
+    serde_json::from_slice::<Value>(&out).is_ok_and(|v| {
+        v["BackendState"] == "Running"
+            && v["Self"]["Tags"].as_array().is_some_and(|t| t.iter().any(|x| x == "tag:falco"))
+    })
 }
 
 /// Rete Falco scelta, profilo pronto e Tailscale installato ma senza login: si collega da solo.

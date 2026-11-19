@@ -12,6 +12,7 @@ close_to_tray = true
 status = "online"            # online | busy | invisible
 
 [stream]                     # lato ospite
+quality = "light"           # light (720p 30) | good (1080p 60) | max (schermo) | custom (valori qui sotto)
 resolution = "auto"          # auto | "1280x720" | "1920x1080" | "2560x1440" | "3840x2160"
 fps = "auto"                 # auto | 30 | 60 | 90 | 120
 codec = "auto"               # auto | h264 | hevc | av1

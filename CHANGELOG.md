@@ -2,6 +2,24 @@
 
 Formato [Keep a Changelog](https://keepachangelog.com/it/1.1.0/), versioni [SemVer](https://semver.org/lang/it/).
 
+## [1.0.0-rc.6] - 2026-11-19 · Beta
+
+### Migliorato
+
+- **Qualità dello stream** nella barra in basso mentre guardi: Leggera (720p 30, predefinita), Buona (1080p 60), Massima, Personalizzata; si ricollega da sola. Anche in Impostazioni → Streaming.
+- «Statistiche» accende l'overlay di Moonlight sopra il video (fps, latenza, perdite) in tempo reale.
+- Ospita → Personalizzato rifatto: scelte a pulsante spiegate (banda per ospite, protezione dalle perdite, nitidezza) e nuove opzioni «Ospiti insieme» e «Ruolo dei nuovi amici».
+- «Ho un invito» rifatto: un solo campo per codice amico, link amico, link di stream o invito, con «Incolla».
+- Pannello dell'amico più largo e scorrevole solo in verticale; «Controller» è un interruttore come gli altri permessi.
+- Ospita → Dispositivi associati: «Può entrare adesso» / «Entra quando lo accetti» al posto di «Bloccato» e «Sblocca».
+- Durante uno stream la barra in alto si attenua quando non ci passi sopra.
+
+### Corretto
+
+- La tastiera dell'ospite non arrivava all'host: il focus restava alla finestra di Falco invece che allo stream.
+- Da spettatore il cursore spariva sopra il video.
+- Bordino colorato attorno alle foto profilo; notifica di aggiornamento con lettere sbagliate («Ã¨»).
+
 ## [1.0.0-rc.5] - 2026-11-19 · Beta
 
 ### Aggiunto

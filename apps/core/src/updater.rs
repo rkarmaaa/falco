@@ -16,7 +16,7 @@ use crate::core::Shared;
 pub const MANIFEST_URL: &str =
     "https://github.com/rkarmaaa/falco/releases/latest/download/latest.json";
 /// Chiave pubblica minisign degli aggiornamenti (base64 del file `.pub`).
-/// Vuota finchÃ© non viene generata la chiave di rilascio: aggiornamenti spenti.
+/// Vuota finché non viene generata la chiave di rilascio: aggiornamenti spenti.
 pub const PUBLIC_KEY: &str = "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDM1MkM1QTE3Q0NCMDdERUUKUldUdWZiRE1GMW9zTlZGbXMyWnZKbmUrS1p6V1RWU2s2ZDRiVWFtdEk0ZUFtL1RmNzJScnF2dFIK";
 
 #[derive(Debug, Clone, Deserialize)]
@@ -52,7 +52,7 @@ fn platform_key() -> &'static str {
     }
 }
 
-/// Versione piÃ¹ recente del manifest rispetto a quella installata?
+/// Versione più recente del manifest rispetto a quella installata?
 pub fn newer(manifest: &Manifest, current: &str) -> bool {
     let parse = |v: &str| semver::Version::parse(v.trim_start_matches('v')).ok();
     matches!((parse(&manifest.version), parse(current)), (Some(m), Some(c)) if m > c)
@@ -93,7 +93,7 @@ pub async fn check(shared: &Shared) -> anyhow::Result<Option<Available>> {
     if c.update.as_ref() != Some(&a) {
         c.emit(events::UPDATE_AVAILABLE, json!(a));
         c.notify_user(
-            &format!("Ãˆ disponibile Falco {}", a.version),
+            &format!("È disponibile Falco {}", a.version),
             "Apri Falco per aggiornare con un clic.",
         );
         c.update = Some(a.clone());
@@ -105,7 +105,7 @@ pub async fn check(shared: &Shared) -> anyhow::Result<Option<Available>> {
 /// Scarica, verifica e avvia l'installer silenzioso; poi il core si chiude.
 pub async fn install(shared: &Shared) -> anyhow::Result<()> {
     if shared.lock().await.streaming {
-        bail!("c'Ã¨ una sessione in corso: l'aggiornamento partirÃ  alla fine");
+        bail!("c'è una sessione in corso: l'aggiornamento partirà alla fine");
     }
     let dir = shared.lock().await.data_dir.join("updates");
     std::fs::create_dir_all(&dir)?;
@@ -153,7 +153,7 @@ pub async fn install(shared: &Shared) -> anyhow::Result<()> {
     std::process::exit(0);
 }
 
-/// All'avvio e ogni 6 ore; in modalitÃ  automatica installa quando non si gioca.
+/// All'avvio e ogni 6 ore; in modalità automatica installa quando non si gioca.
 pub async fn run(shared: Shared) {
     tokio::time::sleep(Duration::from_secs(20)).await;
     loop {

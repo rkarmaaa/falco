@@ -18,6 +18,8 @@ export type SessionPhase = 'idle' | 'starting' | 'connecting' | 'connected';
 
 interface CoreStore {
   ready: boolean;
+  /** Sessione che si sta riaprendo (cambio di qualità): niente avviso di fine. */
+  reconnecting: boolean;
   connected: boolean;
   snapshot: StateSnapshot | null;
   config: FaloConfig | null;
@@ -29,6 +31,7 @@ interface CoreStore {
 
 const state = reactive<CoreStore>({
   ready: false,
+  reconnecting: false,
   connected: true,
   snapshot: null,
   config: null,
@@ -159,6 +162,21 @@ export async function joinFriend(friendId: string, name: string): Promise<void> 
 
 export async function leaveSession(): Promise<void> {
   await rpc('session.leave');
+}
+
+/** Riapre la sessione con le impostazioni nuove (es. qualità), senza tornare alla lista amici. */
+export async function reconnectSession(): Promise<void> {
+  const friendId = state.session.info?.friendId;
+  const name = state.session.host ?? '';
+  if (!friendId) return;
+  state.reconnecting = true;
+  try {
+    await leaveSession();
+    for (let i = 0; i < 50 && state.session.phase !== 'idle'; i++) await new Promise((r) => setTimeout(r, 100));
+    await joinFriend(friendId, name);
+  } finally {
+    state.reconnecting = false;
+  }
 }
 
 export function clearLastSession(): void {

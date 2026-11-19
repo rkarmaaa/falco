@@ -48,6 +48,7 @@ pub fn fields() -> Vec<Field> {
         ("general.start_with_system", Kind::Bool),
         ("general.start_minimized", Kind::Bool),
         ("general.close_to_tray", Kind::Bool),
+        ("stream.quality", e(config::StreamQuality::ALL)),
         ("stream.resolution", e(config::RESOLUTIONS)),
         (
             "stream.fps",

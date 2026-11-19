@@ -26,7 +26,7 @@ const initials = computed(() =>
 <template>
   <span
     class="avatar"
-    :class="[`s${size}`, status]"
+    :class="[`s${size}`, status, { photo: !!src }]"
     :style="{ '--accent': accent }"
     role="img"
     :aria-label="name"
@@ -45,6 +45,11 @@ const initials = computed(() =>
   background: var(--accent);
   color: $on-accent;
   font-weight: 650;
+
+  // Con la foto niente colore di fondo: evita il bordino colorato ai margini dell'immagine
+  &.photo {
+    background: transparent;
+  }
 
   img {
     width: 100%;

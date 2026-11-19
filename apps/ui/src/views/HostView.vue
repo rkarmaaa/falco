@@ -155,9 +155,6 @@ const toggleShare = () =>
               <span class="meta">{{ c.enabled ? t('host.enabled') : t('host.blocked') }}</span>
             </div>
             <div class="row">
-              <UiButton variant="ghost" :size="32" @click="attempt(t('errors.context.device'), () => hostApi.setEnabled(c.uuid, !c.enabled).then(load))">
-                {{ c.enabled ? t('host.block') : t('host.unblock') }}
-              </UiButton>
               <UiButton variant="danger" :size="32" @click="attempt(t('errors.context.device'), () => hostApi.unpair(c.uuid).then(load))">{{ t('host.remove') }}</UiButton>
             </div>
           </li>

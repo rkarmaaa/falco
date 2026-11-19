@@ -50,19 +50,53 @@ fn parse_res(s: &str) -> Option<(u32, u32)> {
 
 /// Parametri automatici (§8.2) corretti dalle preferenze in `[stream]`.
 pub fn plan(cfg: &Config, host: &str, path: NetPath, app: &str) -> StreamRequest {
+    let s = &cfg.stream;
+    // Qualità scelta con un clic: leggera e buona sono fisse, massima lascia fare all'automatico
+    use falco_store::config::StreamQuality;
+    let preset = match s.quality {
+        StreamQuality::Light => Some(((1280, 720), 30, 6_000)),
+        StreamQuality::Good => Some(((1920, 1080), 60, 15_000)),
+        StreamQuality::Max | StreamQuality::Custom => None,
+    };
+    if let Some(((w, h), fps, kbps)) = preset {
+        let mut r = plan_with(cfg, host, path, app, Some((w, h)), Some(fps));
+        r.bitrate_kbps = kbps;
+        return r;
+    }
+    let custom = s.quality == StreamQuality::Custom;
+    let fixed_res = custom
+        .then(|| {
+            RESOLUTIONS.contains(&s.resolution.as_str()).then(|| parse_res(&s.resolution)).flatten()
+        })
+        .flatten();
+    let fps = match (custom, s.fps) {
+        (true, Auto::Value(f)) => Some(f),
+        _ => None,
+    };
+    let mut r = plan_with(cfg, host, path, app, fixed_res, fps);
+    if custom && s.bitrate_mode == falco_store::config::BitrateMode::Fixed {
+        r.bitrate_kbps = s.bitrate_kbps;
+    }
+    r
+}
+
+/// Parametri dello stream con risoluzione e fps eventualmente fissati.
+fn plan_with(
+    cfg: &Config,
+    host: &str,
+    path: NetPath,
+    app: &str,
+    fixed_res: Option<(u32, u32)>,
+    fixed_fps: Option<u16>,
+) -> StreamRequest {
     let (screen, hz) = primary_screen();
     let s = &cfg.stream;
-    let fixed_res =
-        RESOLUTIONS.contains(&s.resolution.as_str()).then(|| parse_res(&s.resolution)).flatten();
     let auto = auto_params(&AutoInputs {
         host_screen: fixed_res.unwrap_or(screen),
         guest_screen: screen,
         guest_refresh_hz: hz,
         max_resolution: fixed_res,
-        max_fps: match s.fps {
-            Auto::Value(f) => Some(f),
-            Auto::Auto(_) => None,
-        },
+        max_fps: fixed_fps,
         max_bitrate_kbps: None,
         path,
         host_av1_hw: false,
@@ -75,19 +109,13 @@ pub fn plan(cfg: &Config, host: &str, path: NetPath, app: &str) -> StreamRequest
         Codec::Hevc => VideoCodec::Hevc,
         Codec::Av1 => VideoCodec::Av1,
     };
-    let bitrate = match s.bitrate_mode {
-        falco_store::config::BitrateMode::Fixed => s.bitrate_kbps,
-        falco_store::config::BitrateMode::Auto => auto.bitrate_kbps,
-    };
+    let bitrate = auto.bitrate_kbps;
     StreamRequest {
         host: host.to_owned(),
         app: app.to_owned(),
         width: auto.width,
         height: auto.height,
-        fps: match s.fps {
-            Auto::Value(f) => f,
-            Auto::Auto(_) => auto.fps,
-        },
+        fps: fixed_fps.unwrap_or(auto.fps),
         bitrate_kbps: bitrate,
         codec,
         display_mode: match s.display_mode {
@@ -248,6 +276,13 @@ pub async fn join(
         // In finestra: la UI la incorpora e gestisce lei lo schermo intero
         if cfg!(windows) {
             req.display_mode = "windowed".into();
+            // Incorporato in Falco la cattura relativa di SDL non si attiva (passano i clic, non i
+            // movimenti): con il permesso del mouse si usa quello assoluto. Senza permesso no,
+            // perché Moonlight nasconderebbe il cursore sopra il video e lo spettatore non lo vede
+            let mouse = info.permissions.as_ref().is_some_and(|p| p["mouse"] == true);
+            if mouse {
+                req.extra_args.push("--absolute-mouse".into());
+            }
         }
         req
     };

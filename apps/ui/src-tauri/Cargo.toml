@@ -24,7 +24,7 @@ tokio = { workspace = true, features = ["sync", "time", "io-util", "macros"] }
 
 [target.'cfg(windows)'.dependencies]
 # Incorporare la finestra di Moonlight (ADR 0015); già presente tra le dipendenze di Tauri
-windows-sys = { version = "0.60", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }
+windows-sys = { version = "0.60", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_UI_Input_KeyboardAndMouse", "Win32_System_Threading"] }
 # Volume dello stream per sessione audio (WASAPI); stessa versione già usata da Tauri
 windows = { version = "0.61", features = ["Win32_Media_Audio", "Win32_System_Com", "Win32_System_Com_StructuredStorage", "Win32_System_Variant"] }
 

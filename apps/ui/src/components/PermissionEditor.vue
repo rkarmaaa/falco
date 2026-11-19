@@ -56,11 +56,7 @@ onMounted(load);
     <UiSwitch :model-value="eff.keyboard" :label="$t('perms.keyboard')" @update:model-value="setOverride('keyboard', $event)" />
     <UiSwitch :model-value="eff.mouse" :label="$t('perms.mouse')" @update:model-value="setOverride('mouse', $event)" />
     <UiSwitch :model-value="eff.launchApps" :label="$t('perms.launchApps')" @update:model-value="setOverride('launchApps', $event)" />
-    <label class="pads">
-      <span>{{ $t('perms.gamepads') }}</span>
-      <input type="range" min="0" max="4" :value="eff.gamepads" @change="setOverride('gamepads', Number(($event.target as HTMLInputElement).value))" />
-      <span class="n">{{ eff.gamepads }}</span>
-    </label>
+    <UiSwitch :model-value="eff.gamepads > 0" :label="$t('perms.gamepads')" @update:model-value="setOverride('gamepads', $event ? 1 : 0)" />
     <p class="note">{{ paired ? $t('perms.enforced') : $t('perms.notPaired') }}</p>
   </section>
 </template>
@@ -76,26 +72,9 @@ onMounted(load);
     @include label;
   }
 
-  .pads {
-    display: grid;
-    grid-template-columns: 1fr 96px 16px;
-    align-items: center;
-    gap: $sp-2;
-    font-weight: 600;
-
-    input {
-      accent-color: $accent-500;
-    }
-
-    .n {
-      font-variant-numeric: tabular-nums;
-      color: $text-2;
-    }
-  }
 
   .note {
-    font-size: $fs-small;
-    color: $text-3;
+    @include message($text-3);
   }
 }
 </style>

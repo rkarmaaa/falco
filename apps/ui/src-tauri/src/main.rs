@@ -126,6 +126,8 @@ fn main() {
             embed::stream_attach,
             embed::stream_place,
             embed::stream_detach,
+            embed::stream_focus,
+            embed::stream_stats,
             volume::stream_volume
         ])
         .run(tauri::generate_context!());

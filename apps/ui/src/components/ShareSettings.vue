@@ -3,7 +3,7 @@
 // «Trova le impostazioni migliori», che misura la rete e consiglia il profilo.
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { Gauge, Scale, Snail, Sparkles, SlidersHorizontal, Wand2, Check, Volume2 } from 'lucide-vue-next';
+import { Gauge, Scale, Snail, Sparkles, SlidersHorizontal, Wand2, Check, Volume2, Wifi, ShieldCheck, Image, Users, UserCheck } from 'lucide-vue-next';
 import UiButton from './UiButton.vue';
 import UiSegmented from './UiSegmented.vue';
 import { core, hostApi, setConfig } from '@/stores/core';
@@ -53,7 +53,29 @@ async function findBest(): Promise<void> {
   testing.value = false;
 }
 
-const mbps = (kbps: number) => (kbps === 0 ? t('share.noCap') : `${Math.round(kbps / 1000)} Mbps`);
+// Scelte a pulsante invece degli slider: pochi valori sensati, ognuno spiegato
+const caps = [0, 10_000, 20_000, 40_000, 80_000].map((v) => ({ value: String(v), label: v === 0 ? t('share.noCap') : `${v / 1000} Mbps` }));
+const capChoice = computed({
+  get: () => String(caps.some((c) => Number(c.value) === cap.value) ? cap.value : 0),
+  set: (v) => void save('host.max_bitrate_kbps', Number(v)),
+});
+const fecs = [
+  { value: '5', label: t('share.fecLevel.low') },
+  { value: '15', label: t('share.fecLevel.medium') },
+  { value: '30', label: t('share.fecLevel.high') },
+];
+const fecChoice = computed({
+  get: () => (fec.value <= 8 ? '5' : fec.value <= 20 ? '15' : '30'),
+  set: (v) => void save('network.fec_percent', Number(v)),
+});
+const guests = computed({
+  get: () => String(core.config?.host.max_guests ?? 3),
+  set: (v) => void save('host.max_guests', Number(v)),
+});
+const defaultRole = computed({
+  get: () => String(core.config?.host.default_role ?? 'spettatore'),
+  set: (v) => void save('host.default_role', v),
+});
 </script>
 
 <template>
@@ -95,34 +117,69 @@ const mbps = (kbps: number) => (kbps === 0 ? t('share.noCap') : `${Math.round(kb
       </li>
     </ul>
 
-    <div v-if="currentProfile === 'custom'" class="custom">
-      <label class="range">
-        <span class="label">{{ t('share.cap') }} <b>{{ mbps(cap) }}</b></span>
-        <input type="range" min="0" max="150000" step="5000" :value="cap" @change="save('host.max_bitrate_kbps', Number(($event.target as HTMLInputElement).value) || 0)" />
-        <span class="hint">{{ t('share.capHint') }}</span>
-      </label>
-      <label class="range">
-        <span class="label">{{ t('share.fec') }} <b>{{ fec }}%</b></span>
-        <input type="range" min="0" max="50" step="5" :value="fec" @change="save('network.fec_percent', Number(($event.target as HTMLInputElement).value))" />
-        <span class="hint">{{ t('share.fecHint') }}</span>
-      </label>
-      <UiSegmented
-        v-model="quality"
-        :label="t('share.encoder')"
-        :options="(['speed', 'balanced', 'quality'] as const).map((v) => ({ value: v, label: t(`share.quality.${v}`) }))"
-      />
+    <div v-if="currentProfile === 'custom'" class="options">
+      <div class="option">
+        <span class="icon"><Wifi :size="18" :stroke-width="1.8" aria-hidden="true" /></span>
+        <div class="what">
+          <span class="title">{{ t('share.cap') }}</span>
+          <span class="hint">{{ t('share.capHint') }}</span>
+        </div>
+        <UiSegmented v-model="capChoice" :label="t('share.cap')" :options="caps" />
+      </div>
+      <div class="option">
+        <span class="icon"><ShieldCheck :size="18" :stroke-width="1.8" aria-hidden="true" /></span>
+        <div class="what">
+          <span class="title">{{ t('share.fec') }}</span>
+          <span class="hint">{{ t('share.fecHint') }}</span>
+        </div>
+        <UiSegmented v-model="fecChoice" :label="t('share.fec')" :options="fecs" />
+      </div>
+      <div class="option">
+        <span class="icon"><Image :size="18" :stroke-width="1.8" aria-hidden="true" /></span>
+        <div class="what">
+          <span class="title">{{ t('share.encoder') }}</span>
+          <span class="hint">{{ t(`share.qualityHint.${quality}`) }}</span>
+        </div>
+        <UiSegmented
+          v-model="quality"
+          :label="t('share.encoder')"
+          :options="(['speed', 'balanced', 'quality'] as const).map((v) => ({ value: v, label: t(`share.quality.${v}`) }))"
+        />
+      </div>
     </div>
 
-    <div v-if="showAudio" class="audio">
-      <span class="icon"><Volume2 :size="18" :stroke-width="1.8" aria-hidden="true" /></span>
-      <div class="what">
-        <span class="title">{{ t('share.audio.label') }}</span>
+    <div class="options">
+      <div class="option">
+        <span class="icon"><Users :size="18" :stroke-width="1.8" aria-hidden="true" /></span>
+        <div class="what">
+          <span class="title">{{ t('share.guests') }}</span>
+          <span class="hint">{{ t('share.guestsHint') }}</span>
+        </div>
+        <UiSegmented v-model="guests" :label="t('share.guests')" :options="['1', '2', '3', '4'].map((v) => ({ value: v, label: v }))" />
+      </div>
+      <div class="option">
+        <span class="icon"><UserCheck :size="18" :stroke-width="1.8" aria-hidden="true" /></span>
+        <div class="what">
+          <span class="title">{{ t('share.defaultRole') }}</span>
+          <span class="hint">{{ t('share.defaultRoleHint') }}</span>
+        </div>
+        <UiSegmented
+          v-model="defaultRole"
+          :label="t('share.defaultRole')"
+          :options="(['spettatore', 'giocatore'] as const).map((v) => ({ value: v, label: t(`role.${v}`) }))"
+        />
+      </div>
+      <div v-if="showAudio" class="option">
+        <span class="icon"><Volume2 :size="18" :stroke-width="1.8" aria-hidden="true" /></span>
+        <div class="what">
+          <span class="title">{{ t('share.audio.label') }}</span>
+          <span class="hint">{{ t(`share.audio.${audio}Hint`) }}</span>
+        </div>
         <UiSegmented
           v-model="audio"
           :label="t('share.audio.label')"
           :options="(['onscreen', 'all'] as const).map((v) => ({ value: v, label: t(`share.audio.${v}`) }))"
         />
-        <span class="hint">{{ t(`share.audio.${audio}Hint`) }}</span>
       </div>
     </div>
 
@@ -275,56 +332,36 @@ const mbps = (kbps: number) => (kbps === 0 ? t('share.noCap') : `${Math.round(kb
     }
   }
 
-  .custom {
+  .options {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: $sp-5;
-    padding: $sp-5;
     border: 1px solid $line;
     border-radius: $r-card;
     background: $bg-2;
 
-    @include mq(md) {
-      grid-template-columns: 1fr;
-    }
-
-    .range {
+    .option {
       display: grid;
-      gap: $sp-2;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: $sp-4;
+      padding: $sp-4 $sp-5;
 
-      .label {
-        font-size: $fs-small;
-        color: $text-2;
+      & + .option {
+        border-top: 1px solid $line;
+      }
 
-        b {
-          color: $text-1;
-          font-weight: 650;
+      // Finestra stretta: le scelte vanno sotto la descrizione
+      @include mq(md) {
+        grid-template-columns: auto minmax(0, 1fr);
+
+        > :last-child {
+          grid-column: 2;
+          justify-self: start;
         }
       }
-
-      .hint {
-        color: $text-3;
-        font-size: 12px;
-      }
-
-      input {
-        accent-color: #6e7eff;
-      }
     }
-  }
-
-  .audio {
-    display: flex;
-    align-items: flex-start;
-    gap: $sp-4;
-    padding: $sp-4 $sp-5;
-    border: 1px solid $line;
-    border-radius: $r-card;
-    background: $bg-2;
 
     .icon {
       display: grid;
-      flex: none;
       place-items: center;
       width: 36px;
       height: 36px;
@@ -335,17 +372,16 @@ const mbps = (kbps: number) => (kbps === 0 ? t('share.noCap') : `${Math.round(kb
 
     .what {
       display: grid;
-      flex: 1;
-      gap: $sp-2;
+      gap: 2px;
+      min-width: 0;
     }
 
     .title {
-      font-weight: 650;
+      font-weight: $fw-strong;
     }
 
     .hint {
-      color: $text-3;
-      font-size: 12px;
+      @include message($text-3);
     }
   }
 

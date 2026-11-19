@@ -22,7 +22,7 @@ import OnboardingView from '@/views/OnboardingView.vue';
 import { clearLastSession, core, initCore, joinFriend, leaveSession } from '@/stores/core';
 import { findInviteLink, initSocial, previewInvite, social } from '@/stores/social';
 import { attempt, errors, initErrors } from '@/stores/errors';
-import { resetStage, setFullscreen, stage } from '@/stores/stage';
+import { focusStream, resetStage, setFullscreen, stage } from '@/stores/stage';
 import { closeModal, joinStream, openAccept, openLink, ui } from '@/stores/ui';
 import { setLocale } from '@/i18n';
 import { getTransport, isTauri, rpc } from '@/ipc';
@@ -60,6 +60,8 @@ watch(
       section.value = 'stream';
     }
     if (phase === 'idle' && prev !== 'idle') {
+      // Cambio di qualità: la sessione si riapre subito, niente avviso né cambio di sezione
+      if (core.reconnecting) return;
       void resetStage();
       if (section.value === 'stream') section.value = before;
       sessionEnded();
@@ -107,7 +109,11 @@ async function checkClipboard(): Promise<void> {
     // Appunti vuoti o link scaduto: niente da mostrare
   }
 }
-useEventListener(window, 'focus', () => void checkClipboard());
+useEventListener(window, 'focus', () => {
+  void checkClipboard();
+  // Con lo stream incorporato la tastiera va a Moonlight, non alla pagina
+  if (onStage.value) focusStream();
+});
 
 onMounted(async () => {
   void initErrors();

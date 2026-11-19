@@ -81,8 +81,8 @@
     "approve": "Pair",
     "devices": "Paired devices",
     "noDevices": "No paired devices yet.",
-    "enabled": "Can connect",
-    "blocked": "Blocked",
+    "enabled": "Can join now",
+    "blocked": "Joins when you accept",
     "block": "Block",
     "unblock": "Unblock",
     "remove": "Remove",
@@ -253,7 +253,8 @@
       "pairing": "Pairing the device",
       "device": "Managing the device",
       "joinLink": "Open the stream link",
-      "invite": "Invite {name}"
+      "invite": "Invite {name}",
+      "quality": "Change stream quality"
     }
   },
   "ping": {
@@ -327,9 +328,9 @@
     "noShare": "Tailscale isn't set up for invites: your friend must already be in your network. Set it up in Settings → Host."
   },
   "accept": {
-    "title": "Accept invite",
+    "title": "Got an invite?",
     "friends": "You're friends",
-    "paste": "Invite link",
+    "paste": "Link or code",
     "invalid": "This link doesn't look like a Falco invite.",
     "accept": "Accept",
     "browserNote": "Your browser will open to confirm sharing on Tailscale: it takes one click.",
@@ -341,7 +342,18 @@
     },
     "doneBody": "You and {name} are friends. When they host, you'll find them in “Playing now”.",
     "clipboard": "You have an invite from {name} in your clipboard",
-    "open": "Open"
+    "open": "Open",
+    "intro": "Paste what you were sent: a friend code, a friend link, a stream link or an invite.",
+    "placeholder": "K7QM-2XPA or https://falcoapp.pages.dev/…",
+    "pasteButton": "Paste",
+    "unknown": "I don't recognize this text: make sure you copied all of it.",
+    "kind": {
+      "friend": "Friend code",
+      "friendLink": "Friend link",
+      "stream": "Stream link",
+      "streamBody": "You join their session right away",
+      "invite": "Invite"
+    }
   },
   "requests": {
     "wants": "{name} wants to join",
@@ -412,7 +424,8 @@
       "frame_pacing": "Frame pacing",
       "audio": "Audio",
       "capture_system_keys": "Capture system shortcuts",
-      "overlay": "On-screen stats"
+      "overlay": "On-screen stats",
+      "quality": "Stream quality"
     },
     "host": {
       "available_on_start": "Available at startup",
@@ -481,7 +494,10 @@
       "giocatore": "Player",
       "copilota": "Co-pilot",
       "fidato": "Trusted",
-      "falco": "Falco network (recommended)"
+      "falco": "Falco network (recommended)",
+      "good": "Good · 1080p 60",
+      "max": "Max · your screen",
+      "custom": "Custom"
     }
   },
   "update": {
@@ -610,16 +626,16 @@
     "advice": "I recommend “{profile}”",
     "apply": "Use this",
     "alreadyBest": "You're already using the best one",
-    "noCap": "no limit",
-    "cap": "Maximum bitrate",
-    "capHint": "Cap for every guest. Lower it if your upload is slow.",
-    "fec": "Error correction",
-    "fecHint": "Higher survives packet loss better, but uses more bandwidth.",
-    "encoder": "Encoder",
+    "noCap": "No limit",
+    "cap": "Bandwidth limit per guest",
+    "capHint": "Lower it if your upload is slow or several friends watch at once.",
+    "fec": "Loss protection",
+    "fecHint": "Higher copes better with an unstable network but uses a bit more bandwidth.",
+    "encoder": "Image sharpness",
     "quality": {
-      "speed": "Fast",
+      "speed": "Smoother",
       "balanced": "Balanced",
-      "quality": "Pretty"
+      "quality": "Sharper"
     },
     "profiles": {
       "latency": {
@@ -669,7 +685,21 @@
       "all": "Whole PC",
       "onscreenHint": "Guests only hear apps with a window visible on the shared screen. Discord and other voice chats never come through, so nobody hears their own voice echoed back.",
       "allHint": "Guests hear all of the PC's audio, including Discord, notifications and background music."
-    }
+    },
+    "fecLevel": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "qualityHint": {
+      "speed": "Frames ready sooner: the best choice for gaming.",
+      "balanced": "A balance between responsiveness and detail.",
+      "quality": "More detail with a touch more delay: great for films and videos."
+    },
+    "guests": "Guests at once",
+    "guestsHint": "How many people can watch or play at the same time.",
+    "defaultRole": "Role for new friends",
+    "defaultRoleHint": "What people who accept your friendship can do: change it later for each one."
   },
   "avatar": {
     "change": "Change photo",
@@ -708,5 +738,21 @@
     "wants": "wants to be your friend",
     "cancel": "Cancel",
     "noHub": "Falco's server isn't configured in this build: use «Share stream» or an invite."
+  },
+  "quality": {
+    "short": {
+      "light": "Light",
+      "good": "Good",
+      "max": "Max",
+      "custom": "Custom"
+    },
+    "title": "Stream quality",
+    "hint": "Reconnects in a couple of seconds",
+    "hints": {
+      "light": "720p · 30 fps · 6 Mbps. Fine even on slow connections.",
+      "good": "1080p · 60 fps · 15 Mbps. Needs a good connection on both sides.",
+      "max": "Your screen resolution. Only on very fast connections.",
+      "custom": "Resolution, fps and bitrate from Settings → Streaming."
+    }
   }
 }
