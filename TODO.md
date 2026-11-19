@@ -54,7 +54,7 @@ Fatto in anticipo, utile alle milestone successive:
 - [x] Ospiti collegati, «Espelli», «Invitalo a giocare», amici in gioco nel menu del tray
 - [x] Scorciatoia globale `Ctrl+Shift+F` / `Cmd+Shift+F` verso la vista Ospita
 - [x] Prova a due istanze con pairing reale: `node scripts/e2e-friends.mjs` (invito → presenza → entra → bussa → espelli → rifiuto → rimozione)
-- [ ] Filtro di controller, tastiera, mouse e qualità **dentro Sunshine** (endpoint `PUT /api/falco/clients/{uuid}/permissions`): serve il fork, ADR 0011
+- [x] Filtro di controller, tastiera e mouse **dentro Sunshine** per ospite, senza riavvio (`POST /api/clients/inputs`, patch `0002`); qualità per ospite ancora da fare
 - [ ] Barra rapida sovrapposta al gioco (ora la scorciatoia apre la finestra su Ospita)
 - [ ] **Marco**: test con client modificato e tre ospiti contemporanei con controller separati
 

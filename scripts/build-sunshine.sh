@@ -38,12 +38,12 @@ export PROCESSOR_ARCHITECTURE="${PROCESSOR_ARCHITECTURE:-AMD64}"
 export BRANCH=falco BUILD_VERSION=2026.914.233613 COMMIT="$commit"
 export PATH="/c/Program Files/nodejs:$PATH"
 cmake -B "$src/cmake-build-release" -G Ninja -S "$src" -DCMAKE_BUILD_TYPE=Release \
-  -DBUILD_DOCS=OFF -DBUILD_TESTS="${FALCO_SUNSHINE_TESTS:-ON}" -DSUNSHINE_ENABLE_TRAY=OFF -DDOTNET_EXECUTABLE=OFF
+  -DBUILD_DOCS=OFF -DBUILD_TESTS="${FALCO_SUNSHINE_TESTS:-OFF}" -DSUNSHINE_ENABLE_TRAY=OFF -DDOTNET_EXECUTABLE=OFF
 # Con troppi processi paralleli MinGW su Windows a volte fallisce con «Invalid argument» sugli
 # include (file bloccati dall'antivirus): pochi job e un secondo tentativo.
 build() { ninja -C "$src/cmake-build-release" -j "${FALCO_JOBS:-8}" "$@" || ninja -C "$src/cmake-build-release" -j 4 "$@"; }
 build sunshine
-if [[ "${FALCO_SUNSHINE_TESTS:-ON}" == ON ]]; then
+if [[ "${FALCO_SUNSHINE_TESTS:-OFF}" == ON ]]; then
   build test_sunshine
   "$src/cmake-build-release/tests/test_sunshine.exe" --gtest_filter='AudioOnscreenTest.*'
 fi

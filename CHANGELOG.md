@@ -2,6 +2,23 @@
 
 Formato [Keep a Changelog](https://keepachangelog.com/it/1.1.0/), versioni [SemVer](https://semver.org/lang/it/).
 
+## [1.0.0-rc.5] - 2026-11-19 · Beta
+
+### Aggiunto
+
+- Permessi di tastiera, mouse e controller applicati **subito, senza riavviare lo stream**: Sunshine di Falco filtra gli input per ogni ospite (nuova patch `0002`). Niente più «Applica ora» né disconnessioni.
+- Volume dello stream per chi guarda, con muto, nella barra in basso (solo l'audio dello stream, non quello del PC).
+- Pulsante **Avvia** con interruttore acceso/spento al posto di «Condividi stream» e «Interrompi»; accanto, quando è attivo, il link da ricopiare.
+
+### Corretto
+
+- Si potevano aprire due finestre di Falco insieme: ora una seconda apertura porta in primo piano quella esistente.
+- Mouse dell'ospite: passavano i clic ma non i movimenti (modalità assoluta nella finestra incorporata).
+- Nella schermata Ospita comparivano tanti dispositivi con lo stesso nome (tentativi di pairing falliti): ora i duplicati si rimuovono da soli.
+
+- Lo stream arrivava (60 fps) ma la finestra del video non compariva: Falco ora riconosce la finestra di Moonlight 6.2 (SDL3) e la cerca fino a 90 secondi; se non la trova, il motivo finisce nel report di debug.
+- La foto profilo degli amici non compariva dopo l'aggiunta: ora si scarica anche se il profilo era già noto.
+
 ## [1.0.0-rc.4] - 2026-11-19 · Beta
 
 ### Aggiunto

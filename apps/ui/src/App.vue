@@ -118,6 +118,9 @@ onMounted(async () => {
     const l = await invoke<string | null>('initial_link').catch(() => null);
     if (l) openLink(l);
     const { listen } = await import('@tauri-apps/api/event');
+    // Seconda apertura di Falco: la finestra esistente riceve link e sezione
+    void listen<string>('ui://link', (e) => openLink(e.payload));
+    void listen<string>('ui://section', (e) => (section.value = e.payload as Section));
     void listen<string>('pill://action', (e) => {
       if (e.payload === 'exit') void setFullscreen(false);
       if (e.payload === 'leave') void attempt(t('errors.context.leave'), () => leaveSession());

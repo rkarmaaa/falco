@@ -284,14 +284,18 @@ async fn poll_once(shared: &Shared, favorites_only: bool) -> bool {
         }
         // Profilo più recente: lo scarica e verifica la firma
         let newer = live.presence.as_ref().map(|p| p.profile_updated_at).unwrap_or(0);
-        let cached_at =
+        let cached =
             c.db.friend_profile(&friend.id)
                 .ok()
                 .flatten()
-                .and_then(|j| serde_json::from_str::<SignedProfile>(&j).ok())
-                .map(|p| p.profile.updated_at)
-                .unwrap_or(0);
-        let fetch = newer > cached_at;
+                .and_then(|j| serde_json::from_str::<SignedProfile>(&j).ok());
+        let cached_at = cached.as_ref().map(|p| p.profile.updated_at).unwrap_or(0);
+        // Anche con il profilo già in cache (es. dall'handshake) la foto può mancare ancora
+        let avatar_missing = cached
+            .as_ref()
+            .and_then(|p| p.profile.avatar.as_deref())
+            .is_some_and(|h| c.db.avatar(h).ok().flatten().is_none());
+        let fetch = live.presence.is_some() && (newer > cached_at || avatar_missing);
         let address = live.address.clone();
         if live != before {
             changed = true;

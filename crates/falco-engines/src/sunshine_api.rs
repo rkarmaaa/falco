@@ -118,6 +118,26 @@ impl SunshineApi {
         self.post("/clients/update", serde_json::json!({ "uuid": uuid, "enabled": enabled }))
     }
 
+    /// Dispositivi che un client può usare, subito e senza riavvio (patch di Falco su Sunshine).
+    pub fn set_inputs(
+        &self,
+        uuid: &str,
+        keyboard: bool,
+        mouse: bool,
+        controller: bool,
+    ) -> Result<(), ApiError> {
+        self.post(
+            "/clients/inputs",
+            serde_json::json!({ "uuid": uuid, "keyboard": keyboard, "mouse": mouse, "controller": controller }),
+        )
+    }
+
+    /// Questo Sunshine filtra gli input per client? Il Sunshine ufficiale non ha l'endpoint (404);
+    /// quello di Falco risponde, anche se rifiuta l'uuid vuoto.
+    pub fn supports_client_inputs(&self) -> bool {
+        matches!(self.set_inputs("", false, false, false), Ok(()) | Err(ApiError::Rejected))
+    }
+
     /// Chiude l'app in streaming (termina la sessione).
     pub fn close_app(&self) -> Result<(), ApiError> {
         self.post("/apps/close", serde_json::json!({}))

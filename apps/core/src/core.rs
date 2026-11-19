@@ -153,6 +153,10 @@ impl Core {
     ) -> anyhow::Result<Self> {
         let db = Db::open(db_path)?;
         let mut config = config;
+        // Già noto per questo eseguibile di Sunshine: si parte subito con il filtro per ospite
+        let per_client = crate::host::Host::engine_fingerprint().is_some_and(|fp| {
+            db.meta("sunshine-per-client").ok().flatten() == Some(format!("{fp}:true"))
+        });
         migrate_provider(&mut config, &db);
         let me = crate::identity::Me::load(&db).unwrap_or_else(|e| {
             tracing::error!("identità non caricata: {e:#}");
@@ -163,7 +167,11 @@ impl Core {
             db,
             net: Tailscale::detect(),
             host_available: false,
-            host: crate::host::Host::new(data_dir),
+            host: {
+                let mut h = crate::host::Host::new(data_dir);
+                h.per_client = per_client;
+                h
+            },
             streaming: false,
             session: None,
             session_stop: None,
@@ -423,6 +431,26 @@ pub async fn set_available(shared: Shared, available: bool) {
         }
         c.host.state = crate::host::HostState::Ready;
         c.publish_host();
+        drop(c);
+        // Permessi per ospite dentro Sunshine? Si scopre una volta per eseguibile; se cambia,
+        // un riavvio subito (prima che entri qualcuno) accende o spegne i dispositivi nel motore
+        let supported = tokio::task::spawn_blocking(move || api.supports_client_inputs())
+            .await
+            .unwrap_or(false);
+        let mut c = shared.lock().await;
+        if supported != c.host.per_client {
+            c.host.per_client = supported;
+            if let Some(fp) = crate::host::Host::engine_fingerprint() {
+                let _ = c.db.set_meta("sunshine-per-client", &format!("{fp}:{supported}"));
+            }
+            if c.guests.is_empty() {
+                drop(c);
+                tracing::info!("filtro input per ospite: {supported}, riavvio del motore");
+                Box::pin(set_available(shared.clone(), false)).await;
+                Box::pin(set_available(shared.clone(), true)).await;
+                return;
+            }
+        }
         drop(c);
         // Client degli amici allineati ai permessi appena l'host è pronto
         crate::access::apply_all(&shared).await;

@@ -70,6 +70,11 @@ pub fn stream_args(r: &StreamRequest) -> Vec<String> {
         "--multi-controller".into(),
         "--quit-after".into(),
     ];
+    // In finestra lo stream è incorporato in Falco: lì la cattura relativa del mouse di SDL non
+    // si attiva (passano i clic ma non i movimenti). Il mouse assoluto da desktop remoto funziona.
+    if r.display_mode == "windowed" {
+        a.push("--absolute-mouse".into());
+    }
     a.extend(r.extra_args.iter().cloned());
     a
 }

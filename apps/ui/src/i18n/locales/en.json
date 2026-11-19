@@ -536,7 +536,10 @@
     "starting": "Starting to share…",
     "idle": "Share your screen so friends can join, or join someone who's playing",
     "stop": "Stop",
-    "share": "Share"
+    "share": "Share",
+    "start": "Start",
+    "on": "Live",
+    "stopHint": "Click to stop sharing"
   },
   "guests": {
     "label": "Connected people",
@@ -583,7 +586,10 @@
     "tip": "Click the stream to use mouse and keyboard, Ctrl+Alt+Shift+Z to release them",
     "endedLeft": "You left {name}'s stream.",
     "endedLost": "{name}'s stream stopped.",
-    "rejoin": "Rejoin"
+    "rejoin": "Rejoin",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "volume": "Stream volume"
   },
   "pill": {
     "label": "Stream actions",

@@ -1,0 +1,209 @@
+From 88e03be7cc9c139ad32d13fc0db0a88eb8a76a2f Mon Sep 17 00:00:00 2001
+From: falco <falco@localhost>
+Date: Thu, 19 Nov 2026 22:16:11 +0100
+Subject: [PATCH] feat(input): per-client input permissions changeable while
+ streaming
+
+Adds POST /api/clients/inputs {uuid, keyboard, mouse, controller}. Each input
+session keeps a shared atomic set of allowed devices; packets for devices the
+client may not use are dropped before reaching the OS. Unknown clients may use
+none. Lets a host grant or revoke mouse, keyboard and gamepads without a restart.
+---
+ src/confighttp.cpp | 43 +++++++++++++++++++++++++++++
+ src/input.cpp      | 69 ++++++++++++++++++++++++++++++++++++++++++++++
+ src/input.h        | 16 +++++++++++
+ 3 files changed, 128 insertions(+)
+
+diff --git a/src/confighttp.cpp b/src/confighttp.cpp
+index 1b473973..84fa276b 100644
+--- a/src/confighttp.cpp
++++ b/src/confighttp.cpp
+@@ -1288,6 +1288,48 @@ namespace confighttp {
+    *
+    * @api_examples{/api/clients/update| POST| {"uuid":"<uuid>","enabled":true}}
+    */
++  /**
++   * @brief Falco: set the input devices a client may use, effective immediately.
++   * @param response The HTTP response object.
++   * @param request The HTTP request object.
++   *
++   * @api_examples{/api/clients/inputs| POST| {"uuid":"<uuid>","keyboard":true,"mouse":true,"controller":false}}
++   */
++  void updateClientInputs(resp_https_t response, req_https_t request) {
++    if (!check_content_type(response, request, "application/json")) {
++      return;
++    }
++    if (!authenticate(response, request)) {
++      return;
++    }
++    std::string client_id = get_client_id(request);
++    if (!validate_csrf_token(response, request, client_id)) {
++      return;
++    }
++
++    std::stringstream ss;
++    ss << request->content.rdbuf();
++    try {
++      nlohmann::json input_tree = nlohmann::json::parse(ss.str());
++      nlohmann::json output_tree;
++      const auto cert = nvhttp::get_cert_by_uuid(input_tree.value("uuid", ""));
++      if (cert.empty()) {
++        output_tree["status"] = false;
++      } else {
++        std::uint8_t flags = 0;
++        flags |= input_tree.value("keyboard", false) ? input::CLIENT_INPUT_KEYBOARD : 0;
++        flags |= input_tree.value("mouse", false) ? input::CLIENT_INPUT_MOUSE : 0;
++        flags |= input_tree.value("controller", false) ? input::CLIENT_INPUT_CONTROLLER : 0;
++        input::set_client_inputs(cert, flags);
++        output_tree["status"] = true;
++      }
++      send_response(response, output_tree);
++    } catch (nlohmann::json::exception &e) {
++      BOOST_LOG(warning) << "Update Client Inputs: "sv << e.what();
++      bad_request(response, request, e.what());
++    }
++  }
++
+   void updateClient(resp_https_t response, req_https_t request) {
+     if (!check_content_type(response, request, "application/json")) {
+       return;
+@@ -2363,6 +2405,7 @@ namespace confighttp {
+     server.resource["^/api/clients/unpair$"]["POST"] = unpair;
+     server.resource["^/api/clients/unpair-all$"]["POST"] = unpairAll;
+     server.resource["^/api/clients/update$"]["POST"] = updateClient;
++    server.resource["^/api/clients/inputs$"]["POST"] = updateClientInputs;
+     server.resource["^/api/config$"]["GET"] = getConfig;
+     server.resource["^/api/config$"]["POST"] = saveConfig;
+     server.resource["^/api/configLocale$"]["GET"] = getLocale;
+diff --git a/src/input.cpp b/src/input.cpp
+index a12514d4..c0b2e264 100644
+--- a/src/input.cpp
++++ b/src/input.cpp
+@@ -10,6 +10,7 @@ extern "C" {
+ 
+ // standard includes
+ #include <algorithm>
++#include <atomic>
+ #include <bitset>
+ #include <chrono>
+ #include <cmath>
+@@ -251,7 +252,68 @@ namespace input {
+   /**
+    * @brief Input emulation settings loaded from configuration.
+    */
++  /**
++   * @brief Falco: allowed input devices per client certificate, shared with live sessions.
++   */
++  struct client_inputs_t {
++    std::mutex mutex;
++    std::unordered_map<std::string, std::shared_ptr<std::atomic<std::uint8_t>>> flags;
++  };
++
++  client_inputs_t &client_inputs() {
++    static client_inputs_t state;
++    return state;
++  }
++
++  std::shared_ptr<std::atomic<std::uint8_t>> client_input_flags(const std::string &cert) {
++    auto &state = client_inputs();
++    std::lock_guard lock {state.mutex};
++    auto &slot = state.flags[cert];
++    if (!slot) {
++      slot = std::make_shared<std::atomic<std::uint8_t>>(0);
++    }
++    return slot;
++  }
++
++  void set_client_inputs(const std::string &cert, std::uint8_t flags) {
++    client_input_flags(cert)->store(flags, std::memory_order_relaxed);
++  }
++
++  /**
++   * @brief Device class of an input packet, or 0 for packets always allowed.
++   */
++  std::uint8_t input_device_of(std::uint32_t magic) {
++    switch (magic) {
++      case KEY_DOWN_EVENT_MAGIC:
++      case KEY_UP_EVENT_MAGIC:
++      case UTF8_TEXT_EVENT_MAGIC:
++        return CLIENT_INPUT_KEYBOARD;
++      case MOUSE_MOVE_REL_MAGIC_GEN5:
++      case MOUSE_MOVE_ABS_MAGIC:
++      case MOUSE_BUTTON_DOWN_EVENT_MAGIC_GEN5:
++      case MOUSE_BUTTON_UP_EVENT_MAGIC_GEN5:
++      case SCROLL_MAGIC_GEN5:
++      case SS_HSCROLL_MAGIC:
++      case SS_TOUCH_MAGIC:
++      case SS_PEN_MAGIC:
++        return CLIENT_INPUT_MOUSE;
++      case MULTI_CONTROLLER_MAGIC_GEN5:
++      case SS_CONTROLLER_ARRIVAL_MAGIC:
++      case SS_CONTROLLER_TOUCH_MAGIC:
++      case SS_CONTROLLER_MOTION_MAGIC:
++      case SS_CONTROLLER_BATTERY_MAGIC:
++        return CLIENT_INPUT_CONTROLLER;
++      default:
++        return 0;
++    }
++  }
++
+   struct input_t {
++    /**
++     * @brief Falco: devices this client may use (see `client_input_e`).
++     */
++    std::shared_ptr<std::atomic<std::uint8_t>> allowed;
++
+     /**
+      * @brief Enumerates supported shortkey options.
+      */
+@@ -2136,6 +2198,12 @@ namespace input {
+       return;
+     }
+ 
++    // Falco: drop devices this client may not use (permissions change live, no restart)
++    if (const auto device = input_device_of(util::endian::little(header.magic));
++        device != 0 && (!input->allowed || (input->allowed->load(std::memory_order_relaxed) & device) == 0)) {
++      return;
++    }
++
+     {
+       std::lock_guard<std::mutex> lg(input->input_queue_lock);
+       input->input_queue.push_back(std::move(input_data));
+@@ -2321,6 +2389,7 @@ namespace input {
+           mail->event<input::touch_port_t>(mail::touch_port),
+           mail->queue<platf::gamepad_feedback_msg_t>(mail::gamepad_feedback)
+         );
++        input->allowed = client_input_flags(session_id);
+         state.inputs.try_emplace(std::move(session_id), input);
+       }
+     }
+diff --git a/src/input.h b/src/input.h
+index d383e425..51fca19a 100644
+--- a/src/input.h
++++ b/src/input.h
+@@ -84,6 +84,22 @@ namespace input {
+    */
+   std::shared_ptr<input_t> alloc(safe::mail_t mail, std::string session_id);
+ 
++  /**
++   * @brief Falco: per-client input permissions, changeable while streaming (no restart).
++   */
++  enum client_input_e : std::uint8_t {
++    CLIENT_INPUT_KEYBOARD = 0x1,  ///< Keyboard and text input.
++    CLIENT_INPUT_MOUSE = 0x2,  ///< Mouse, scroll, touch and pen.
++    CLIENT_INPUT_CONTROLLER = 0x4,  ///< Gamepads.
++  };
++
++  /**
++   * @brief Set the input devices a paired client may use. Unknown clients may use none.
++   * @param cert PEM certificate of the client (the input session key).
++   * @param flags Combination of `client_input_e`.
++   */
++  void set_client_inputs(const std::string &cert, std::uint8_t flags);
++
+ #ifdef SUNSHINE_TESTS
+   namespace testing {
+     /**
+-- 
+2.55.0.windows.2
+

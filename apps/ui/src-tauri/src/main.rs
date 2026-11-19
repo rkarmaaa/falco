@@ -4,6 +4,7 @@
 
 mod embed;
 mod link;
+mod volume;
 
 use std::sync::Arc;
 
@@ -90,6 +91,23 @@ fn pill_action(app: tauri::AppHandle, action: String) -> Result<(), String> {
 
 fn main() {
     let result = tauri::Builder::default()
+        // Per primo: una seconda istanza passa i suoi argomenti a questa e si chiude
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.unminimize();
+                let _ = w.show();
+                let _ = w.set_focus();
+            }
+            let value = |name: &str| {
+                args.iter().position(|a| a == name).and_then(|i| args.get(i + 1)).cloned()
+            };
+            if let Some(link) = value("--link") {
+                let _ = app.emit("ui://link", link);
+            }
+            if let Some(section) = value("--section") {
+                let _ = app.emit("ui://section", section);
+            }
+        }))
         .plugin(tauri_plugin_clipboard_manager::init())
         .setup(|app| {
             let link = Arc::new(CoreLink::default());
@@ -107,7 +125,8 @@ fn main() {
             pill_action,
             embed::stream_attach,
             embed::stream_place,
-            embed::stream_detach
+            embed::stream_detach,
+            volume::stream_volume
         ])
         .run(tauri::generate_context!());
     if let Err(e) = result {

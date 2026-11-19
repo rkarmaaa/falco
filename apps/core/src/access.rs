@@ -85,6 +85,10 @@ fn system_offset_s() -> i64 {
 /// Dispositivi che almeno un amico può usare: gli altri restano spenti in Sunshine.
 /// Default: nessuno, cioè ogni ospite può solo guardare (ADR 0015).
 pub fn wanted_inputs(c: &Core) -> falco_engines::sunshine::Inputs {
+    // Filtro per ospite dentro Sunshine: dispositivi accesi, decide il permesso di ciascuno
+    if c.host.per_client {
+        return falco_engines::sunshine::Inputs { keyboard: true, mouse: true, controller: true };
+    }
     let mut i = falco_engines::sunshine::Inputs::default();
     for f in c.db.friends().unwrap_or_default() {
         if let Some(p) = effective(c, &f.id) {
@@ -98,6 +102,11 @@ pub fn wanted_inputs(c: &Core) -> falco_engines::sunshine::Inputs {
 
 /// Riavvia Sunshine se gli input da accendere sono cambiati; con ospiti collegati aspetta la fine.
 pub async fn sync_inputs(shared: &Shared) {
+    // Con il filtro per ospite i permessi valgono subito: niente riavvio, nessuno si disconnette
+    if shared.lock().await.host.per_client {
+        apply_all(shared).await;
+        return;
+    }
     let (restart, pending) = {
         let mut c = shared.lock().await;
         let wanted = wanted_inputs(&c);
@@ -129,36 +138,73 @@ fn should_enable(c: &Core, friend_id: &str, p: &Permissions) -> bool {
 }
 
 /// Allinea Sunshine ai permessi: abilita o blocca ogni client associato.
+/// Cosa applicare in Sunshine per un amico.
+struct Plan {
+    friend: String,
+    name: String,
+    uuid: Option<String>,
+    enabled: bool,
+    keyboard: bool,
+    mouse: bool,
+    controller: bool,
+}
+
 pub async fn apply_all(shared: &Shared) {
     let (api, plan) = {
         let c = shared.lock().await;
         let Some(api) = c.host.api() else { return };
         let friends = c.db.friends().unwrap_or_default();
-        // (amico, nome, uuid noto, abilitare?)
-        let plan: Vec<(String, String, Option<String>, bool)> = friends
+        let per_client = c.host.per_client;
+        let plan: Vec<Plan> = friends
             .iter()
             .filter_map(|f| {
                 let uuid = c.db.permissions(&f.id).ok().flatten()?.2;
                 let p = effective(&c, &f.id)?;
-                Some((f.id.clone(), f.name.clone(), uuid, should_enable(&c, &f.id, &p)))
+                let on = should_enable(&c, &f.id, &p);
+                Some(Plan {
+                    friend: f.id.clone(),
+                    name: f.name.clone(),
+                    uuid,
+                    enabled: on,
+                    keyboard: on && p.keyboard,
+                    mouse: on && p.mouse,
+                    controller: on && p.gamepads > 0,
+                })
             })
             .collect();
-        (api, plan)
+        (api, (plan, per_client))
     };
+    let (plan, per_client) = plan;
     let learned = tokio::task::spawn_blocking(move || {
         let current = api.clients().unwrap_or_default();
         let mut learned = Vec::new();
-        for (fid, name, uuid, enabled) in plan {
+        // (nome dell'amico, uuid del suo dispositivo) dopo il ripiego per nome
+        let mut bound: Vec<(String, String)> = Vec::new();
+        for Plan { friend: fid, name, uuid, enabled, keyboard, mouse, controller } in plan {
             // Ripiego: client associato con il nome dell'amico ma uuid non registrato
             let uuid = uuid.or_else(|| {
-                let u = current.iter().find(|c| c.name == name).map(|c| c.uuid.clone())?;
+                // Il più recente: quelli prima sono tentativi di pairing falliti
+                let u = current.iter().rev().find(|c| c.name == name).map(|c| c.uuid.clone())?;
                 learned.push((fid, u.clone()));
                 Some(u)
             });
-            if let Some(uuid) = uuid
-                && current.iter().any(|c| c.uuid == uuid && c.enabled != enabled)
-            {
+            let Some(uuid) = uuid else { continue };
+            bound.push((name.clone(), uuid.clone()));
+            if current.iter().any(|c| c.uuid == uuid && c.enabled != enabled) {
                 let _ = api.set_enabled(&uuid, enabled);
+            }
+            if per_client && let Err(e) = api.set_inputs(&uuid, keyboard, mouse, controller) {
+                tracing::warn!("permessi di input per {name} non applicati: {e}");
+            }
+        }
+        // Residui di pairing falliti: client con il nome di un amico che non sono il suo
+        // dispositivo (né quello di un altro amico con lo stesso nome)
+        for c in &current {
+            let named = bound.iter().any(|(n, _)| *n == c.name);
+            let used = bound.iter().any(|(_, u)| *u == c.uuid);
+            if named && !used {
+                tracing::info!("rimosso il client duplicato {} ({})", c.name, c.uuid);
+                let _ = api.unpair(&c.uuid);
             }
         }
         learned

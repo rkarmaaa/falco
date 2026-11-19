@@ -3,6 +3,7 @@
 // finestra figlia resta sempre sopra la pagina web.
 import { onBeforeUnmount, onMounted, reactive, readonly } from 'vue';
 import { isTauri } from '@/ipc';
+import { reportError } from './errors';
 
 export interface StageRect {
   x: number;
@@ -56,6 +57,10 @@ export async function attach(pid: number, rect: StageRect): Promise<void> {
     state.embedded = ok === true;
     state.external = ok !== true;
     if (ok && state.rect) place(state.rect);
+  } catch (e) {
+    // Finestra non trovata: lo stream resta nella finestra di Moonlight; il motivo va nel report
+    state.external = true;
+    reportError(e, 'stream.attach');
   } finally {
     state.attaching = false;
   }

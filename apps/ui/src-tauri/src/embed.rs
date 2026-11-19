@@ -45,6 +45,7 @@ mod win32 {
         pid: u32,
         stream: Option<isize>,
         others: Vec<isize>,
+        classes: Vec<String>,
     }
 
     unsafe extern "system" fn visit(hwnd: HWND, lparam: LPARAM) -> i32 {
@@ -61,21 +62,23 @@ mod win32 {
         // SAFETY: buffer locale di 64 caratteri, la lunghezza passata coincide
         let n = unsafe { GetClassNameW(hwnd, buf.as_mut_ptr(), buf.len() as i32) };
         let class = String::from_utf16_lossy(&buf[..n.max(0) as usize]);
-        // La finestra del flusso è di SDL; le altre sono la schermata Qt di avvio
-        if class == "SDL_app" {
-            s.stream = Some(hwnd as isize);
-        } else {
+        // Le finestre Qt sono la schermata di avvio; il flusso è l'altra (SDL, anche via
+        // sdl2-compat su SDL3, che può registrare una classe con un nome diverso da «SDL_app»)
+        if class.starts_with("Qt") {
             s.others.push(hwnd as isize);
+        } else if s.stream.is_none() || class.starts_with("SDL") {
+            s.stream = Some(hwnd as isize);
         }
+        s.classes.push(class);
         1
     }
 
-    /// Finestra del flusso del processo `pid` e le sue altre finestre visibili.
-    pub fn find(pid: u32) -> (Option<isize>, Vec<isize>) {
-        let mut s = Search { pid, stream: None, others: Vec::new() };
+    /// Finestra del flusso del processo `pid`, le sue altre finestre visibili e le classi viste.
+    pub fn find(pid: u32) -> (Option<isize>, Vec<isize>, Vec<String>) {
+        let mut s = Search { pid, stream: None, others: Vec::new(), classes: Vec::new() };
         // SAFETY: `visit` usa `s` solo durante la chiamata sincrona
         unsafe { EnumWindows(Some(visit), &mut s as *mut Search as LPARAM) };
-        (s.stream, s.others)
+        (s.stream, s.others, s.classes)
     }
 
     pub fn hide(hwnd: isize) {
@@ -135,18 +138,20 @@ pub async fn stream_attach(
     #[cfg(windows)]
     {
         let parent = window.hwnd().map_err(|e| e.to_string())?.0 as isize;
-        // Moonlight apre la finestra solo a connessione avvenuta: fino a 40 s
-        for _ in 0..400 {
-            let (stream, others) = win32::find(pid);
+        // Moonlight apre la finestra solo a connessione avvenuta: fino a 90 s
+        let mut seen = Vec::new();
+        for _ in 0..900 {
+            let (stream, others, classes) = win32::find(pid);
             if let Some(child) = stream {
                 others.into_iter().for_each(win32::hide);
                 win32::attach(parent, child, physical(&window, rect));
                 *state.0.lock().map_err(|e| e.to_string())? = Some(child);
                 return Ok(true);
             }
+            seen = classes;
             tokio::time::sleep(Duration::from_millis(100)).await;
         }
-        Ok(false)
+        Err(format!("finestra del flusso non trovata (finestre di Moonlight: {seen:?})"))
     }
     #[cfg(not(windows))]
     {

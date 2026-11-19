@@ -31,6 +31,9 @@ pub struct Host {
     dir: PathBuf,
     /// Input accesi nell'istanza in esecuzione.
     pub inputs: sunshine::Inputs,
+    /// Sunshine filtra gli input per ospite (patch di Falco): dispositivi sempre accesi nel
+    /// motore, permessi applicati al volo senza riavvio.
+    pub per_client: bool,
 }
 
 /// Cartella dei dati di Sunshine, creata se manca, con un percorso solo ASCII: Sunshine non
@@ -95,6 +98,7 @@ impl Host {
             gpu: None,
             dir: engine_dir(&data_dir.join("sunshine")),
             inputs: sunshine::Inputs::default(),
+            per_client: false,
         }
     }
 
@@ -257,6 +261,15 @@ impl Host {
         // «[data ora]: Error: messaggio» → «messaggio»
         let msg = line.split_once("]: ").map_or(line, |(_, m)| m);
         Some(msg.split_once(": ").map_or(msg, |(_, m)| m).trim().chars().take(200).collect())
+    }
+
+    /// Impronta dell'eseguibile di Sunshine: il supporto ai permessi per client si ricontrolla
+    /// quando cambia il file.
+    pub fn engine_fingerprint() -> Option<String> {
+        let bin = falco_engines::locate::sunshine()?;
+        let m = std::fs::metadata(bin).ok()?;
+        let at = m.modified().ok()?.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs();
+        Some(format!("{}-{at}", m.len()))
     }
 
     /// Il processo è ancora vivo?

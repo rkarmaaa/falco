@@ -12,7 +12,7 @@ import {
   Maximize2,
   Power,
   Radio,
-  Share2,
+  Link2,
   SlidersHorizontal,
 } from 'lucide-vue-next';
 import UserCard from './UserCard.vue';
@@ -21,6 +21,7 @@ import DeviceIcons from './DeviceIcons.vue';
 import UiAvatar from './UiAvatar.vue';
 import UiButton from './UiButton.vue';
 import ContextMenu from './ContextMenu.vue';
+import StreamVolume from './StreamVolume.vue';
 import { core, hostApi, leaveSession, setHostAvailable } from '@/stores/core';
 import { social } from '@/stores/social';
 import { attempt } from '@/stores/errors';
@@ -127,6 +128,7 @@ const applyInputs = () => attempt(t('errors.context.applyInputs'), () => hostApi
     <!-- Azioni -->
     <div class="actions">
       <template v-if="inSession">
+        <StreamVolume v-if="info?.pid" :pid="info.pid" />
         <UiButton variant="ghost" :size="40" :aria-pressed="stage.stats" :class="{ on: stage.stats }" @click="toggleStats">
           <Activity :size="17" :stroke-width="1.9" aria-hidden="true" />
           {{ t('session.stats') }}
@@ -147,14 +149,30 @@ const applyInputs = () => attempt(t('errors.context.applyInputs'), () => hostApi
           {{ t(`share.profiles.${currentProfile}.name`) }}
           <ChevronUp :size="14" :stroke-width="2" aria-hidden="true" />
         </UiButton>
-        <!-- Un solo pulsante: crea il link e avvia la condivisione; poi resta per ricopiarlo -->
-        <UiButton :variant="hosting || starting ? 'secondary' : 'primary'" :size="40" class="share" @click="openModal('share')">
-          <Share2 :size="17" :stroke-width="1.9" aria-hidden="true" />
-          {{ t('stream.share') }}
+        <!-- Interruttore: «Avvia» crea il link e condivide; acceso, un clic ferma -->
+        <UiButton
+          v-if="hosting"
+          variant="ghost"
+          :size="40"
+          icon
+          :title="t('stream.share')"
+          :aria-label="t('stream.share')"
+          @click="openModal('share')"
+        >
+          <Link2 :size="17" :stroke-width="1.9" aria-hidden="true" />
         </UiButton>
-        <UiButton v-if="hosting || starting" variant="danger" :size="40" :disabled="starting" @click="stop">
-          <Power :size="17" :stroke-width="2" aria-hidden="true" />
-          {{ t('bar.stop') }}
+        <UiButton
+          :variant="hosting || starting ? 'secondary' : 'primary'"
+          :size="40"
+          class="power"
+          :class="{ on: hosting }"
+          :aria-pressed="hosting"
+          :title="hosting ? t('bar.stopHint') : undefined"
+          :disabled="starting"
+          @click="hosting ? stop() : openModal('share')"
+        >
+          <Power :size="17" :stroke-width="2.2" aria-hidden="true" />
+          {{ hosting ? t('bar.on') : starting ? t('host.state.starting') : t('bar.start') }}
         </UiButton>
       </template>
     </div>
@@ -345,6 +363,15 @@ const applyInputs = () => attempt(t('errors.context.applyInputs'), () => hostApi
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+.power.on {
+  border-color: $live;
+
+  :deep(svg) {
+    color: $live;
+    filter: drop-shadow(0 0 6px $live-glow);
   }
 }
 </style>

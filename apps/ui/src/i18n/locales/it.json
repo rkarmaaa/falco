@@ -536,7 +536,10 @@
     "starting": "Avvio della condivisione…",
     "idle": "Condividi lo schermo per far entrare gli amici, o entra da chi sta giocando",
     "stop": "Interrompi",
-    "share": "Condividi"
+    "share": "Condividi",
+    "start": "Avvia",
+    "on": "Attivo",
+    "stopHint": "Clic per fermare la condivisione"
   },
   "guests": {
     "label": "Persone collegate",
@@ -583,7 +586,10 @@
     "tip": "Clic nello stream per usare mouse e tastiera, Ctrl+Alt+Maiusc+Z per liberarli",
     "endedLeft": "Sei uscito dallo stream di {name}.",
     "endedLost": "Lo stream di {name} si è interrotto.",
-    "rejoin": "Rientra"
+    "rejoin": "Rientra",
+    "mute": "Disattiva audio",
+    "unmute": "Riattiva audio",
+    "volume": "Volume dello stream"
   },
   "pill": {
     "label": "Azioni dello stream",
