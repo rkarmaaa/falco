@@ -122,8 +122,17 @@ pub async fn install(shared: &Shared) -> anyhow::Result<()> {
     std::fs::write(&file, &bytes)?;
     shared.lock().await.emit(events::UPDATE_PROGRESS, json!({ "step": "installing" }));
     if cfg!(windows) {
-        // NSIS in modalitÃ  silenziosa: l'installer chiude e riavvia Falco
-        std::process::Command::new(&file).arg("/S").spawn().context("installer non avviato")?;
+        // NSIS silenzioso: l'installer chiude e riavvia Falco. Il core gira come utente normale e
+        // l'installer è per tutto il PC: si avvia con «runas», Windows chiede la conferma (UAC)
+        let path = file.to_string_lossy().replace('\'', "''");
+        let script = format!("Start-Process -FilePath '{path}' -ArgumentList '/S' -Verb RunAs");
+        let status = std::process::Command::new("powershell")
+            .args(["-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", &script])
+            .status()
+            .context("installer non avviato")?;
+        if !status.success() {
+            bail!("aggiornamento annullato: serve confermare la richiesta di Windows");
+        }
     } else {
         let app = std::env::current_exe()?
             .ancestors()
