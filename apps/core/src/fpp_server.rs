@@ -233,6 +233,14 @@ async fn handshake(
     if !direct && s.node_of(peer.ip()).await.as_deref() != Some(req.node_id.as_str()) {
         return err(StatusCode::FORBIDDEN, "dispositivo non riconosciuto da Tailscale");
     }
+    // Prima il motore: se non parte, l'invito resta valido e l'ospite sa subito perché
+    if let Err(why) = crate::core::ensure_host_ready(&s.core).await {
+        let name = s.core.lock().await.me.as_ref().map(|m| m.name().to_owned()).unwrap_or_default();
+        return err(
+            StatusCode::SERVICE_UNAVAILABLE,
+            &format!("il PC di {name} non riesce ad avviare lo streaming ({why})"),
+        );
+    }
     let hash = falco_proto::invite::token_hash(&req.token);
     let consumed = s.core.lock().await.db.consume_invite(&hash, now()).ok().flatten();
     let Some((role, needs_approval)) = consumed else {

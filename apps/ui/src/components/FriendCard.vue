@@ -2,13 +2,13 @@
 // Card amico: stato, attività, azioni rapide. In gioco: bordo d'accento e alone (§12)
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { Play, Star } from 'lucide-vue-next';
+import { Check, Play, Send, Star } from 'lucide-vue-next';
 import UiAvatar from './UiAvatar.vue';
 import UiButton from './UiButton.vue';
 import type { Friend } from '@/ipc';
 
-const props = defineProps<{ friend: Friend; selected?: boolean }>();
-const emit = defineEmits<{ open: []; join: [] }>();
+const props = defineProps<{ friend: Friend; selected?: boolean; invited?: boolean }>();
+const emit = defineEmits<{ open: []; join: []; invite: [] }>();
 const { t } = useI18n();
 
 const ring = computed(() =>
@@ -17,6 +17,7 @@ const ring = computed(() =>
 const activity = computed(() => {
   const f = props.friend;
   if (f.state === 'playing') return t('friends.activity.playing', { n: f.slotsFree ?? 0 }, f.slotsFree ?? 0);
+  if (f.remote) return t('friends.notConnected');
   if (f.state === 'offline' && f.lastSeen) return t('friends.activity.seen', { when: ago(f.lastSeen) });
   return t(`friends.state.${f.state}`);
 });
@@ -43,6 +44,11 @@ function ago(ts: number): string {
       <UiButton v-if="friend.state === 'playing'" variant="primary" :size="32" @click="emit('join')">
         <Play :size="16" :stroke-width="1.75" aria-hidden="true" />
         {{ $t('friends.join') }}
+      </UiButton>
+      <UiButton v-else variant="ghost" :size="32" :disabled="invited" @click="emit('invite')">
+        <Check v-if="invited" :size="16" :stroke-width="1.75" aria-hidden="true" />
+        <Send v-else :size="16" :stroke-width="1.75" aria-hidden="true" />
+        {{ invited ? $t('friends.invited') : $t('friends.inviteOne') }}
       </UiButton>
     </div>
   </li>

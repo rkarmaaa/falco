@@ -2,6 +2,23 @@
 
 Formato [Keep a Changelog](https://keepachangelog.com/it/1.1.0/), versioni [SemVer](https://semver.org/lang/it/).
 
+## [1.0.0-rc.3] - 2026-11-19 · Beta
+
+### Aggiunto
+
+- «Invita» su ogni amico: l'invito arriva come notifica con «Entra», anche a chi è offline (lo riceve appena apre Falco).
+
+### Corretto
+
+- Gli amici registrati sul server ma mai collegati a questo PC non comparivano in «Amici»; il gruppo «Offline» ora è aperto.
+- Sunshine non partiva se il percorso della cartella utente aveva lettere accentate.
+- Se Sunshine rifiuta la configurazione, l'errore riporta il suo messaggio invece di «il motore host non risponde».
+
+- Se il motore di streaming dell'host non parte, chi entra riceve subito il motivo invece di aspettare due minuti, e l'invito resta valido.
+- L'errore «il motore host non risponde» ora riporta il motivo scritto da Sunshine; «Condividi» riparte da capo al tentativo successivo.
+- Un link di stream aperto due volte non consuma più l'invito con un secondo tentativo.
+- Sulla rete Falco, se l'amico non è collegato alla rete l'errore arriva in un minuto e dice cosa fare.
+
 ## [1.0.0-rc.2] - 2026-11-18 · Beta
 
 ### Aggiunto

@@ -133,6 +133,8 @@ export interface Friend {
   lastSeen: number | null;
   role: Role | null;
   devices: readonly FriendDevice[];
+  /** Amico registrato sul Falco Hub ma mai collegato a questo PC. */
+  remote?: boolean;
 }
 
 export interface MyProfile {
@@ -182,6 +184,8 @@ export interface FriendRequest {
 export interface HubRequests {
   incoming: FriendRequest[];
   outgoing: FriendRequest[];
+  /** Inviti diretti ricevuti dagli amici. */
+  invites: FriendRequest[];
 }
 
 /** Richiesta accettata o link di stream aperto: invito da completare con l'handshake. */

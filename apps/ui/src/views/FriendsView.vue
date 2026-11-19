@@ -9,8 +9,8 @@ import EmptyState from '@/components/EmptyState.vue';
 import UiButton from '@/components/UiButton.vue';
 import FriendCard from '@/components/FriendCard.vue';
 import FriendDetail from '@/components/FriendDetail.vue';
-import { social } from '@/stores/social';
-import { joinFriend } from '@/stores/core';
+import { allFriends, inviteFriend, social } from '@/stores/social';
+import { core, joinFriend, setHostAvailable } from '@/stores/core';
 import { attempt } from '@/stores/errors';
 import { openAccept, openModal } from '@/stores/ui';
 import type { Friend } from '@/ipc';
@@ -21,7 +21,7 @@ const selectedId = ref<string | null>(null);
 
 const filtered = computed(() => {
   const q = query.value.trim().toLowerCase();
-  return social.friends.filter((f) => !q || f.name.toLowerCase().includes(q) || f.tag.toLowerCase().includes(q));
+  return allFriends().filter((f) => !q || f.name.toLowerCase().includes(q) || f.tag.toLowerCase().includes(q));
 });
 const groups = computed(() => ({
   playing: filtered.value.filter((f) => f.state === 'playing'),
@@ -29,6 +29,24 @@ const groups = computed(() => ({
   offline: filtered.value.filter((f) => f.state === 'offline'),
 }));
 const selected = computed(() => social.friends.find((f) => f.id === selectedId.value) ?? null);
+
+// «Invita» con un clic: avvia la condivisione e recapita l'invito tramite il Falco Hub
+const invited = ref(new Set<string>());
+async function invite(f: Friend): Promise<void> {
+  const ok = await attempt(t('errors.context.invite', { name: f.name }), () => inviteFriend(f.id).then(() => true), { name: f.name });
+  if (!ok) return;
+  invited.value = new Set(invited.value).add(f.id);
+  setTimeout(() => {
+    const next = new Set(invited.value);
+    next.delete(f.id);
+    invited.value = next;
+  }, 4000);
+  if (core.host.state === 'stopped' || core.host.state === 'error') void attempt(t('errors.context.share'), () => setHostAvailable(true));
+}
+
+function open(f: Friend): void {
+  if (!f.remote) selectedId.value = f.id;
+}
 
 function enter(f: Friend): void {
   void attempt(t('errors.context.join', { name: f.name }), () => joinFriend(f.id, f.name), { name: f.name });
@@ -53,7 +71,7 @@ function enter(f: Friend): void {
       <FriendRequests :requests="social.friendRequests.incoming" />
     </section>
 
-    <EmptyState v-if="social.friends.length === 0" :title="$t('friends.emptyTitle')" :body="$t('friends.emptyBody')">
+    <EmptyState v-if="allFriends().length === 0" :title="$t('friends.emptyTitle')" :body="$t('friends.emptyBody')">
       <UiButton variant="secondary" :size="48" @click="openModal('addFriend')">{{ $t('friends.emptyAction') }}</UiButton>
     </EmptyState>
 
@@ -67,19 +85,19 @@ function enter(f: Friend): void {
       <section v-if="groups.playing.length" class="group">
         <h2 class="label">{{ $t('friends.groups.playing') }}</h2>
         <ul class="list">
-          <FriendCard v-for="f in groups.playing" :key="f.id" :friend="f" :selected="f.id === selectedId" @open="selectedId = f.id" @join="enter(f)" />
+          <FriendCard v-for="f in groups.playing" :key="f.id" :friend="f" :selected="f.id === selectedId" :invited="invited.has(f.id)" @open="open(f)" @join="enter(f)" @invite="invite(f)" />
         </ul>
       </section>
       <section v-if="groups.online.length" class="group">
         <h2 class="label">{{ $t('friends.groups.online') }}</h2>
         <ul class="list">
-          <FriendCard v-for="f in groups.online" :key="f.id" :friend="f" :selected="f.id === selectedId" @open="selectedId = f.id" @join="enter(f)" />
+          <FriendCard v-for="f in groups.online" :key="f.id" :friend="f" :selected="f.id === selectedId" :invited="invited.has(f.id)" @open="open(f)" @join="enter(f)" @invite="invite(f)" />
         </ul>
       </section>
-      <details v-if="groups.offline.length" class="group">
+      <details v-if="groups.offline.length" class="group" open>
         <summary class="label">{{ $t('friends.groups.offline') }} · {{ groups.offline.length }}</summary>
         <ul class="list">
-          <FriendCard v-for="f in groups.offline" :key="f.id" :friend="f" :selected="f.id === selectedId" @open="selectedId = f.id" @join="enter(f)" />
+          <FriendCard v-for="f in groups.offline" :key="f.id" :friend="f" :selected="f.id === selectedId" :invited="invited.has(f.id)" @open="open(f)" @join="enter(f)" @invite="invite(f)" />
         </ul>
       </details>
     </template>

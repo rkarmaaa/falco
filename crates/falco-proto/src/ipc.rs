@@ -61,6 +61,10 @@ pub mod methods {
     pub const HUB_DECLINE: &str = "hub.decline";
     pub const HUB_SHARE_STREAM: &str = "hub.shareStream";
     pub const HUB_JOIN: &str = "hub.join";
+    pub const HUB_FRIENDS: &str = "hub.friends";
+    pub const HUB_INVITE_FRIEND: &str = "hub.inviteFriend";
+    pub const HUB_TAKE_INVITE: &str = "hub.takeInvite";
+    pub const HUB_DECLINE_INVITE: &str = "hub.declineInvite";
     pub const NET_JOIN_FALCO: &str = "net.joinFalco";
     pub const APP_OPEN_LINK: &str = "app.openLink";
     pub const DEBUG_REPORT: &str = "debug.report";

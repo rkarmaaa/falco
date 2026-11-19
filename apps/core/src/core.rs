@@ -390,21 +390,61 @@ pub async fn set_available(shared: Shared, available: bool) {
     c.publish_host();
     let Some(api) = c.host.api_any() else { return };
     drop(c);
-    let ready = crate::host::Host::wait_ready(api).await;
+    // Fino a 90 s, ma se il processo muore si smette subito di aspettare
+    let mut ready = false;
+    for _ in 0..90 {
+        if crate::host::Host::api_ready(api.clone()).await {
+            ready = true;
+            break;
+        }
+        if !shared.lock().await.host.alive() {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    }
     let mut c = shared.lock().await;
     if c.host_available {
         let alive = c.host.alive();
         c.guests.clear();
         c.input_monitor = None;
-        c.host.state = if ready && alive {
-            crate::host::HostState::Ready
-        } else {
-            crate::host::HostState::Error("il motore host non risponde".into())
-        };
+        if !(ready && alive) {
+            // Processo fermato: il prossimo «Condividi» riparte da capo invece di restare appeso
+            let why = c.host.failure_reason();
+            c.host.stop().await;
+            c.host_available = false;
+            let msg = match why {
+                Some(w) => format!("il motore host non è partito: {w}"),
+                None => "il motore host non risponde".into(),
+            };
+            c.record_error("host.start", &msg, None);
+            c.host.state = crate::host::HostState::Error(msg);
+            c.publish_host();
+            return;
+        }
+        c.host.state = crate::host::HostState::Ready;
         c.publish_host();
         drop(c);
         // Client degli amici allineati ai permessi appena l'host è pronto
         crate::access::apply_all(&shared).await;
+    }
+}
+
+/// Motore host pronto prima di accettare qualcuno (handshake): lo avvia se serve.
+/// Entro 75 s, meno dell'attesa dell'ospite, così l'errore arriva a lui invece di un timeout.
+pub async fn ensure_host_ready(shared: &Shared) -> Result<(), String> {
+    use crate::host::HostState;
+    if matches!(shared.lock().await.host.state, HostState::Ready) {
+        return Ok(());
+    }
+    let started = tokio::time::timeout(
+        std::time::Duration::from_secs(75),
+        set_available(shared.clone(), true),
+    )
+    .await;
+    match (&shared.lock().await.host.state, started) {
+        (HostState::Ready, _) => Ok(()),
+        (HostState::Error(m), _) => Err(m.clone()),
+        _ => Err("il motore host è troppo lento ad avviarsi".into()),
     }
 }
 

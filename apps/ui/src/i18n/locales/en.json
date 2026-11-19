@@ -55,7 +55,10 @@
       "playing": "Playing · no free seats | Playing · {n} free seat | Playing · {n} free seats",
       "seen": "Seen {when}"
     },
-    "invitePlay": "Invite to play"
+    "invitePlay": "Invite to play",
+    "notConnected": "Not connected yet: invite them",
+    "invited": "Invited",
+    "inviteOne": "Invite"
   },
   "host": {
     "title": "Host",
@@ -248,7 +251,8 @@
       "hostLists": "Loading guests and devices",
       "pairing": "Pairing the device",
       "device": "Managing the device",
-      "joinLink": "Open the stream link"
+      "joinLink": "Open the stream link",
+      "invite": "Invite {name}"
     }
   },
   "ping": {

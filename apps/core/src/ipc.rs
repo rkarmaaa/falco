@@ -401,6 +401,10 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
             let p: Link = params(req.params)?;
             // Valida subito il link, poi prosegue in background con eventi invite.progress
             crate::invites::preview(&p.link).map_err(anyhow_err(codes::INVALID_PARAMS))?;
+            if !crate::invites::begin_accept(&p.link) {
+                // Già in corso (link aperto due volte): i progressi arrivano dal primo tentativo
+                return Ok(Value::Null);
+            }
             let core2 = core.clone();
             tokio::spawn(async move {
                 if let Err(e) = crate::invites::accept(core2.clone(), p.link).await {
@@ -566,6 +570,26 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
             let p: HubText = params(req.params)?;
             let a = crate::hub::join(core, &p.text).await.map_err(anyhow_err(codes::INTERNAL))?;
             return serde_json::to_value(a).map_err(internal);
+        }
+        methods::HUB_FRIENDS => {
+            let f = crate::hub::friends(core).await.map_err(anyhow_err(codes::INTERNAL))?;
+            return serde_json::to_value(f).map_err(internal);
+        }
+        methods::HUB_INVITE_FRIEND => {
+            let p: HubId = params(req.params)?;
+            crate::hub::invite_friend(core, &p.id).await.map_err(anyhow_err(codes::INTERNAL))?;
+            return Ok(Value::Null);
+        }
+        methods::HUB_TAKE_INVITE => {
+            let p: HubId = params(req.params)?;
+            let a =
+                crate::hub::take_invite(core, &p.id).await.map_err(anyhow_err(codes::INTERNAL))?;
+            return serde_json::to_value(a).map_err(internal);
+        }
+        methods::HUB_DECLINE_INVITE => {
+            let p: HubId = params(req.params)?;
+            crate::hub::decline_invite(core, &p.id).await.map_err(anyhow_err(codes::INTERNAL))?;
+            return Ok(Value::Null);
         }
         methods::NET_JOIN_FALCO => {
             crate::hub::join_network(core).await.map_err(anyhow_err(codes::INTERNAL))?;

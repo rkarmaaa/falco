@@ -4,7 +4,8 @@
 import UiButton from './UiButton.vue';
 import UiAvatar from './UiAvatar.vue';
 import ErrorNotice from './ErrorNotice.vue';
-import { answerKnock, answerRequest, dismissPlayInvite, social } from '@/stores/social';
+import { answerKnock, answerRequest, declineInvite, dismissPlayInvite, social } from '@/stores/social';
+import { acceptDirectInvite } from '@/stores/ui';
 import { joinFriend } from '@/stores/core';
 import { attempt, dismiss, errors } from '@/stores/errors';
 import { useI18n } from 'vue-i18n';
@@ -44,6 +45,14 @@ function join(id: string, name: string): void {
       <div class="acts">
         <UiButton variant="ghost" :size="32" @click="dismissPlayInvite(p.friendId)">{{ t('knock.later') }}</UiButton>
         <UiButton variant="primary" :size="32" @click="join(p.friendId, p.name)">{{ t('friends.join') }}</UiButton>
+      </div>
+    </div>
+    <div v-for="i in social.friendRequests.invites" :key="`h${i.id}`" class="toast request" role="alert">
+      <UiAvatar :name="i.user.name" :size="32" />
+      <span class="text">{{ t('knock.invited', { name: i.user.name }) }}</span>
+      <div class="acts">
+        <UiButton variant="ghost" :size="32" @click="attempt(t('errors.context.request'), () => declineInvite(i.id))">{{ t('requests.decline') }}</UiButton>
+        <UiButton variant="primary" :size="32" @click="acceptDirectInvite(i.id, i.user.name)">{{ t('friends.join') }}</UiButton>
       </div>
     </div>
     <div v-for="r in social.requests" :key="`r${r.requestId}`" class="toast request" role="alert">

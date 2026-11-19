@@ -1,6 +1,6 @@
 // Modali dell'app: uno alla volta, apribili da qualsiasi vista o componente.
 import { reactive, readonly } from 'vue';
-import { acceptFriend, findInviteLink, redeemStream } from './social';
+import { acceptFriend, findInviteLink, redeemStream, takeInvite } from './social';
 import { attempt } from './errors';
 import { i18n } from '@/i18n';
 
@@ -42,6 +42,12 @@ export function openAccept(link: string | null = null, opts: Partial<Omit<Accept
 export async function acceptFriendRequest(id: string, name: string): Promise<void> {
   const r = await attempt(t('errors.context.request'), () => acceptFriend(id), { name });
   if (r) openAccept(r.invite, { auto: true });
+}
+
+/** Invito diretto di un amico: si entra subito nella sua sessione. */
+export async function acceptDirectInvite(id: string, name: string): Promise<void> {
+  const r = await attempt(t('errors.context.join', { name }), () => takeInvite(id), { name });
+  if (r) openAccept(r.invite, { auto: true, joinHost: { id: r.user.id, name: r.user.name } });
 }
 
 /** Link di stream (`falco://join/…` o `https://…/j/…`): si entra subito nella sessione dell'host. */

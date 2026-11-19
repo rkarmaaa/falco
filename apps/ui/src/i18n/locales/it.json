@@ -55,7 +55,10 @@
       "playing": "Sta giocando · nessun posto libero | Sta giocando · {n} posto libero | Sta giocando · {n} posti liberi",
       "seen": "Visto {when}"
     },
-    "invitePlay": "Invitalo a giocare"
+    "invitePlay": "Invitalo a giocare",
+    "notConnected": "Non ancora collegato: invitalo",
+    "invited": "Invitato",
+    "inviteOne": "Invita"
   },
   "host": {
     "title": "Ospita",
@@ -248,7 +251,8 @@
       "hostLists": "Caricare ospiti e dispositivi",
       "pairing": "Associare il dispositivo",
       "device": "Gestire il dispositivo",
-      "joinLink": "Aprire il link di stream"
+      "joinLink": "Aprire il link di stream",
+      "invite": "Invitare {name}"
     }
   },
   "ping": {

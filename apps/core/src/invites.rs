@@ -240,8 +240,31 @@ fn progress(core: &crate::core::Core, step: &str, ok: Option<bool>) {
 }
 
 /// Lato ospite: Tailscale → condivisione → handshake → pairing (§6 «Accettazione»).
+/// Inviti in accettazione: lo stesso link aperto due volte non parte due volte.
+static ACCEPTING: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+
+/// Segna l'invito come in corso; `false` se lo era già.
+pub fn begin_accept(link: &str) -> bool {
+    let mut a = ACCEPTING.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    if a.iter().any(|l| l == link) {
+        return false;
+    }
+    a.push(link.to_owned());
+    true
+}
+
+fn end_accept(link: &str) {
+    ACCEPTING.lock().unwrap_or_else(std::sync::PoisonError::into_inner).retain(|l| l != link);
+}
+
 pub async fn accept(core: Shared, link: String) -> anyhow::Result<()> {
-    let p = invite::decode(&link, now())?;
+    let out = accept_inner(core, &link).await;
+    end_accept(&link);
+    out
+}
+
+async fn accept_inner(core: Shared, link: &str) -> anyhow::Result<()> {
+    let p = invite::decode(link, now())?;
     let ts = core.lock().await.net.clone();
 
     // 1. Tailscale installato e collegato
@@ -263,8 +286,11 @@ pub async fn accept(core: Shared, link: String) -> anyhow::Result<()> {
         if !p.ts.invite_url.is_empty() {
             let _ = opener::open_browser(&p.ts.invite_url);
         }
+        // Rete Falco: l'host è visibile in pochi secondi, oppure non è proprio nella rete
+        let falco = core.lock().await.config.config().network.provider
+            == falco_store::config::Provider::Falco;
         let mut found = false;
-        for _ in 0..150 {
+        for _ in 0..if falco { 30 } else { 150 } {
             tokio::time::sleep(Duration::from_secs(2)).await;
             if ts.status().await.is_ok_and(|n| visible(&n)) {
                 found = true;
@@ -273,6 +299,12 @@ pub async fn accept(core: Shared, link: String) -> anyhow::Result<()> {
         }
         if !found {
             progress(&*core.lock().await, "share", Some(false));
+            if falco {
+                bail!(
+                    "il PC di {} non è sulla rete Falco: chiedigli di aprire Impostazioni → Rete → «Collega alla rete Falco» e di mandarti un link nuovo",
+                    p.host.name
+                );
+            }
             bail!("la condivisione su Tailscale non è stata accettata");
         }
     }

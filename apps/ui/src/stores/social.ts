@@ -7,6 +7,7 @@ import {
   type HubAccepted,
   type HubInfo,
   type HubRequests,
+  type HubUser,
   type StreamLink,
   type InvitePreview,
   type InviteRow,
@@ -24,6 +25,8 @@ interface SocialStore {
   /** Codice amico, link e richieste d'amicizia dal Falco Hub. */
   hub: HubInfo;
   friendRequests: HubRequests;
+  /** Amici registrati sul Falco Hub (anche mai collegati a questo PC). */
+  hubFriends: HubUser[];
   friends: Friend[];
   invites: InviteRow[];
   /** Avanzamento dell'accettazione di un invito (lato ospite). */
@@ -46,7 +49,8 @@ const state = reactive<SocialStore>({
   profile: { exists: false },
   profileLoaded: false,
   hub: { configured: false, code: null, friendLink: null, network: false },
-  friendRequests: { incoming: [], outgoing: [] },
+  friendRequests: { incoming: [], outgoing: [], invites: [] },
+  hubFriends: [],
   friends: [],
   invites: [],
   accept: null,
@@ -139,7 +143,11 @@ export async function initSocial(): Promise<void> {
       clearTimeout(activityTimer);
       activityTimer = setTimeout(() => (state.activity = { keyboard: false, mouse: false, controller: false }), 450);
     }
-    if (e.method === 'hub.requests') state.friendRequests = p as unknown as HubRequests;
+    if (e.method === 'hub.requests') {
+      const r = p as unknown as HubRequests;
+      state.friendRequests = { ...r, invites: r.invites ?? [] };
+      void loadHub();
+    }
     if (e.method === 'play.invite') state.playInvites.push(p as SocialStore['playInvites'][number]);
   });
   await reload();
@@ -172,8 +180,53 @@ export async function rename(name: string): Promise<void> {
 export async function loadHub(): Promise<void> {
   state.hub = await rpc<HubInfo>('hub.info');
   if (state.hub.configured && state.profile.exists) {
-    state.friendRequests = await rpc<HubRequests>('hub.requests').catch(() => state.friendRequests);
+    const [requests, friends] = await Promise.all([
+      rpc<HubRequests>('hub.requests').catch(() => state.friendRequests),
+      rpc<HubUser[]>('hub.friends').catch(() => state.hubFriends),
+    ]);
+    state.friendRequests = { ...requests, invites: requests.invites ?? [] };
+    state.hubFriends = friends;
   }
+}
+
+/** Amici di questo PC più quelli solo sul Hub (offline, da collegare con un invito). */
+export function allFriends(): Friend[] {
+  const local = new Set(state.friends.map((f) => f.id));
+  const remote = state.hubFriends
+    .filter((u) => !local.has(u.id))
+    .map<Friend>((u) => ({
+      id: u.id,
+      tag: `#${u.code.slice(0, 4)}-${u.code.slice(4)}`,
+      name: u.name,
+      accent: '#6e7eff',
+      avatarUrl: null,
+      state: 'offline',
+      canJoin: false,
+      slotsFree: null,
+      favorite: false,
+      lastSeen: null,
+      role: null,
+      devices: [],
+      remote: true,
+    }));
+  return [...state.friends, ...remote];
+}
+
+/** «Invita»: l'invito arriva all'amico come notifica, anche se ora è offline. */
+export async function inviteFriend(id: string): Promise<void> {
+  await rpc('hub.inviteFriend', { id });
+}
+
+/** Invito diretto ricevuto: il Hub lo consegna una volta sola. */
+export async function takeInvite(id: string): Promise<HubAccepted> {
+  const r = await rpc<HubAccepted>('hub.takeInvite', { id });
+  state.friendRequests.invites = state.friendRequests.invites.filter((x) => x.id !== id);
+  return r;
+}
+
+export async function declineInvite(id: string): Promise<void> {
+  await rpc('hub.declineInvite', { id });
+  state.friendRequests.invites = state.friendRequests.invites.filter((x) => x.id !== id);
 }
 
 /** Richiesta d'amicizia per codice (`K7QM-2XPA`) o link. */
@@ -194,7 +247,11 @@ export async function acceptFriend(id: string): Promise<HubAccepted> {
 export async function declineFriend(id: string): Promise<void> {
   await rpc('hub.decline', { id });
   const keep = (x: { id: string }) => x.id !== id;
-  state.friendRequests = { incoming: state.friendRequests.incoming.filter(keep), outgoing: state.friendRequests.outgoing.filter(keep) };
+  state.friendRequests = {
+    incoming: state.friendRequests.incoming.filter(keep),
+    outgoing: state.friendRequests.outgoing.filter(keep),
+    invites: state.friendRequests.invites,
+  };
 }
 
 /** Link corto dello stream; senza Hub, il link di invito firmato. */

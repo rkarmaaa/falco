@@ -99,6 +99,17 @@ pub struct FriendRequest {
 pub struct Requests {
     pub incoming: Vec<FriendRequest>,
     pub outgoing: Vec<FriendRequest>,
+    /// Inviti diretti ricevuti dagli amici («Invita» dalla lista).
+    #[serde(default)]
+    pub invites: Vec<FriendRequest>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DirectInvite {
+    pub to: String,
+    pub invite: String,
+    pub expires_at: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -8,7 +8,8 @@ use std::time::Duration;
 use anyhow::{Context, bail};
 use falco_net::NetworkProvider;
 use falco_proto::hub::{
-    self, Accepted, CreateLink, HubLink, Link, NetKey, Register, Requests, SendRequest,
+    self, Accepted, CreateLink, DirectInvite, HubLink, Link, NetKey, Register, Requests,
+    SendRequest, UserRef,
 };
 use falco_proto::ipc::{TailscaleState, events};
 use falco_proto::{Identity, Role, fpp};
@@ -202,6 +203,40 @@ pub async fn join(core: &Shared, text: &str) -> anyhow::Result<Accepted> {
     checked(request(core, "POST", format!("/v1/links/{code}/redeem"), None).await?)
 }
 
+/// Amici registrati sul Hub, anche quelli mai collegati a questo PC.
+pub async fn friends(core: &Shared) -> anyhow::Result<Vec<UserRef>> {
+    request(core, "GET", "/v1/friends".into(), None).await
+}
+
+/// «Invita» dalla lista: invito a uso singolo (24 h) recapitato dal Hub, anche a chi è offline.
+pub async fn invite_friend(core: &Shared, id: &str) -> anyhow::Result<()> {
+    let created = invites::create(
+        core,
+        CreateParams { role: Role::Spectator, validity_hours: 24, uses: 1, manual_share_url: None },
+    )
+    .await?;
+    let body = serde_json::to_value(DirectInvite {
+        to: id.to_owned(),
+        invite: created.link,
+        expires_at: created.expires_at,
+    })?;
+    let _: Value = request(core, "POST", "/v1/invites".into(), Some(body)).await?;
+    Ok(())
+}
+
+/// Invito ricevuto: il Hub lo consegna una volta sola.
+pub async fn take_invite(core: &Shared, id: &str) -> anyhow::Result<Accepted> {
+    let out = request(core, "POST", format!("/v1/invites/{id}/take"), None).await;
+    poke();
+    checked(out?)
+}
+
+pub async fn decline_invite(core: &Shared, id: &str) -> anyhow::Result<()> {
+    let _: Value = request(core, "POST", format!("/v1/invites/{id}/decline"), None).await?;
+    poke();
+    Ok(())
+}
+
 /// Amicizia tolta anche dal Hub. Senza Hub non c'è niente da togliere.
 pub async fn unfriend(core: &Shared, id: &str) {
     if ctx(core).await.is_err() {
@@ -267,6 +302,7 @@ async fn auto_join(core: &Shared) {
 /// Ciclo delle richieste: 20 s a finestra aperta, 2 minuti in tray. Notifica le nuove.
 pub async fn run(core: Shared) {
     let mut seen: Option<HashSet<String>> = None;
+    let mut seen_invites: Option<HashSet<String>> = None;
     let mut last = Requests::default();
     loop {
         auto_join(&core).await;
@@ -283,6 +319,17 @@ pub async fn run(core: Shared) {
                             );
                         }
                     }
+                    let invite_ids: HashSet<String> =
+                        r.invites.iter().map(|x| x.id.clone()).collect();
+                    if let Some(old) = &seen_invites {
+                        for x in r.invites.iter().filter(|x| !old.contains(&x.id)) {
+                            c.notify_user(
+                                &format!("{} ti invita a guardare", x.user.name),
+                                "Apri Falco ed entra con un clic.",
+                            );
+                        }
+                    }
+                    seen_invites = Some(invite_ids);
                     if r != last {
                         c.emit(events::HUB_REQUESTS, serde_json::to_value(&r).unwrap_or_default());
                         last = r;

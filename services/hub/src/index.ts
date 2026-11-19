@@ -107,8 +107,57 @@ async function listRequests({ env, me }: Ctx): Promise<Response> {
       .all<{ id: string; createdAt: number; uid: string; name: string; code: string }>();
   const shape = (rows: { results: { id: string; createdAt: number; uid: string; name: string; code: string }[] }) =>
     rows.results.map((r) => ({ id: r.id, createdAt: r.createdAt, user: { id: r.uid, name: r.name, code: r.code } }));
-  const [incoming, outgoing] = await Promise.all([q('to_id', 'from_id'), q('from_id', 'to_id')]);
-  return json({ incoming: shape(incoming), outgoing: shape(outgoing) });
+  const invites = env.DB.prepare(
+    `SELECT i.id, i.created_at AS createdAt, u.id AS uid, u.name, u.code FROM invites i
+     JOIN users u ON u.id = i.from_id WHERE i.to_id = ?1 AND i.expires_at > ?2 ORDER BY i.created_at DESC`,
+  )
+    .bind(me, now())
+    .all<{ id: string; createdAt: number; uid: string; name: string; code: string }>();
+  const [incoming, outgoing, inv] = await Promise.all([q('to_id', 'from_id'), q('from_id', 'to_id'), invites]);
+  return json({ incoming: shape(incoming), outgoing: shape(outgoing), invites: shape(inv) });
+}
+
+async function listFriends({ env, me }: Ctx): Promise<Response> {
+  const rows = await env.DB.prepare(
+    `SELECT u.id, u.name, u.code FROM friendships f
+     JOIN users u ON u.id = CASE WHEN f.a = ?1 THEN f.b ELSE f.a END
+     WHERE f.a = ?1 OR f.b = ?1 ORDER BY u.name`,
+  )
+    .bind(me)
+    .all<UserRef>();
+  return json(rows.results);
+}
+
+/** Invito diretto a un amico: gli arriva come notifica, anche se ora è offline. */
+async function inviteFriend({ env, me, raw }: Ctx): Promise<Response> {
+  const req = body<{ to?: string; invite?: string; expiresAt?: number }>(raw);
+  if (!req.to || !req.invite?.startsWith('falco://invite/') || req.invite.length > 4096) throw new HttpError(400, 'invito non valido');
+  if (!(await areFriends(env.DB, me, req.to))) throw new HttpError(403, 'potete invitarvi solo tra amici');
+  const exp = Math.min(Number(req.expiresAt) || now() + 86400, now() + MAX_LINK_TTL_S);
+  const id = randomCode();
+  await env.DB.prepare(
+    `INSERT INTO invites (id, from_id, to_id, invite, created_at, expires_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+     ON CONFLICT(from_id, to_id) DO UPDATE SET id = excluded.id, invite = excluded.invite,
+       created_at = excluded.created_at, expires_at = excluded.expires_at`,
+  )
+    .bind(id, me, req.to, req.invite, now(), exp)
+    .run();
+  return json({ id });
+}
+
+/** Invito ricevuto: lo restituisce una volta sola. */
+async function takeInvite({ env, me }: Ctx, id: string): Promise<Response> {
+  const r = await env.DB.prepare('SELECT from_id, invite FROM invites WHERE id = ?1 AND to_id = ?2 AND expires_at > ?3')
+    .bind(id, me, now())
+    .first<{ from_id: string; invite: string }>();
+  if (!r) throw new HttpError(404, 'invito scaduto o già usato');
+  await env.DB.prepare('DELETE FROM invites WHERE id = ?1').bind(id).run();
+  return json({ invite: r.invite, user: await user(env.DB, r.from_id) });
+}
+
+async function dropInvite({ env, me }: Ctx, id: string): Promise<Response> {
+  await env.DB.prepare('DELETE FROM invites WHERE id = ?1 AND (to_id = ?2 OR from_id = ?2)').bind(id, me).run();
+  return json({});
 }
 
 async function sendRequest({ env, me, raw }: Ctx): Promise<Response> {
@@ -206,7 +255,11 @@ const routes: [string, RegExp, Handler, boolean][] = [
   ['POST', /^\/v1\/requests$/, sendRequest, true],
   ['POST', /^\/v1\/requests\/([A-Z2-7]{8})\/accept$/, acceptRequest, true],
   ['POST', /^\/v1\/requests\/([A-Z2-7]{8})\/decline$/, dropRequest, true],
+  ['GET', /^\/v1\/friends$/, listFriends, true],
   ['DELETE', /^\/v1\/friends\/([A-Z2-7]{52})$/, unfriend, true],
+  ['POST', /^\/v1\/invites$/, inviteFriend, true],
+  ['POST', /^\/v1\/invites\/([A-Z2-7]{8})\/take$/, takeInvite, true],
+  ['POST', /^\/v1\/invites\/([A-Z2-7]{8})\/decline$/, dropInvite, true],
   ['POST', /^\/v1\/links$/, createLink, true],
   ['DELETE', /^\/v1\/links\/([A-Z2-7]{8})$/, revokeLink, true],
   ['POST', /^\/v1\/links\/([A-Z2-7]{8})\/redeem$/, redeemLink, true],
@@ -271,6 +324,7 @@ export default {
     await ensureSchema(env.DB);
     await env.DB.batch([
       env.DB.prepare('DELETE FROM links WHERE expires_at <= ?1').bind(now()),
+      env.DB.prepare('DELETE FROM invites WHERE expires_at <= ?1').bind(now()),
       env.DB.prepare('DELETE FROM requests WHERE created_at <= ?1').bind(now() - REQUEST_TTL_S),
     ]);
   },

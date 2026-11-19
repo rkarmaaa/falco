@@ -36,7 +36,9 @@ const onboarding = computed(() => core.ready && core.connected && social.profile
 const inSession = computed(() => core.session.phase !== 'idle');
 const onStage = computed(() => inSession.value && section.value === 'stream');
 const hasToasts = computed(
-  () => errors.toasts.length + social.knocks.length + social.requests.length + social.playInvites.length > 0 || !!toast.value,
+  () =>
+    errors.toasts.length + social.knocks.length + social.requests.length + social.playInvites.length + social.friendRequests.invites.length > 0 ||
+    !!toast.value,
 );
 
 watchEffect(() => setLocale(core.config?.general.language ?? 'it'));

@@ -7,7 +7,7 @@ export function createMockTransport(): Transport {
   const emit = (method: string, params: unknown) => listeners.forEach((cb) => cb({ method, params }));
 
   const state: StateSnapshot = {
-    version: '1.0.0-rc.2',
+    version: '1.0.0-rc.3',
     milestone: 'M6',
     host: { state: 'stopped' },
     status: 'online',
@@ -91,6 +91,7 @@ export function createMockTransport(): Transport {
   let hubRequests = {
     incoming: [{ id: 'r1', user: { id: 'G', name: 'Giulia', code: 'GQ4M2ZTA' }, createdAt: Math.floor(Date.now() / 1000) - 600 }],
     outgoing: [] as { id: string; user: { id: string; name: string; code: string }; createdAt: number }[],
+    invites: [] as { id: string; user: { id: string; name: string; code: string }; createdAt: number }[],
   };
 
   const handlers: Record<string, (p: any) => unknown> = {
@@ -105,7 +106,7 @@ export function createMockTransport(): Transport {
     ],
     'config.export': () => ({ text: 'schema = 1' }),
     'config.import': () => null,
-    'update.check': () => ({ available: { version: '1.0.0', notes: 'Prima versione stabile.' }, current: '1.0.0-rc.2', enabled: true }),
+    'update.check': () => ({ available: { version: '1.0.0', notes: 'Prima versione stabile.' }, current: '1.0.0-rc.3', enabled: true }),
     'update.install': () => null,
     'tailscale.install': () => null,
     'config.set': ({ key, value }: { key: string; value: unknown }) => {
@@ -188,6 +189,10 @@ export function createMockTransport(): Transport {
     },
     'hub.info': () => ({ configured: true, code: 'K7QM-2XPA', friendLink: 'https://hub.falco.test/a/K7QM2XPA', network: true }),
     'hub.requests': () => structuredClone(hubRequests),
+    'hub.friends': () => [{ id: 'M', name: 'MANUZZO', code: '7UWUUTTW' }],
+    'hub.inviteFriend': () => null,
+    'hub.takeInvite': () => ({ invite: 'falco://invite/KLUv_WBmAJUJAMZURyEA8zb8P8uPmqmBSLdemo', user: { id: 'L', name: 'Luca', code: 'AXBR7FQZ' } }),
+    'hub.declineInvite': () => null,
     'hub.addFriend': ({ text }: { text: string }) => {
       if (!/[A-Z2-7]{4}-?[A-Z2-7]{4}/i.test(text)) throw { code: -32602, message: 'codice amico non valido: sono 8 caratteri, come K7QM-2XPA' };
       const user = { id: 'N', name: 'Nico', code: text.toUpperCase().replace(/[^A-Z2-7]/g, '').slice(-8) };

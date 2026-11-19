@@ -92,6 +92,21 @@ describe('hub', () => {
     expect((await guest.call('POST', `/v1/links/${link.body.code}/redeem`)).status).toBe(404);
   });
 
+  it('amici e inviti diretti', async () => {
+    const [a, b, c] = [new Me(), new Me(), new Me()];
+    for (const [m, n] of [[a, 'Anna'], [b, 'Bruno'], [c, 'Carla']] as const) await m.call('POST', '/v1/me', { name: n });
+    const link = await a.call('POST', '/v1/links', { invite });
+    await b.call('POST', `/v1/links/${link.body.code}/redeem`);
+    expect((await a.call('GET', '/v1/friends')).body).toEqual([{ id: b.id, name: 'Bruno', code: await codeOf(b.id) }]);
+    expect((await a.call('POST', '/v1/invites', { to: c.id, invite })).status).toBe(403);
+    expect((await a.call('POST', '/v1/invites', { to: b.id, invite })).status).toBe(200);
+    const inv = (await b.call('GET', '/v1/requests')).body.invites;
+    expect(inv[0].user.name).toBe('Anna');
+    const taken = await b.call('POST', `/v1/invites/${inv[0].id}/take`);
+    expect(taken.body).toMatchObject({ invite, user: { id: a.id } });
+    expect((await b.call('POST', `/v1/invites/${inv[0].id}/take`)).status).toBe(404);
+  });
+
   it('firma sbagliata e rete spenta', async () => {
     const me = new Me();
     const r = await worker.fetch('http://hub/v1/me', { method: 'POST', headers: { 'x-falco-id': me.id, 'x-falco-ts': '1', 'x-falco-sig': 'x' } });
