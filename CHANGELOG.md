@@ -2,6 +2,13 @@
 
 Formato [Keep a Changelog](https://keepachangelog.com/it/1.1.0/), versioni [SemVer](https://semver.org/lang/it/).
 
+## [1.0.0-rc.8] - 2026-11-20 · Beta
+
+### Corretto
+
+- Il controller dell'ospite non mandava comandi: nello stream incorporato SDL ignorava i gamepad («--background-gamepad»).
+- «Invita» verso un amico già associato restava in caricamento: ora entra direttamente nella sessione, come quando chiede lui di entrare.
+
 ## [1.0.0-rc.7] - 2026-11-19 · Beta
 
 ### Aggiunto

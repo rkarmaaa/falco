@@ -68,6 +68,9 @@ pub fn stream_args(r: &StreamRequest) -> Vec<String> {
         "--game-optimization".into(),
         "--keep-awake".into(),
         "--multi-controller".into(),
+        // Lo stream è incorporato in Falco: senza, SDL ignora i controller quando crede che la
+        // sua finestra non sia in primo piano e all'host non arriva nessun comando
+        "--background-gamepad".into(),
         "--quit-after".into(),
     ];
     a.extend(r.extra_args.iter().cloned());

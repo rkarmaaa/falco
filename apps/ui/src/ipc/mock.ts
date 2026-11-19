@@ -7,7 +7,7 @@ export function createMockTransport(): Transport {
   const emit = (method: string, params: unknown) => listeners.forEach((cb) => cb({ method, params }));
 
   const state: StateSnapshot = {
-    version: '1.0.0-rc.7',
+    version: '1.0.0-rc.8',
     milestone: 'M6',
     host: { state: 'stopped' },
     status: 'online',
@@ -106,7 +106,7 @@ export function createMockTransport(): Transport {
     ],
     'config.export': () => ({ text: 'schema = 1' }),
     'config.import': () => null,
-    'update.check': () => ({ available: { version: '1.0.0', notes: 'Prima versione stabile.' }, current: '1.0.0-rc.7', enabled: true }),
+    'update.check': () => ({ available: { version: '1.0.0', notes: 'Prima versione stabile.' }, current: '1.0.0-rc.8', enabled: true }),
     'update.install': () => null,
     'tailscale.install': () => null,
     'config.set': ({ key, value }: { key: string; value: unknown }) => {

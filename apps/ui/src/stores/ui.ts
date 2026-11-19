@@ -1,6 +1,7 @@
 // Modali dell'app: uno alla volta, apribili da qualsiasi vista o componente.
 import { reactive, readonly } from 'vue';
-import { acceptFriend, findInviteLink, redeemStream, takeInvite } from './social';
+import { acceptFriend, findInviteLink, redeemStream, social, takeInvite } from './social';
+import { joinFriend } from './core';
 import { attempt } from './errors';
 import { i18n } from '@/i18n';
 
@@ -47,7 +48,13 @@ export async function acceptFriendRequest(id: string, name: string): Promise<voi
 /** Invito diretto di un amico: si entra subito nella sua sessione. */
 export async function acceptDirectInvite(id: string, name: string): Promise<void> {
   const r = await attempt(t('errors.context.join', { name }), () => takeInvite(id), { name });
-  if (r) openAccept(r.invite, { auto: true, joinHost: { id: r.user.id, name: r.user.name } });
+  if (!r) return;
+  // Già amici e associati: si entra e basta. Rifare handshake e pairing si bloccherebbe
+  if (social.friends.some((f) => f.id === r.user.id)) {
+    await attempt(t('errors.context.join', { name: r.user.name }), () => joinFriend(r.user.id, r.user.name), { name: r.user.name });
+    return;
+  }
+  openAccept(r.invite, { auto: true, joinHost: { id: r.user.id, name: r.user.name } });
 }
 
 /** Link di stream (`falco://join/…` o `https://…/j/…`): si entra subito nella sessione dell'host. */
