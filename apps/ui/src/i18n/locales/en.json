@@ -152,7 +152,8 @@
     "falcoJoin": "Connect to the Falco network",
     "falcoJoining": "Connecting…",
     "falcoJoinHint": "No account: Falco uses a one-time key.",
-    "falcoJoined": "Connected to the Falco network."
+    "falcoJoined": "Connected to the Falco network.",
+    "website": "Website"
   },
   "doctor": {
     "title": "Network doctor",

@@ -43,14 +43,14 @@ Account personale `rkarmaaa`, repository `rkarmaaa/falco` (nessuna organizzazion
 
 Finché i segreti del workflow non sono impostati, si rilascia da questo PC:
 
-1. `powershell -File scripts/package.ps1 -HubUrl https://falco-hub.luccimarco176.workers.dev`
+1. `powershell -File scripts/package.ps1 -HubUrl https://falcoapp.pages.dev`
 2. Firma per l'updater (da `apps/ui`, la password si legge dal file, non va scritta a mano):
    `TAURI_SIGNING_PRIVATE_KEY_PASSWORD="$(cat ~/.falco/falco-updater.password.txt)" npx.cmd tauri signer sign -f ~/.falco/falco-updater.key <installer>.exe`
 3. `latest.json` con `version`, `notes` e `platforms.windows-x86_64` = `{ signature: <contenuto del .sig>, url: <link dell'installer nella release> }`.
 4. `gh release create beta-<versione> <installer>.exe <installer>.exe.sig latest.json --latest --title "Falco 1.0 Beta (<versione>)"`.
    Il tag non inizia con `v`, così non parte `release.yml`. La release deve essere **latest**, non pre-release: l'updater legge `releases/latest/download/latest.json`.
 
-Il sito `https://falco-hub.luccimarco176.workers.dev/download` porta sempre all'installer dell'ultima release.
+Il sito `https://falcoapp.pages.dev/download` porta sempre all'installer dell'ultima release.
 
 Prova locale dell'installer Windows:
 

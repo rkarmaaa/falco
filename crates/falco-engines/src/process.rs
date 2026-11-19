@@ -29,12 +29,37 @@ impl Priority {
 }
 
 /// Costruisce il comando: niente console, priorità richiesta, chiusura con il core.
+/// Cartella di lavoro di Moonlight, scrivibile dall'utente (impostata dal core all'avvio).
+static MOONLIGHT_HOME: std::sync::OnceLock<std::path::PathBuf> = std::sync::OnceLock::new();
+
+/// Moonlight cerca `portable.dat` nella cartella di lavoro e ci salva impostazioni e certificato.
+/// Accanto all'exe (Program Files) non può scrivere: ogni avvio avrebbe un'identità nuova e il
+/// pairing non resterebbe mai valido. Questa cartella invece è dell'utente.
+pub fn set_moonlight_home(dir: std::path::PathBuf) {
+    let _ = std::fs::create_dir_all(&dir);
+    let marker = dir.join("portable.dat");
+    if !marker.exists() {
+        let _ = std::fs::write(&marker, b"");
+    }
+    let _ = MOONLIGHT_HOME.set(dir);
+}
+
+fn is_moonlight(bin: &Path) -> bool {
+    bin.file_stem().is_some_and(|s| s.eq_ignore_ascii_case("moonlight"))
+}
+
 pub fn command(bin: &Path, args: &[String], priority: Priority) -> Command {
     let mut cmd = Command::new(bin);
     cmd.args(args).kill_on_drop(true);
-    // Moonlight cerca portable.dat nella cartella di lavoro: impostazioni separate
-    if let Some(dir) = bin.parent() {
-        cmd.current_dir(dir);
+    match MOONLIGHT_HOME.get().filter(|_| is_moonlight(bin)) {
+        Some(home) => {
+            cmd.current_dir(home);
+        }
+        None => {
+            if let Some(dir) = bin.parent() {
+                cmd.current_dir(dir);
+            }
+        }
     }
     #[cfg(windows)]
     cmd.creation_flags(0x0800_0000 | priority.creation_flag()); // CREATE_NO_WINDOW

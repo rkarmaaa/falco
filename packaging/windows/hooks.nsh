@@ -12,6 +12,10 @@
 !macroend
 
 !macro NSIS_HOOK_POSTINSTALL
+  ; Sunshine crea all'avvio la cartella config accanto al proprio .exe. Il core gira come utente
+  ; normale e non può scrivere in Program Files: la crea l'installer (basta che esista, i dati
+  ; veri stanno in %LOCALAPPDATA%\Falco)
+  CreateDirectory "$INSTDIR\engines\sunshine\config"
   ; Streaming in ingresso solo dagli intervalli di Tailscale (100.64.0.0/10, fd7a:115c:a1e0::/48)
   nsExec::Exec 'netsh advfirewall firewall delete rule name="Falco Sunshine"'
   nsExec::Exec 'netsh advfirewall firewall add rule name="Falco Sunshine" dir=in action=allow program="$INSTDIR\engines\sunshine\sunshine.exe" remoteip=100.64.0.0/10,fd7a:115c:a1e0::/48 enable=yes'
@@ -30,6 +34,7 @@
 !macro NSIS_HOOK_POSTUNINSTALL
   nsExec::Exec 'netsh advfirewall firewall delete rule name="Falco Sunshine"'
   nsExec::Exec 'netsh advfirewall firewall delete rule name="Falco Presence"'
+  RMDir "$INSTDIR\engines\sunshine\config"
   DeleteRegKey HKCU "Software\Classes\falco"
   DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "Falco"
 !macroend

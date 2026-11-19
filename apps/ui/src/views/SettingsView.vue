@@ -2,7 +2,7 @@
 // Impostazioni: la UI è solo un editor di config.toml (§15). Salvataggio automatico.
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { RefreshCw } from 'lucide-vue-next';
+import { Github, Globe, RefreshCw } from 'lucide-vue-next';
 import UiSegmented from '@/components/UiSegmented.vue';
 import UiButton from '@/components/UiButton.vue';
 import DiagnosticRow from '@/components/DiagnosticRow.vue';
@@ -281,6 +281,16 @@ function openTab(next: Tab): void {
 
       <template v-else-if="tab === 'about'">
         <p>{{ $t('settings.version', { version: core.snapshot?.version ?? '–', milestone: core.snapshot?.milestone ?? '–' }) }}</p>
+        <div class="io">
+          <UiButton variant="secondary" :size="32" @click="rpc('app.openWeb', { target: 'site' })">
+            <Globe :size="16" :stroke-width="1.75" aria-hidden="true" />
+            {{ $t('settings.website') }}
+          </UiButton>
+          <UiButton variant="secondary" :size="32" @click="rpc('app.openWeb', { target: 'github' })">
+            <Github :size="16" :stroke-width="1.75" aria-hidden="true" />
+            GitHub
+          </UiButton>
+        </div>
         <p class="muted">{{ $t('settings.license') }}</p>
         <div class="io">
           <UiButton variant="secondary" :size="32" @click="checkUpdate">{{ $t('update.check') }}</UiButton>

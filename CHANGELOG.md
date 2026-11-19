@@ -2,6 +2,20 @@
 
 Formato [Keep a Changelog](https://keepachangelog.com/it/1.1.0/), versioni [SemVer](https://semver.org/lang/it/).
 
+## [1.0.0-rc.4] - 2026-11-19 · Beta
+
+### Aggiunto
+
+- Nuovo sito **falcoapp.pages.dev**, con download per Windows (macOS in arrivo); i link amico e di stream usano il nuovo indirizzo.
+- Impostazioni → Info: pulsanti «Sito web» e «GitHub».
+
+### Corretto
+
+- «Condividi» non partiva sui PC nuovi: Sunshine non poteva creare la sua cartella in Program Files. Ora la crea l'installer.
+- Aggiornamento automatico bloccato dall'errore 740: ora l'installer si avvia chiedendo la conferma di Windows.
+- L'associazione dei dispositivi non riusciva mai: Moonlight non poteva salvare il suo certificato in Program Files e a ogni avvio aveva un'identità nuova. Ora salva tutto nella cartella dell'utente.
+- L'host conferma il PIN per 2 minuti invece di 30 secondi e non riavvia Sunshine durante un'associazione; i motivi di un fallimento finiscono nel log.
+
 ## [1.0.0-rc.3] - 2026-11-19 · Beta
 
 ### Aggiunto

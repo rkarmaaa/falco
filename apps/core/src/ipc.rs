@@ -189,6 +189,12 @@ struct HubText {
 }
 
 #[derive(Deserialize)]
+struct OpenWeb {
+    /// `site` | `github`
+    target: String,
+}
+
+#[derive(Deserialize)]
 struct HubId {
     id: String,
 }
@@ -589,6 +595,17 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
         methods::HUB_DECLINE_INVITE => {
             let p: HubId = params(req.params)?;
             crate::hub::decline_invite(core, &p.id).await.map_err(anyhow_err(codes::INTERNAL))?;
+            return Ok(Value::Null);
+        }
+        methods::APP_OPEN_WEB => {
+            let p: OpenWeb = params(req.params)?;
+            let url = match p.target.as_str() {
+                "site" => crate::hub::base_url(core.lock().await.config.config())
+                    .unwrap_or_else(|| crate::hub::SITE_URL.into()),
+                "github" => crate::hub::REPO_URL.into(),
+                _ => return Err(RpcError::new(codes::INVALID_PARAMS, "link sconosciuto")),
+            };
+            opener::open_browser(&url).map_err(internal)?;
             return Ok(Value::Null);
         }
         methods::NET_JOIN_FALCO => {

@@ -172,6 +172,29 @@ pub async fn ask_host(core: &Shared, name: &str, tag: &str) -> bool {
     ok
 }
 
+/// Associazioni in corso lato host: finché ce n'è una, Sunshine non si riavvia (si perderebbe
+/// la richiesta di Moonlight in attesa del PIN).
+static PAIRING: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
+pub fn pairing_active() -> bool {
+    PAIRING.load(std::sync::atomic::Ordering::Relaxed) > 0
+}
+
+struct PairingGuard;
+
+impl PairingGuard {
+    fn new() -> Self {
+        PAIRING.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        Self
+    }
+}
+
+impl Drop for PairingGuard {
+    fn drop(&mut self) {
+        PAIRING.fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
+    }
+}
+
 /// Lato host: Sunshine attivo e conferma del PIN appena arriva la richiesta di Moonlight.
 pub async fn host_pairing(
     core: Shared,
@@ -184,25 +207,42 @@ pub async fn host_pairing(
         crate::core::set_available(core.clone(), true).await;
     }
     let api = core.lock().await.host.api().context("motore host non avviato")?;
+    let guard = PairingGuard::new();
     tokio::spawn(async move {
+        let _guard = guard;
         let (n, p) = (name.clone(), pin.clone());
         let api2 = api.clone();
-        // Riprova ogni 500 ms per 30 s (§6 passo 8)
+        // Riprova ogni 500 ms per 2 minuti, quanto aspetta l'ospite (§6 passo 8). Gli errori
+        // finiscono nel log (livello warn): sono la prima cosa da guardare nel report di debug
         let uuid = tokio::task::spawn_blocking(move || {
-            for _ in 0..60 {
-                if let Ok(list) = api2.pending_pairings()
-                    && let Some(req) = list.first()
-                    && api2.submit_pin(&req.id, &p, &n).is_ok()
-                {
-                    std::thread::sleep(Duration::from_millis(500));
-                    return api2
-                        .clients()
-                        .ok()
-                        .and_then(|cs| cs.into_iter().rev().find(|c| c.name == n))
-                        .map(|c| c.uuid);
+            let mut last_err = String::new();
+            for _ in 0..240 {
+                match api2.pending_pairings() {
+                    Ok(list) => match list.first() {
+                        Some(req) => match api2.submit_pin(&req.id, &p, &n) {
+                            Ok(()) => {
+                                std::thread::sleep(Duration::from_millis(500));
+                                let uuid = api2
+                                    .clients()
+                                    .ok()
+                                    .and_then(|cs| cs.into_iter().rev().find(|c| c.name == n))
+                                    .map(|c| c.uuid);
+                                if uuid.is_none() {
+                                    tracing::warn!(
+                                        "pairing {n}: PIN accettato ma client non trovato"
+                                    );
+                                }
+                                return uuid;
+                            }
+                            Err(e) => last_err = format!("PIN rifiutato: {e}"),
+                        },
+                        None => last_err = "nessuna richiesta di Moonlight arrivata".into(),
+                    },
+                    Err(e) => last_err = format!("API di Sunshine: {e}"),
                 }
                 std::thread::sleep(Duration::from_millis(500));
             }
+            tracing::warn!("pairing {n} non riuscito: {last_err}");
             None
         })
         .await
@@ -396,7 +436,10 @@ async fn accept_inner(core: Shared, link: &str) -> anyhow::Result<()> {
     progress(&c, "pairing", Some(ok));
     c.poke.notify_one();
     if !ok {
-        bail!("pairing con l'host non riuscito");
+        bail!(
+            "{} non ha confermato l'associazione dei dispositivi: riprova con un invito nuovo",
+            p.host.name
+        );
     }
     Ok(())
 }

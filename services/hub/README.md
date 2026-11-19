@@ -1,7 +1,9 @@
 # Falco Hub · Cloudflare Workers
 
 Servizio di [ADR 0017](../../docs/adr/0017-falco-hub.md): codici amico, richieste d'amicizia, link di stream e
-chiavi monouso della rete Falco. Gratis, sempre acceso, su `https://falco-hub.<sottodominio>.workers.dev`.
+chiavi monouso della rete Falco. Gratis, sempre acceso. Indirizzo pubblico **https://falcoapp.pages.dev**
+(progetto Pages in `services/site`, che inoltra tutto al Worker); il Worker risponde anche su
+`https://falco-hub.<sottodominio>.workers.dev`, usato dalle versioni fino alla rc.3.
 
 ## Pubblicazione (una volta)
 
@@ -51,10 +53,16 @@ npx.cmd wrangler secret put GITHUB_TOKEN
 
 ## Collegare l'app
 
-L'indirizzo entra nell'app in fase di build: `FALCO_HUB_URL=https://falco-hub.<sottodominio>.workers.dev`
+L'indirizzo entra nell'app in fase di build: `FALCO_HUB_URL=https://falcoapp.pages.dev`
 (lo usa `scripts/package.ps1`). Per prove: Impostazioni → Rete → «Server Falco Hub».
 
 ## Sviluppo
 
 `npm run dev` (Worker e D1 in locale su <http://127.0.0.1:8787>, l'indirizzo che usano le build di debug),
 `npm test` (Worker vero in locale), `npm run typecheck`.
+
+## Dominio pubblico (Pages)
+
+`services/site` è un progetto Cloudflare Pages di una riga (`_worker.js`) collegato al Worker con un
+*service binding*: stesso database, stessi segreti. Pubblicazione: `cd services/site` e
+`../hub/node_modules/.bin/wrangler pages deploy --branch main`.

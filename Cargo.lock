@@ -1153,7 +1153,7 @@ checksum = "0b5343afd4a8365a643ac588dab4cf234a190c7f6c88c9f6dd6ffe00837661b7"
 
 [[package]]
 name = "falco-core"
-version = "1.0.0-rc.3"
+version = "1.0.0-rc.4"
 dependencies = [
  "anyhow",
  "auto-launch",
@@ -1194,7 +1194,7 @@ dependencies = [
 
 [[package]]
 name = "falco-engines"
-version = "1.0.0-rc.3"
+version = "1.0.0-rc.4"
 dependencies = [
  "data-encoding",
  "serde",
@@ -1207,7 +1207,7 @@ dependencies = [
 
 [[package]]
 name = "falco-net"
-version = "1.0.0-rc.3"
+version = "1.0.0-rc.4"
 dependencies = [
  "falco-proto",
  "if-addrs",
@@ -1223,7 +1223,7 @@ dependencies = [
 
 [[package]]
 name = "falco-proto"
-version = "1.0.0-rc.3"
+version = "1.0.0-rc.4"
 dependencies = [
  "data-encoding",
  "directories",
@@ -1242,7 +1242,7 @@ dependencies = [
 
 [[package]]
 name = "falco-store"
-version = "1.0.0-rc.3"
+version = "1.0.0-rc.4"
 dependencies = [
  "rusqlite",
  "serde",
@@ -1254,7 +1254,7 @@ dependencies = [
 
 [[package]]
 name = "falco-ui"
-version = "1.0.0-rc.3"
+version = "1.0.0-rc.4"
 dependencies = [
  "falco-proto",
  "serde",

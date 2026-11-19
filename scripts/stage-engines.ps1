@@ -1,6 +1,6 @@
 # Copia i motori accanto ai binari di Falco, con lo stesso layout del pacchetto finale:
 #   target\<profilo>\engines\sunshine\sunshine.exe
-#   target\<profilo>\engines\moonlight\Moonlight.exe  (+ portable.dat: impostazioni separate)
+#   target\<profilo>\engines\moonlight\Moonlight.exe
 # In sviluppo la sorgente sono le installazioni ufficiali; in CI saranno i fork compilati.
 # Uso: powershell -File scripts\stage-engines.ps1 [-Profile debug|release]
 param(
@@ -22,9 +22,9 @@ foreach ($pair in @(@($SunshineDir, "sunshine", "sunshine.exe"), @($MoonlightDir
   if ($LASTEXITCODE -ge 8) { throw "Copia di $name non riuscita ($LASTEXITCODE)" }
   Write-Host "ok  $name -> $out"
 }
-# Moonlight portable: impostazioni nella sua cartella, non nel profilo utente
-New-Item -ItemType File -Force (Join-Path $dest "moonlight\portable.dat") | Out-Null
-Write-Host "ok  moonlight in modalità portable"
+# Moonlight portable: il core lo avvia con una cartella di lavoro dell'utente che contiene
+# portable.dat (%LOCALAPPDATA%\Falco\...\data\moonlight), non accanto all'exe in Program Files
+Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $dest "moonlight\portable.dat")
 
 # Sunshine di Falco (patch in engines/patches/sunshine, scripts/build-sunshine.sh): sostituisce
 # l'eseguibile ufficiale. Senza, l'audio «solo ciò che è a schermo» non è disponibile (ADR 0016).

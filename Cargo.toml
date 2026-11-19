@@ -3,7 +3,7 @@ resolver = "3"
 members = ["apps/core", "apps/ui/src-tauri", "crates/*"]
 
 [workspace.package]
-version = "1.0.0-rc.3"
+version = "1.0.0-rc.4"
 edition = "2024"
 license = "GPL-3.0-only"
 repository = "https://github.com/rkarmaaa/falco"
@@ -53,7 +53,9 @@ unwrap_used = "deny"
 
 [profile.release]
 opt-level = 3
-lto = "fat"
-codegen-units = 1
+# LTO «thin» con 16 unità: prestazioni quasi uguali a «fat», collegamento molto più veloce.
+# Il codice critico per la latenza è in Sunshine e Moonlight, non nel core.
+lto = "thin"
+codegen-units = 16
 panic = "abort"
 strip = true

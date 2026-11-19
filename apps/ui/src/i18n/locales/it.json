@@ -152,7 +152,8 @@
     "falcoJoin": "Collega alla rete Falco",
     "falcoJoining": "Collegamento…",
     "falcoJoinHint": "Nessun account: Falco usa una chiave monouso.",
-    "falcoJoined": "Collegato alla rete Falco."
+    "falcoJoined": "Collegato alla rete Falco.",
+    "website": "Sito web"
   },
   "doctor": {
     "title": "Dottore di rete",

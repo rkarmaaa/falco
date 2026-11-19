@@ -1,0 +1,9 @@
+# Dominio pubblico di Falco (ADR 0017): https://falcoapp.pages.dev
+# Pages fa solo da ingresso: ogni richiesta passa al Worker falco-hub (stesso database e segreti).
+name = "falcoapp"
+pages_build_output_dir = "public"
+compatibility_date = "2025-10-01"
+
+[[services]]
+binding = "HUB"
+service = "falco-hub"

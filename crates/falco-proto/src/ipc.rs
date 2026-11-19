@@ -66,6 +66,8 @@ pub mod methods {
     pub const HUB_TAKE_INVITE: &str = "hub.takeInvite";
     pub const HUB_DECLINE_INVITE: &str = "hub.declineInvite";
     pub const NET_JOIN_FALCO: &str = "net.joinFalco";
+    /// Apre il sito di Falco o il repository GitHub (solo questi due).
+    pub const APP_OPEN_WEB: &str = "app.openWeb";
     pub const APP_OPEN_LINK: &str = "app.openLink";
     pub const DEBUG_REPORT: &str = "debug.report";
     pub const HOST_RECOMMEND: &str = "host.recommend";

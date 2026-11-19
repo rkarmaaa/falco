@@ -28,7 +28,13 @@ if (-not $SkipEngines) {
 
 Write-Host "==> interfaccia e installer"
 Push-Location "apps\ui"
-npm ci
+# npm ci solo se le dipendenze sono cambiate: reinstallare tutto ogni volta costa minuti
+$stamp = "node_modules\.package-lock.json"
+if (-not (Test-Path $stamp) -or (Get-Item "package-lock.json").LastWriteTime -gt (Get-Item $stamp).LastWriteTime) {
+  npm ci
+} else {
+  Write-Host "    dipendenze della UI già aggiornate"
+}
 npx tauri build --config src-tauri/tauri.bundle.json
 $code = $LASTEXITCODE
 Pop-Location

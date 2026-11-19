@@ -103,7 +103,8 @@ pub async fn sync_inputs(shared: &Shared) {
         let wanted = wanted_inputs(&c);
         let running = c.host.api().is_some();
         let differs = running && wanted != c.host.inputs;
-        let busy = !c.guests.is_empty();
+        // Ospiti collegati o un'associazione in corso: il riavvio aspetta
+        let busy = !c.guests.is_empty() || crate::invites::pairing_active();
         c.inputs_pending = differs && busy;
         (differs && !busy, c.inputs_pending)
     };

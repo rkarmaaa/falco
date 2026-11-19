@@ -90,6 +90,7 @@ fn main() -> anyhow::Result<()> {
     }
 
     let paths = Paths::resolve()?;
+    falco_engines::process::set_moonlight_home(paths.data.join("moonlight"));
     let config = ConfigFile::load_or_create(&paths.config)
         .with_context(|| format!("config non valida: {}", paths.config.display()))?;
     let _log_guard = init_logging(&paths, config.config().advanced.log_level);

@@ -30,6 +30,10 @@ static AUTO_JOINED: AtomicBool = AtomicBool::new(false);
 
 const TIMEOUT: Duration = Duration::from_secs(10);
 
+/// Sito pubblico e repository, per i pulsanti delle Impostazioni.
+pub const SITE_URL: &str = "https://falcoapp.pages.dev";
+pub const REPO_URL: &str = "https://github.com/rkarmaaa/falco";
+
 /// URL del Hub: impostazioni, poi quello della build, poi quello locale nelle build di debug.
 pub fn base_url(cfg: &falco_store::Config) -> Option<String> {
     let custom = cfg.network.hub_url.trim();

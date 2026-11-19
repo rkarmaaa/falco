@@ -2,6 +2,7 @@
 // link di stream e chiavi monouso per la rete Falco. Non vede gli stream e non decide i permessi:
 // l'invito allegato è firmato dall'host e il core lo verifica nell'handshake (§6).
 import { codeOf, displayCode, normalizeCode, randomCode, validName, verify } from './auth';
+import { LOGO_256, LOGO_32 } from './assets';
 import { installerUrl } from './download';
 import { addPage, homePage, joinPage, missingPage } from './pages';
 import { ensureSchema } from './schema';
@@ -43,6 +44,11 @@ const json = (data: unknown, status = 200) =>
 const html = (body: string, status = 200) =>
   new Response(body, { status, headers: { 'content-type': 'text/html; charset=utf-8' } });
 const now = () => Math.floor(Date.now() / 1000);
+const repoUrl = (env: Env) => `https://github.com/${env.RELEASES_REPO}`;
+const png = (b64: string) =>
+  new Response(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)), {
+    headers: { 'content-type': 'image/png', 'cache-control': 'public, max-age=86400' },
+  });
 const pair = (x: string, y: string) => (x < y ? [x, y] : [y, x]);
 
 function body<T>(raw: Uint8Array): T {
@@ -293,13 +299,13 @@ async function pages(env: Env, url: URL): Promise<Response> {
   const code = normalizeCode(raw);
   if (code && kind === 'a') {
     const u = await env.DB.prepare('SELECT name, code FROM users WHERE code = ?1').bind(code).first<UserRef>();
-    if (u) return html(addPage(u.name, u.code, `${url.origin}/download`));
+    if (u) return html(addPage(u.name, u.code, `${url.origin}/download`, repoUrl(env)));
   }
   if (code && kind === 'j') {
     const l = await link(env.DB, code);
-    if (l) return html(joinPage(l.name, code, `${url.origin}/download`));
+    if (l) return html(joinPage(l.name, code, `${url.origin}/download`, repoUrl(env)));
   }
-  return html(missingPage(`${url.origin}/download`), 404);
+  return html(missingPage(`${url.origin}/download`, repoUrl(env)), 404);
 }
 
 export default {
@@ -307,7 +313,9 @@ export default {
     const url = new URL(request.url);
     try {
       if (url.pathname === '/healthz') return new Response('ok');
-      if (url.pathname === '/') return html(homePage(`${url.origin}/download`));
+      if (url.pathname === '/') return html(homePage(`${url.origin}/download`, repoUrl(env)));
+      if (url.pathname === '/logo.png') return png(LOGO_256);
+      if (url.pathname === '/favicon.png') return png(LOGO_32);
       if (url.pathname === '/download') return await download(env);
       await ensureSchema(env.DB);
       if (url.pathname.startsWith('/v1/')) return await api(request, env, url);
