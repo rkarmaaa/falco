@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   mac:
-    runs-on: macos-14
+    runs-on: macos-latest
     env:
       FALCO_HUB_URL: https://falcoapp.pages.dev
       # Chiave minisign dell'updater (segreti del repository, ADR 0008)
