@@ -176,6 +176,8 @@ onMounted(async () => {
         // Un errore qui non deve impedire la chiusura
         await resetStage().catch(() => {});
       }
+      // Fuori dallo schermo intero prima di chiudere: si ricorda la dimensione normale
+      if (stage.fullscreen) await setFullscreen(false).catch(() => {});
     });
   }
   const transport = await getTransport();

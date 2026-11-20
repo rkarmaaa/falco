@@ -457,6 +457,73 @@ pub async fn set_available(shared: Shared, available: bool) {
     }
 }
 
+/// Riavvii automatici del motore host concessi in `WATCHDOG_WINDOW`, poi ci si arrende.
+const WATCHDOG_RESTARTS: usize = 3;
+const WATCHDOG_WINDOW: std::time::Duration = std::time::Duration::from_secs(600);
+
+/// Sorveglia Sunshine mentre si condivide. Prima lo si controllava solo all'avvio: se poi si
+/// chiudeva o si bloccava, la presenza diceva ancora «si può entrare» e gli ospiti restavano
+/// appesi. Processo chiuso o API muta per due controlli di fila: riavvio, al massimo
+/// `WATCHDOG_RESTARTS` volte in `WATCHDOG_WINDOW`, poi errore e condivisione spenta.
+async fn host_watchdog(shared: Shared) {
+    let mut restarts: Vec<std::time::Instant> = Vec::new();
+    let mut silent = 0u8;
+    let mut tick = 0u32;
+    loop {
+        tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+        tick = tick.wrapping_add(1);
+        let (ready, alive, api) = {
+            let mut c = shared.lock().await;
+            let ready = c.host_available && c.host.state == crate::host::HostState::Ready;
+            (ready, c.host.alive(), c.host.api())
+        };
+        if !ready {
+            silent = 0;
+            continue;
+        }
+        // Processo vivo: ogni 30 s si verifica anche che l'API risponda (motore bloccato)
+        let answering = if !alive {
+            false
+        } else if tick.is_multiple_of(6) {
+            match api {
+                Some(api) => crate::host::Host::api_ready(api).await,
+                None => false,
+            }
+        } else {
+            true
+        };
+        silent = if answering { 0 } else { silent + 1 };
+        if alive && silent < 2 {
+            continue;
+        }
+        silent = 0;
+        let why = {
+            let mut c = shared.lock().await;
+            c.host.failure_reason().unwrap_or_else(|| "non risponde".into())
+        };
+        restarts.retain(|t| t.elapsed() < WATCHDOG_WINDOW);
+        if restarts.len() >= WATCHDOG_RESTARTS {
+            let msg = format!("il motore host si è fermato più volte: {why}");
+            tracing::warn!("{msg}");
+            let mut c = shared.lock().await;
+            c.host.stop().await;
+            c.host_available = false;
+            c.guests.clear();
+            c.record_error("host.watchdog", &msg, None);
+            c.host.state = crate::host::HostState::Error(msg);
+            c.publish_host();
+            continue;
+        }
+        restarts.push(std::time::Instant::now());
+        tracing::warn!("motore host fermo ({why}): riavvio");
+        {
+            let mut c = shared.lock().await;
+            c.host.stop().await;
+        }
+        set_available(shared.clone(), true).await;
+    }
+}
+
 /// Motore host pronto prima di accettare qualcuno (handshake): lo avvia se serve.
 /// Entro 75 s, meno dell'attesa dell'ospite, così l'errore arriva a lui invece di un timeout.
 pub async fn ensure_host_ready(shared: &Shared) -> Result<(), String> {
@@ -489,6 +556,7 @@ pub async fn run(core: Core, mut tray_rx: mpsc::UnboundedReceiver<TrayCommand>) 
     let lan = tokio::spawn(crate::netmodes::lan_task(shared.clone()));
     let updates = tokio::spawn(crate::updater::run(shared.clone()));
     let hub = tokio::spawn(crate::hub::run(shared.clone()));
+    let watchdog = tokio::spawn(host_watchdog(shared.clone()));
     let ipn = {
         let (ts, poke) = {
             let c = shared.lock().await;
@@ -554,4 +622,5 @@ pub async fn run(core: Core, mut tray_rx: mpsc::UnboundedReceiver<TrayCommand>) 
     lan.abort();
     updates.abort();
     hub.abort();
+    watchdog.abort();
 }

@@ -289,8 +289,9 @@ pub const HOST_STARTUP_WAIT_S: u64 = 30;
 async fn hosting_ready(shared: &Shared) -> bool {
     for _ in 0..HOST_STARTUP_WAIT_S * 2 {
         {
-            let c = shared.lock().await;
-            if c.host.api().is_some() {
+            let mut c = shared.lock().await;
+            // «Pronto» non basta: il processo deve essere ancora vivo (vedi host_watchdog)
+            if c.host.api().is_some() && c.host.alive() {
                 return true;
             }
             if c.host.state != crate::host::HostState::Starting {

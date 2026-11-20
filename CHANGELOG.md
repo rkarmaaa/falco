@@ -2,6 +2,17 @@
 
 Formato [Keep a Changelog](https://keepachangelog.com/it/1.1.0/), versioni [SemVer](https://semver.org/lang/it/).
 
+## [1.0.0-rc.14] - 2026-11-20 · Beta
+
+### Corretto
+
+- Entrando da un amico si restava in caricamento per sempre se il suo motore di condivisione si era fermato: l'host ora sorveglia Sunshine, lo riavvia da solo e accetta ospiti solo se risponde davvero.
+- Se Moonlight non riesce a collegarsi, la sessione si chiude subito con l'errore invece di restare appesa dietro una finestra nascosta.
+
+### Migliorato
+
+- La finestra ricorda dimensioni, posizione e stato ingrandito tra un avvio e l'altro.
+
 ## [1.0.0-rc.13] - 2026-11-20 · Beta
 
 ### Corretto

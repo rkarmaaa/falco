@@ -288,6 +288,10 @@ pub fn parse_event(line: &str) -> Option<EngineEvent> {
     } else if line.contains("Connection terminated") || line.contains("Starting connection failed")
     {
         Some(EngineEvent::Ended { reason: line.rsplit(": ").next().unwrap_or(line).to_owned() })
+    } else if let Some((_, msg)) = line.split_once("Qt Critical: ") {
+        // Errore fatale mostrato in una finestra di Moonlight (che Falco nasconde): Moonlight
+        // resterebbe aperto ad aspettare un clic e l'ospite in caricamento per sempre
+        Some(EngineEvent::Ended { reason: msg.trim().to_owned() })
     } else {
         None
     }
@@ -379,6 +383,16 @@ Steam Big Picture
         assert!((s.network_latency_ms - 1.0).abs() < 1e-3);
         assert!((s.dropped_jitter_pct - 0.33).abs() < 1e-3);
         assert!((s.total_ms() - 4.34).abs() < 0.01);
+    }
+
+    #[test]
+    fn fatal_dialog_ends_the_session() {
+        let line = "00:00:30 - Qt Critical: Conessione fallita verso 100.118.86.80";
+        assert_eq!(
+            parse_event(line),
+            Some(EngineEvent::Ended { reason: "Conessione fallita verso 100.118.86.80".into() })
+        );
+        assert_eq!(parse_event("00:00:02 - Qt Info: \"x (Falco)\" is now offline"), None);
     }
 
     #[test]

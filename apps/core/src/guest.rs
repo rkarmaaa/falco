@@ -252,6 +252,10 @@ pub struct SessionInfo {
     pub permissions: Option<serde_json::Value>,
 }
 
+/// Margine oltre `network.connect_timeout_s` per avere il video: handshake RTSP, decoder, primo
+/// fotogramma. Moonlight da solo rinuncia dopo circa 30 s.
+const CONNECT_GRACE_S: u64 = 35;
+
 /// Avvia lo streaming; ritorna subito, la sessione prosegue in background.
 pub async fn join(
     core: Shared,
@@ -321,13 +325,20 @@ pub async fn join(
         let mut reason = "closed".to_owned();
         let mut summary: Option<moonlight::VideoStats> = None;
         let mut ending: Option<tokio::time::Instant> = None;
+        // Senza video entro questo tempo si chiude con un errore invece di caricare all'infinito
+        let connect_by = tokio::time::Instant::now()
+            + Duration::from_secs(u64::from(cfg.network.connect_timeout_s) + CONNECT_GRACE_S);
+        let mut connected = false;
         loop {
             // Dopo «Connection terminated» Moonlight stampa ancora le statistiche: 3 s per leggerle
             let wait = ending.map(|t| t + Duration::from_secs(3));
             tokio::select! {
                 ev = events.recv() => match ev {
                     Some(EngineEvent::Connecting) => core.lock().await.emit(events::SESSION_STATS, json!({ "phase": "connecting" })),
-                    Some(EngineEvent::Connected) => core.lock().await.emit(events::SESSION_STATS, json!({ "phase": "connected" })),
+                    Some(EngineEvent::Connected) => {
+                        connected = true;
+                        core.lock().await.emit(events::SESSION_STATS, json!({ "phase": "connected" }));
+                    }
                     Some(EngineEvent::Stats { rtt_ms, fps, bitrate_kbps, path }) => core.lock().await.emit(
                         events::SESSION_STATS,
                         json!({ "phase": "stats", "rttMs": rtt_ms, "fps": fps, "bitrateKbps": bitrate_kbps, "path": path }),
@@ -351,6 +362,11 @@ pub async fn join(
                     break;
                 }
                 _ = async { match wait { Some(t) => tokio::time::sleep_until(t).await, None => std::future::pending().await } } => {
+                    let _ = child.kill().await;
+                    break;
+                }
+                _ = tokio::time::sleep_until(connect_by), if !connected && ending.is_none() => {
+                    reason = "l'host non risponde: il suo motore di condivisione non è raggiungibile".into();
                     let _ = child.kill().await;
                     break;
                 }

@@ -177,6 +177,18 @@ fn main() {
             }
         }))
         .plugin(tauri_plugin_clipboard_manager::init())
+        // Dimensioni, posizione e «ingrandita» della finestra principale tra un avvio e l'altro.
+        // Non lo schermo intero (solo durante uno stream), né pulsantino e notifiche
+        .plugin(
+            tauri_plugin_window_state::Builder::default()
+                .with_state_flags(
+                    tauri_plugin_window_state::StateFlags::SIZE
+                        | tauri_plugin_window_state::StateFlags::POSITION
+                        | tauri_plugin_window_state::StateFlags::MAXIMIZED,
+                )
+                .with_denylist(&["pill", "toasts"])
+                .build(),
+        )
         .setup(|app| {
             let link = Arc::new(CoreLink::default());
             app.manage(link.clone());

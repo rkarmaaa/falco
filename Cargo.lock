@@ -1336,7 +1336,7 @@ dependencies = [
 
 [[package]]
 name = "falco-core"
-version = "1.0.0-rc.13"
+version = "1.0.0-rc.14"
 dependencies = [
  "anyhow",
  "auto-launch",
@@ -1377,7 +1377,7 @@ dependencies = [
 
 [[package]]
 name = "falco-engines"
-version = "1.0.0-rc.13"
+version = "1.0.0-rc.14"
 dependencies = [
  "data-encoding",
  "serde",
@@ -1390,7 +1390,7 @@ dependencies = [
 
 [[package]]
 name = "falco-net"
-version = "1.0.0-rc.13"
+version = "1.0.0-rc.14"
 dependencies = [
  "falco-proto",
  "if-addrs",
@@ -1406,7 +1406,7 @@ dependencies = [
 
 [[package]]
 name = "falco-proto"
-version = "1.0.0-rc.13"
+version = "1.0.0-rc.14"
 dependencies = [
  "data-encoding",
  "directories",
@@ -1425,7 +1425,7 @@ dependencies = [
 
 [[package]]
 name = "falco-store"
-version = "1.0.0-rc.13"
+version = "1.0.0-rc.14"
 dependencies = [
  "rusqlite",
  "serde",
@@ -1437,7 +1437,7 @@ dependencies = [
 
 [[package]]
 name = "falco-ui"
-version = "1.0.0-rc.13"
+version = "1.0.0-rc.14"
 dependencies = [
  "falco-proto",
  "serde",
@@ -1446,6 +1446,7 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-clipboard-manager",
  "tauri-plugin-single-instance",
+ "tauri-plugin-window-state",
  "tokio",
  "windows 0.61.3",
  "windows-sys 0.60.2",
@@ -5010,6 +5011,21 @@ dependencies = [
  "tracing",
  "windows-sys 0.61.2",
  "zbus 5.19.0",
+]
+
+[[package]]
+name = "tauri-plugin-window-state"
+version = "2.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d6815cab7b212f9cfe16a9d79d8d22f9e14159e4a9460f7dec1467167a008e3"
+dependencies = [
+ "bitflags 2.13.2",
+ "log",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-plugin",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
