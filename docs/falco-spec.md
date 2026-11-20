@@ -214,12 +214,13 @@ Il core espone un piccolo server HTTP sulla porta 47900 (configurabile), legato 
 | `POST /v1/session/knock` | Un ospite chiede di entrare; long-poll fino a 30 s per la risposta dell'host |
 | `POST /v1/session/notify` | L'host avvisa un amico: «ti invito a giocare ora» |
 | `POST /v1/friend/remove` | Notifica di rimozione dell'amicizia |
+| `POST /v1/devices` | Nodo Tailscale nuovo di un amico, con il profilo firmato (ADR 0018) |
 
 **Autenticazione di ogni richiesta**
 
 - Header `X-Falco-Id`, `X-Falco-Ts` e `X-Falco-Sig`. La firma copre metodo, percorso, timestamp e SHA-256 del corpo.
 - Il server rifiuta un timestamp fuori di ±60 s e qualsiasi ID non presente tra gli amici, tranne su `/v1/handshake`.
-- Doppio vincolo: l'IP sorgente, risolto con `tailscale whois`, deve appartenere a un nodo registrato per quell'amico.
+- Doppio vincolo: l'IP sorgente, risolto con `tailscale whois`, deve appartenere a un nodo registrato per quell'amico. Unica eccezione `/v1/devices`, che sostituisce i nodi di un amico solo se il profilo firmato elenca il nodo nuovo e quelli vecchi sono tutti offline (ADR 0018).
 - Limite di 20 richieste al minuto per IP, oltre il quale si risponde 429.
 
 **Frequenza degli aggiornamenti**
@@ -850,7 +851,7 @@ schema = 1
 language = "it"              # it | en
 updates = "auto"             # auto | notify | off  (§13 «Aggiornamenti automatici»)
 theme = "system"             # system | dark | light
-start_with_system = true
+start_with_system = false
 start_minimized = true
 close_to_tray = true
 

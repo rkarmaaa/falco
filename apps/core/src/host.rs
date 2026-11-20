@@ -168,6 +168,12 @@ impl Host {
         let bin = falco_engines::locate::sunshine().context("motore host non trovato")?;
         let s = self.settings(cfg, inputs);
         self.inputs = inputs;
+        if TcpListener::bind(("0.0.0.0", s.base_port)).is_err()
+            && stop_stale_engine(&bin, &s.conf_path()).await
+        {
+            // Il nostro Sunshine rimasto da un core chiuso male (crash, aggiornamento) teneva la porta
+            tracing::info!("host.start: chiuso un motore host rimasto aperto");
+        }
         if TcpListener::bind(("0.0.0.0", s.base_port)).is_err() {
             bail!("la porta {} è già usata da un altro programma", s.base_port);
         }
@@ -285,6 +291,42 @@ impl Host {
         self.api = None;
         self.state = HostState::Stopped;
     }
+}
+
+/// Chiude i Sunshine avviati da un core precedente di questa istanza: stesso eseguibile di Falco
+/// e stessa configurazione. Mai altri programmi né altre istanze (`FALCO_INSTANCE`), anche se
+/// usano la stessa porta. Ritorna true se ne ha chiuso uno.
+async fn stop_stale_engine(bin: &Path, conf: &Path) -> bool {
+    use sysinfo::{ProcessRefreshKind, ProcessesToUpdate, System, UpdateKind};
+    let bin = bin.canonicalize().unwrap_or_else(|_| bin.to_path_buf());
+    let conf = conf.to_string_lossy().to_lowercase();
+    let killed = tokio::task::spawn_blocking(move || {
+        let mut sys = System::new();
+        sys.refresh_processes_specifics(
+            ProcessesToUpdate::All,
+            true,
+            ProcessRefreshKind::nothing().with_exe(UpdateKind::Always).with_cmd(UpdateKind::Always),
+        );
+        let mut killed = false;
+        for p in sys.processes().values() {
+            let same = p
+                .exe()
+                .is_some_and(|e| e.canonicalize().unwrap_or_else(|_| e.to_path_buf()) == bin);
+            let ours = p.cmd().iter().any(|a| a.to_string_lossy().to_lowercase() == conf);
+            if same && ours && p.kill() {
+                p.wait();
+                killed = true;
+            }
+        }
+        killed
+    })
+    .await
+    .unwrap_or(false);
+    if killed {
+        // Il sistema libera le porte poco dopo la fine del processo
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+    }
+    killed
 }
 
 #[cfg(test)]

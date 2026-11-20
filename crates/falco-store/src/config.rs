@@ -219,7 +219,7 @@ impl Default for General {
         Self {
             language: Language::It,
             updates: Updates::Auto,
-            start_with_system: true,
+            start_with_system: false,
             start_minimized: true,
             close_to_tray: true,
         }

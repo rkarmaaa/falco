@@ -7,15 +7,20 @@ fn exe_path() -> anyhow::Result<String> {
 }
 
 /// Allinea l'avvio con il sistema a `general.start_with_system`.
+///
+/// Su Windows solo per l'utente corrente (HKCU): un core avviato da amministratore scriverebbe
+/// in HKLM una voce che poi, da utente normale, non si può più togliere. Da attivo la voce si
+/// riscrive sempre, così un percorso vecchio (reinstallazione, build di sviluppo) si corregge.
 pub fn sync_autostart(enabled: bool) -> anyhow::Result<()> {
     let al = auto_launch::AutoLaunchBuilder::new()
         .set_app_name("Falco")
         .set_app_path(&exe_path()?)
         .set_args(&["--autostart"])
+        .set_windows_enable_mode(auto_launch::WindowsEnableMode::CurrentUser)
         .build()?;
-    if enabled && !al.is_enabled().unwrap_or(false) {
+    if enabled {
         al.enable().context("avvio con il sistema non attivato")?;
-    } else if !enabled && al.is_enabled().unwrap_or(false) {
+    } else if al.is_enabled().unwrap_or(true) {
         al.disable()?;
     }
     Ok(())

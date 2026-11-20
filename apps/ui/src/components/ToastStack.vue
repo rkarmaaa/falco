@@ -48,7 +48,7 @@ function join(id: string, name: string): void {
       </div>
     </div>
     <div v-for="i in social.friendRequests.invites" :key="`h${i.id}`" class="toast request" role="alert">
-      <UiAvatar :name="i.user.name" :size="32" />
+      <UiAvatar :name="i.user.name" :src="friend(i.user.id)?.avatarUrl" :accent="friend(i.user.id)?.accent" :size="32" />
       <span class="text">{{ t('knock.invited', { name: i.user.name }) }}</span>
       <div class="acts">
         <UiButton variant="ghost" :size="32" @click="attempt(t('errors.context.request'), () => declineInvite(i.id))">{{ t('requests.decline') }}</UiButton>

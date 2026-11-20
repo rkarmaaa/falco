@@ -32,7 +32,15 @@ pub struct Live {
     pub address: Option<String>,
     /// Andata e ritorno dell'ultima richiesta di presenza, in ms: la latenza verso l'amico.
     pub rtt_ms: Option<u32>,
+    /// Ultimo errore della presenza (stato HTTP, 0 se nessuna risposta): si registra una volta.
+    pub error: Option<u16>,
+    /// Ultimo invio del nostro nodo nuovo dopo un 403 (secondi Unix, ADR 0018).
+    pub device_sent_at: Option<i64>,
 }
+
+/// Ogni quanto riprovare ad annunciare il nodo nuovo: Tailscale segna offline il vecchio in
+/// qualche minuto.
+const DEVICE_RETRY_S: i64 = 300;
 
 /// Indirizzo di presenza salvato come `ip` o `ip:porta`.
 pub fn split_address(s: &str) -> (String, u16) {
@@ -250,6 +258,7 @@ async fn poll_once(shared: &Shared, favorites_only: bool) -> bool {
     };
 
     let mut changed = false;
+    let mut announce: Vec<String> = Vec::new();
     for (friend, addrs, etag) in targets {
         let me2 = me.clone();
         let result = tokio::task::spawn_blocking(move || {
@@ -279,6 +288,9 @@ async fn poll_once(shared: &Shared, favorites_only: bool) -> bool {
         let mut live = before.clone();
         live.rtt_ms = result.as_ref().map(|r| r.2);
         let result = result.map(|(a, r, _)| (a, r));
+        if result.is_some() {
+            live.error = None;
+        }
         match result {
             Some((addr, (304, _, _))) => live.address = Some(addr),
             Some((addr, (200, tag, body))) => {
@@ -286,7 +298,33 @@ async fn poll_once(shared: &Shared, favorites_only: bool) -> bool {
                 live.etag = tag;
                 live.address = Some(addr);
             }
-            _ => live = Live::default(),
+            other => {
+                // Un 403 (nodo Tailscale cambiato) o un 401 (orologio sfasato) altrimenti
+                // risulterebbero un semplice «offline»: si registra una volta per ogni errore nuovo
+                let error = other.as_ref().map_or(0, |(_, (status, _, _))| *status);
+                if before.error != Some(error) && (error != 0 || before.address.is_some()) {
+                    let why = match &other {
+                        Some((addr, (status, _, body))) => format!(
+                            "{addr} ha risposto {status}: {}",
+                            String::from_utf8_lossy(&body[..body.len().min(200)])
+                        ),
+                        None => "nessuna risposta".into(),
+                    };
+                    tracing::warn!("presenza di {}: {why}", friend.name);
+                }
+                live = Live {
+                    error: Some(error),
+                    device_sent_at: before.device_sent_at,
+                    ..Live::default()
+                };
+                // 403: forse è cambiato il nostro nodo Tailscale e l'amico non lo conosce
+                if let Some((addr, (403, _, _))) = &other
+                    && before.device_sent_at.is_none_or(|t| now() - t >= DEVICE_RETRY_S)
+                {
+                    live.device_sent_at = Some(now());
+                    announce.push(addr.clone());
+                }
+            }
         }
         if live.presence.is_some() {
             let _ = c.db.touch_friend(&friend.id, now());
@@ -314,8 +352,50 @@ async fn poll_once(shared: &Shared, favorites_only: bool) -> bool {
         if fetch && let Some(addr) = address {
             changed |= refresh_profile(shared, &me, &addr).await;
         }
+        for addr in announce.drain(..) {
+            if announce_device(shared, &me, &addr).await {
+                tracing::warn!("nodo nuovo registrato da {}", friend.name);
+                // Al prossimo giro la presenza risponde: l'errore si potrà registrare di nuovo
+                if let Some(l) = shared.lock().await.live.get_mut(&friend.id) {
+                    l.error = None;
+                }
+                changed = true;
+            }
+        }
     }
     changed
+}
+
+/// Annuncia a un amico il nodo Tailscale attuale di questo PC (ADR 0018).
+async fn announce_device(shared: &Shared, me: &Identity, address: &str) -> bool {
+    let ts = shared.lock().await.net.clone();
+    let net = crate::core::Core::net_status(ts).await;
+    let body = {
+        let c = shared.lock().await;
+        let Some(Ok(profile)) = c.me.as_ref().map(|m| m.signed(c.status(), my_devices(&net)))
+        else {
+            return false;
+        };
+        let port = c.config.config().network.presence_port;
+        match serde_json::to_value(fpp::DeviceUpdate { profile, presence_port: port }) {
+            Ok(v) => v,
+            Err(_) => return false,
+        }
+    };
+    let (me2, a) = (me.clone(), address.to_owned());
+    let out = tokio::task::spawn_blocking(move || {
+        fpp_call(&me2, "POST", &a, "/v1/devices", Some(&body), None, Duration::from_secs(5))
+    })
+    .await;
+    match out {
+        Ok(Ok((204, _, _))) => true,
+        Ok(Ok((status, _, body))) => {
+            let why = String::from_utf8_lossy(&body[..body.len().min(200)]).into_owned();
+            tracing::warn!("nodo nuovo non accettato da {address} ({status}): {why}");
+            false
+        }
+        _ => false,
+    }
 }
 
 /// Scarica profilo e avatar di un amico.

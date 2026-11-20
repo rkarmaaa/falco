@@ -29,7 +29,10 @@
   nsExec::Exec 'netsh advfirewall firewall add rule name="Falco Sunshine" dir=in action=allow program="$INSTDIR\engines\sunshine\sunshine.exe" remoteip=100.64.0.0/10,fd7a:115c:a1e0::/48 enable=yes'
   nsExec::Exec 'netsh advfirewall firewall delete rule name="Falco Presence"'
   nsExec::Exec 'netsh advfirewall firewall add rule name="Falco Presence" dir=in action=allow program="$INSTDIR\falco-core.exe" remoteip=100.64.0.0/10,fd7a:115c:a1e0::/48 enable=yes'
-  ; Avvio del core nel tray: registra da solo avvio con il sistema e schema falco://.
+  ; Avvio con il sistema solo per utente (HKCU) e solo se attivato nelle impostazioni: via le
+  ; voci HKLM lasciate da versioni precedenti, che l'app non può più togliere da sola
+  DeleteRegValue HKLM "Software\Microsoft\Windows\CurrentVersion\Run" "Falco"
+  ; Avvio del core nel tray: allinea l'avvio con il sistema alle impostazioni e registra falco://.
   ; Come utente normale, non con i privilegi dell'installer: un core da amministratore
   ; crea una pipe che la finestra di Falco (utente normale) non può aprire (EPERM).
   nsis_tauri_utils::RunAsUser "$INSTDIR\falco-core.exe" "--autostart"
@@ -45,4 +48,5 @@
   RMDir "$INSTDIR\engines\sunshine\config"
   DeleteRegKey HKCU "Software\Classes\falco"
   DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "Falco"
+  DeleteRegValue HKLM "Software\Microsoft\Windows\CurrentVersion\Run" "Falco"
 !macroend

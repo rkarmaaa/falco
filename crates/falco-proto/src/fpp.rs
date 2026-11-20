@@ -104,6 +104,15 @@ pub struct HandshakeRequest {
     pub reverse_invite_url: Option<String>,
 }
 
+/// `POST /v1/devices`: un amico annuncia il suo nodo Tailscale nuovo (ADR 0018).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeviceUpdate {
+    /// Profilo firmato che elenca il nodo da cui parte la richiesta.
+    pub profile: crate::profile::SignedProfile,
+    pub presence_port: u16,
+}
+
 /// Risposta dell'host: amicizia salvata, PIN per il pairing di Moonlight.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

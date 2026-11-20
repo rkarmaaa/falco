@@ -281,6 +281,12 @@ impl Db {
         rows.collect()
     }
 
+    /// Toglie un nodo Tailscale (sostituito da uno nuovo, ADR 0018).
+    pub fn remove_device(&self, node_id: &str) -> Result<(), DbError> {
+        self.conn.execute("DELETE FROM friend_devices WHERE ts_node_id = ?1", [node_id])?;
+        Ok(())
+    }
+
     /// Amico a cui appartiene un nodo Tailscale (doppio vincolo del §5).
     pub fn friend_by_node(&self, node_id: &str) -> Result<Option<String>, DbError> {
         self.conn

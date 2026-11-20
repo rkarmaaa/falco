@@ -26,7 +26,7 @@ export function createMockTransport(): Transport {
   ];
   const invites: { tokenHash: string; role: string; createdAt: number; expiresAt: number; usesLeft: number; needsApproval: boolean; active: boolean }[] = [];
   const config = {
-    general: { language: 'it', updates: 'auto', start_with_system: true, start_minimized: true, close_to_tray: true },
+    general: { language: 'it', updates: 'auto', start_with_system: false, start_minimized: true, close_to_tray: true },
     profile: { status: 'online' },
     stream: {},
     host: { max_guests: 3, encoder: 'auto', default_role: 'spettatore', profile: 'latency', max_bitrate_kbps: 0, encoder_quality: 'speed', audio_capture: 'onscreen' },

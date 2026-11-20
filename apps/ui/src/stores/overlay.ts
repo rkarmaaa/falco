@@ -52,6 +52,9 @@ export function useStreamOverlay(active: Ref<boolean>, message: Ref<PlainToast |
       id: i.id,
       name: i.user.name,
       text: t('knock.invited', { name: i.user.name }),
+      // Il Hub usa l'id dell'identità: è lo stesso dell'amico salvato qui
+      avatar: friend(i.user.id)?.avatarUrl,
+      accent: friend(i.user.id)?.accent,
       no: t('requests.decline'),
       yes: t('friends.join'),
     })),

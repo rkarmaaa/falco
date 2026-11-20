@@ -65,6 +65,11 @@ impl Srv {
         node
     }
 
+    async fn is_friend(&self, key: &str) -> bool {
+        let state = self.core.lock().await.db.friend_state(key).ok().flatten();
+        matches!(state, Some(FriendState::Friend | FriendState::Pending))
+    }
+
     /// Firma, finestra temporale, frequenza; per gli amici anche nodo registrato.
     async fn auth(
         &self,
@@ -93,8 +98,7 @@ impl Srv {
             return Ok(id);
         }
         let key = id.to_string();
-        let state = self.core.lock().await.db.friend_state(&key).ok().flatten();
-        if !matches!(state, Some(FriendState::Friend | FriendState::Pending)) {
+        if !self.is_friend(&key).await {
             return Err((StatusCode::FORBIDDEN, "non siete amici".into()));
         }
         // LAN o Diretto: l'IP deve essere quello annunciato o registrato per l'amico
@@ -397,6 +401,94 @@ async fn notify(
     StatusCode::NO_CONTENT.into_response()
 }
 
+/// Perché un nodo nuovo non può sostituire quelli di un amico (ADR 0018), se non può.
+fn device_change_denied(
+    friend: &FalcoId,
+    node: &str,
+    owner: Option<&str>,
+    profile: &falco_proto::profile::SignedProfile,
+    old_nodes_online: bool,
+) -> Option<&'static str> {
+    if owner.is_some_and(|o| o != friend.to_string()) {
+        return Some("nodo di un altro amico");
+    }
+    if profile.verify().is_err() || profile.profile.id != *friend {
+        return Some("profilo non valido");
+    }
+    if !profile.profile.devices.iter().any(|d| d.node_id == node) {
+        return Some("il profilo non elenca questo nodo");
+    }
+    if old_nodes_online {
+        return Some("il dispositivo registrato è ancora online");
+    }
+    None
+}
+
+/// Un amico annuncia il nodo Tailscale nuovo del suo PC (ADR 0018).
+async fn devices(
+    State(s): State<Srv>,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    method: Method,
+    uri: Uri,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Response {
+    // Firma e amicizia, senza il vincolo sul nodo: è proprio il nodo a essere cambiato
+    let id = match s.auth(peer, &method, &uri, &headers, &body, false).await {
+        Ok(id) => id,
+        Err((code, msg)) => return err(code, &msg),
+    };
+    let key = id.to_string();
+    if !s.is_friend(&key).await {
+        return err(StatusCode::FORBIDDEN, "non siete amici");
+    }
+    let Ok(req) = serde_json::from_slice::<fpp::DeviceUpdate>(&body) else {
+        return err(StatusCode::BAD_REQUEST, "richiesta non valida");
+    };
+    if !social::is_tailnet(peer.ip()) {
+        return err(StatusCode::FORBIDDEN, "solo dalla tailnet");
+    }
+    let Some(node) = s.node_of(peer.ip()).await else {
+        return err(StatusCode::FORBIDDEN, "dispositivo non riconosciuto da Tailscale");
+    };
+    let ts = s.core.lock().await.net.clone();
+    let net = crate::core::Core::net_status(ts).await;
+    // Senza lo stato della tailnet non si sa se il vecchio nodo è online: si rifiuta
+    if net.state != falco_net::TailscaleState::Running {
+        return err(StatusCode::SERVICE_UNAVAILABLE, "stato di Tailscale non disponibile");
+    }
+    let c = s.core.lock().await;
+    let owner = c.db.friend_by_node(&node).ok().flatten();
+    let old = c.db.devices(&key).unwrap_or_default();
+    let old_online = old.iter().any(|d| {
+        d.ts_node_id != node && net.peers.iter().any(|p| p.node_id == d.ts_node_id && p.online)
+    });
+    let name = c.db.friend(&key).ok().flatten().map(|f| f.name).unwrap_or_default();
+    if let Some(why) = device_change_denied(&id, &node, owner.as_deref(), &req.profile, old_online)
+    {
+        tracing::warn!("nodo nuovo di {name} rifiutato: {why}");
+        return err(StatusCode::FORBIDDEN, why);
+    }
+    let device = req.profile.profile.devices.iter().find(|d| d.node_id == node);
+    let prev = old.first();
+    let _ = c.db.upsert_device(&DeviceRow {
+        friend_id: key.clone(),
+        ts_node_id: node.clone(),
+        ts_ip: social::join_address(&peer.ip().to_string(), req.presence_port),
+        hostname: device.map(|d| d.name.clone()).unwrap_or_default(),
+        os: device.map(|d| d.os.clone()).unwrap_or_default(),
+        can_host: device.is_some_and(|d| d.can_host),
+        shared_in: prev.is_none_or(|d| d.shared_in),
+        shared_out: prev.is_none_or(|d| d.shared_out),
+    });
+    for d in old.iter().filter(|d| d.ts_node_id != node) {
+        let _ = c.db.remove_device(&d.ts_node_id);
+    }
+    tracing::warn!("{name} ha un nodo Tailscale nuovo ({node}, {}): registrato", peer.ip());
+    social::emit_friends(&c);
+    StatusCode::NO_CONTENT.into_response()
+}
+
 fn router(s: Srv) -> Router {
     Router::new()
         .route("/v1/profile", get(profile))
@@ -405,6 +497,7 @@ fn router(s: Srv) -> Router {
         .route("/v1/handshake", post(handshake))
         .route("/v1/speedtest", get(speedtest))
         .route("/v1/friend/remove", post(friend_remove))
+        .route("/v1/devices", post(devices))
         .route("/v1/session/knock", post(knock))
         .route("/v1/session/leave", post(leave))
         .route("/v1/session/notify", post(notify))
@@ -445,5 +538,67 @@ pub async fn run(core: Shared) {
             bound = want;
         }
         tokio::time::sleep(Duration::from_secs(60)).await;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::device_change_denied;
+    use falco_proto::Identity;
+    use falco_proto::profile::{Device, Profile, SignedProfile};
+
+    fn signed(who: &Identity, nodes: &[&str]) -> SignedProfile {
+        let mut p = Profile::new(who.id(), "Manu", 1).unwrap();
+        p.devices = nodes
+            .iter()
+            .map(|n| Device {
+                node_id: (*n).into(),
+                name: "pc".into(),
+                os: "windows".into(),
+                can_host: true,
+            })
+            .collect();
+        p.sign(who).unwrap()
+    }
+
+    #[test]
+    fn new_node_replaces_offline_ones() {
+        let manu = Identity::generate();
+        let sp = signed(&manu, &["nNEW"]);
+        assert_eq!(device_change_denied(&manu.id(), "nNEW", None, &sp, false), None);
+        // Già suo (ripetizione dopo un riavvio): va bene
+        let id = manu.id().to_string();
+        assert_eq!(device_change_denied(&manu.id(), "nNEW", Some(&id), &sp, false), None);
+    }
+
+    #[test]
+    fn refuses_while_old_node_online() {
+        let manu = Identity::generate();
+        let sp = signed(&manu, &["nNEW"]);
+        assert!(device_change_denied(&manu.id(), "nNEW", None, &sp, true).is_some());
+    }
+
+    #[test]
+    fn refuses_node_of_someone_else() {
+        let manu = Identity::generate();
+        let other = Identity::generate().id().to_string();
+        let sp = signed(&manu, &["nNEW"]);
+        assert!(device_change_denied(&manu.id(), "nNEW", Some(&other), &sp, false).is_some());
+    }
+
+    #[test]
+    fn refuses_profile_of_another_id_or_without_the_node() {
+        let manu = Identity::generate();
+        let thief = Identity::generate();
+        // Profilo valido ma di un altro: non vale per Manu
+        let foreign = signed(&thief, &["nNEW"]);
+        assert!(device_change_denied(&manu.id(), "nNEW", None, &foreign, false).is_some());
+        // Profilo di Manu che non elenca il nodo da cui arriva la richiesta
+        let other_node = signed(&manu, &["nOTHER"]);
+        assert!(device_change_denied(&manu.id(), "nNEW", None, &other_node, false).is_some());
+        // Profilo manomesso dopo la firma
+        let mut tampered = signed(&manu, &["nOLD"]);
+        tampered.profile.devices[0].node_id = "nNEW".into();
+        assert!(device_change_denied(&manu.id(), "nNEW", None, &tampered, false).is_some());
     }
 }

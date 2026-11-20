@@ -19,6 +19,8 @@ const { t } = useI18n();
 
 const text = ref(ui.accept.link ?? '');
 const preview = ref<InvitePreview | null>(null);
+// L'host di un invito è spesso già un amico: si usa la sua foto
+const hostAvatar = computed(() => social.friends.find((f) => f.id === preview.value?.host.id)?.avatarUrl);
 const error = ref<string | null>(null);
 const link = computed(() => findInviteLink(text.value));
 const sent = ref<string | null>(null);
@@ -148,7 +150,7 @@ onMounted(async () => {
         <span><Ticket :size="16" :stroke-width="1.75" aria-hidden="true" /> {{ $t('accept.kind.invite') }}</span>
       </div>
       <div v-if="preview" class="host">
-        <UiAvatar :name="preview.host.name" :accent="preview.host.accent" :size="56" />
+        <UiAvatar :name="preview.host.name" :src="hostAvatar" :accent="preview.host.accent" :size="56" />
         <div class="who">
           <span class="name">{{ preview.host.name }}</span>
           <span class="tag">{{ preview.host.tag }} · {{ $t(`role.${preview.role}`) }}</span>

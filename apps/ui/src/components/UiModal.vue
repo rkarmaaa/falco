@@ -11,10 +11,35 @@ const dialog = ref<HTMLDialogElement | null>(null);
 // Lo stream incorporato starebbe sopra la modale: si nasconde finché è aperta
 useStageCover();
 onMounted(() => dialog.value?.showModal?.());
+
+// Clic sullo sfondo scuro: chiude. Conta solo se anche la pressione è partita fuori,
+// così selezionare del testo e rilasciare oltre il bordo non chiude la modale.
+let downOutside = false;
+function outside(e: MouseEvent): boolean {
+  const el = dialog.value;
+  if (!el || e.target !== el) return false;
+  const r = el.getBoundingClientRect();
+  return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+}
+function onPointerDown(e: PointerEvent): void {
+  downOutside = outside(e);
+}
+function onClick(e: MouseEvent): void {
+  if (downOutside && outside(e)) emit('close');
+  downOutside = false;
+}
 </script>
 
 <template>
-  <dialog ref="dialog" class="modal" :aria-label="title" @close="emit('close')" @cancel.prevent="emit('close')">
+  <dialog
+    ref="dialog"
+    class="modal"
+    :aria-label="title"
+    @close="emit('close')"
+    @cancel.prevent="emit('close')"
+    @pointerdown="onPointerDown"
+    @click="onClick"
+  >
     <header class="head">
       <h2 class="title">{{ title }}</h2>
       <button type="button" class="close" :aria-label="$t('app.close')" @click="emit('close')">

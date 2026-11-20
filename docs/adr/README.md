@@ -21,3 +21,4 @@ Una decisione per file, numerate. Per un nuovo ADR copia [0000-modello.md](0000-
 | [0015](0015-stream-incorporato-e-input-per-dispositivo.md) | Stream nella finestra e input per dispositivo | accettato |
 | [0016](0016-audio-solo-a-schermo.md) | Audio condiviso: solo ciò che è a schermo | accettato |
 | [0017](0017-falco-hub.md) | Falco Hub: codici amico, richieste, link di stream, rete senza account | accettato |
+| [0018](0018-nodo-tailscale-cambiato.md) | Amico con un nodo Tailscale nuovo | accettato |

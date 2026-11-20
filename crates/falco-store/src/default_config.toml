@@ -4,7 +4,7 @@ schema = 1
 [general]
 language = "it"              # it | en
 updates = "auto"             # auto | notify | off
-start_with_system = true
+start_with_system = false
 start_minimized = true
 close_to_tray = true
 

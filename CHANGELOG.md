@@ -2,6 +2,21 @@
 
 Formato [Keep a Changelog](https://keepachangelog.com/it/1.1.0/), versioni [SemVer](https://semver.org/lang/it/).
 
+## [1.0.0-rc.10] - 2026-11-20 · Beta
+
+### Corretto
+
+- Amici sempre «offline» dopo che Tailscale ha dato al PC di uno dei due un nodo nuovo: Falco annuncia da solo il nodo nuovo con il profilo firmato, accettato solo se quello vecchio è spento ([ADR 0018](docs/adr/0018-nodo-tailscale-cambiato.md)). Serve la nuova versione su entrambi i PC.
+- Condividere non ripartiva («porta 47989 già usata») se un Sunshine di Falco era rimasto aperto dopo un crash o un aggiornamento: ora viene chiuso.
+- Falco si avviava con il sistema anche con l'opzione spenta (voce rimasta nel registro di sistema).
+- Foto dell'amico mancante negli inviti a giocare.
+
+### Migliorato
+
+- Falco non si avvia più con il sistema di default: si attiva nelle Impostazioni. Aprendolo parte tutto ciò che serve.
+- I popup si chiudono anche cliccando lo sfondo scuro.
+- Nel rapporto di debug compare il motivo per cui un amico non risponde (per esempio «dispositivo non riconosciuto»).
+
 ## [1.0.0-rc.9] - 2026-11-20 · Beta
 
 ### Migliorato
