@@ -266,9 +266,12 @@ pub async fn join_friend(core: &Shared, id: &str, app: &str) -> Result<(), RpcEr
     let (host, _) = crate::social::split_address(&addr);
     let address = crate::guest::moonlight_address(&host, port);
     let info = crate::guest::SessionInfo { friend_id: Some(id.to_owned()), name, permissions };
-    crate::guest::join(core.clone(), address, app.to_owned(), info)
-        .await
-        .map_err(anyhow_err(codes::SESSION_FAILED))
+    let started = crate::guest::join(core.clone(), address, app.to_owned(), info).await;
+    if started.is_err() {
+        // Moonlight non è partito: nessuna sessione da chiudere più tardi
+        core.lock().await.joined = None;
+    }
+    started.map_err(anyhow_err(codes::SESSION_FAILED))
 }
 
 /// Bussa all'host prima di avviare Moonlight (§7); errore con il motivo se rifiutato.
@@ -276,7 +279,9 @@ async fn knock_friend(core: &Shared, addr: &str) -> Result<Option<Value>, RpcErr
     let (me, wait) = {
         let c = core.lock().await;
         let me = c.me.as_ref().map(|m| m.identity.clone());
-        (me, u64::from(c.config.config().host.knock_timeout_s) + 15)
+        // Tempo dell'host per rispondere, per avviare la condivisione e margine di rete
+        let host_wait = u64::from(c.config.config().host.knock_timeout_s);
+        (me, host_wait + crate::access::HOST_STARTUP_WAIT_S + 15)
     };
     let me = me.ok_or_else(|| RpcError::new(codes::SESSION_FAILED, "profilo non pronto"))?;
     let addr = addr.to_owned();
@@ -463,6 +468,7 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
             // Effetto lato host senza riconnessione; gli input richiedono il riavvio del motore
             crate::access::apply_all(core).await;
             crate::access::sync_inputs(core).await;
+            crate::access::push_permissions(core, &p.id).await;
             return Ok(Value::Null);
         }
         methods::HOST_ANSWER_KNOCK => {

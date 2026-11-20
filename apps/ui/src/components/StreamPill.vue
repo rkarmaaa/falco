@@ -78,7 +78,8 @@ function leave(): void {
   border-radius: $r-pill;
   background: rgba(10, 12, 22, 0.9);
   backdrop-filter: blur(12px);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+  // Compatta: la finestra del pulsantino lascia 16 px sotto la barra, l'ombra deve starci dentro
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   color: $text-1;
   font-size: $fs-small;
   // Più leggibile anche a riposo

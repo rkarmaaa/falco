@@ -53,6 +53,10 @@ function pin(): void {
 
 onMounted(async () => {
   document.body.classList.add('pill');
+  // La finestra viene nascosta e riusata: ricompare sempre aperta, come la sua dimensione
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') pin();
+  });
   const snap = await rpc<StateSnapshot>('state.snapshot').catch(() => null);
   name.value = snap?.session?.name ?? '';
   const t = await getTransport();

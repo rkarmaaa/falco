@@ -214,6 +214,7 @@ Il core espone un piccolo server HTTP sulla porta 47900 (configurabile), legato 
 | `POST /v1/session/knock` | Un ospite chiede di entrare; long-poll fino a 30 s per la risposta dell'host |
 | `POST /v1/session/notify` | L'host avvisa un amico: «ti invito a giocare ora» |
 | `POST /v1/friend/remove` | Notifica di rimozione dell'amicizia |
+| `POST /v1/session/permissions` | L'host manda all'ospite collegato i permessi appena cambiati |
 | `POST /v1/hub/poke` | «Leggi subito il Hub»: un invito appena lasciato arriva senza aspettare il giro |
 | `POST /v1/devices` | Nodo Tailscale nuovo di un amico, con il profilo firmato (ADR 0018) |
 

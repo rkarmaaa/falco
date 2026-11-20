@@ -127,7 +127,8 @@ fn main() -> anyhow::Result<()> {
     let core = Core::new(config, &paths.db, &paths.data, Box::new(notify))?;
     let mut core = core;
     // Avvio da menu Start o Launchpad: si apre la finestra; con --autostart resta nel tray
-    if open_at_start {
+    // Appena aggiornato con la finestra aperta: l'installer avvia il core nel tray, la si riapre
+    if open_at_start || updater::take_reopen(&paths.data) {
         core.open_ui();
     }
     if let Some(l) = &link {

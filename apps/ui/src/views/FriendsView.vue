@@ -33,6 +33,8 @@ const selected = computed(() => social.friends.find((f) => f.id === selectedId.v
 // «Invita» con un clic: avvia la condivisione e recapita l'invito tramite il Falco Hub
 const invited = ref(new Set<string>());
 async function invite(f: Friend): Promise<void> {
+  // Prima la condivisione, poi l'invito: chi accetta subito trova l'host già in avvio
+  if (core.host.state === 'stopped' || core.host.state === 'error') void attempt(t('errors.context.share'), () => setHostAvailable(true));
   const ok = await attempt(t('errors.context.invite', { name: f.name }), () => inviteFriend(f.id).then(() => true), { name: f.name });
   if (!ok) return;
   invited.value = new Set(invited.value).add(f.id);
@@ -41,7 +43,6 @@ async function invite(f: Friend): Promise<void> {
     next.delete(f.id);
     invited.value = next;
   }, 4000);
-  if (core.host.state === 'stopped' || core.host.state === 'error') void attempt(t('errors.context.share'), () => setHostAvailable(true));
 }
 
 function open(f: Friend): void {

@@ -95,7 +95,8 @@ withDefaults(
   &.danger {
     background: transparent;
     color: $danger;
-    border: 1px solid $danger;
+    // Bordo tenue a riposo: il rosso pieno resta per il passaggio del mouse
+    border: 1px solid $danger-line;
 
     &:hover {
       background: $danger;

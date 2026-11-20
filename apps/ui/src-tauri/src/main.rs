@@ -46,21 +46,33 @@ fn core_connected(link: State<'_, Arc<CoreLink>>) -> bool {
 }
 
 /// Pulsantino sopra il flusso a schermo intero: finestra piccola, trasparente, sempre in primo piano.
-/// Asincrono: su Windows creare una finestra da un comando sincrono la blocca.
+/// Asincrono: su Windows creare una finestra da un comando sincrono la blocca. Uscendo dallo
+/// schermo intero si nasconde e poi si riusa: distruggerla mentre gestisce il clic su «Esci da
+/// schermo intero» a volte bloccava WebView2 (finestra bianca «Non risponde»).
 #[tauri::command]
 async fn pill(app: tauri::AppHandle, show: bool) -> Result<(), String> {
-    if let Some(w) = app.get_webview_window("pill") {
+    let main = app.get_webview_window("main").ok_or("finestra principale assente")?;
+    let monitor = main.current_monitor().map_err(|e| e.to_string())?;
+    let (w, h) = (PILL_W, PILL_H);
+    // In alto al centro dello schermo della finestra principale (coordinate logiche)
+    let spot = monitor.map(|m| {
+        let s = m.scale_factor();
+        let x = f64::from(m.position().x) / s + (f64::from(m.size().width) / s - w) / 2.0;
+        (x, f64::from(m.position().y) / s)
+    });
+    if let Some(win) = app.get_webview_window("pill") {
         if !show {
-            return w.close().map_err(|e| e.to_string());
+            return win.hide().map_err(|e| e.to_string());
         }
-        return Ok(());
+        win.set_size(tauri::LogicalSize::new(w, h)).map_err(|e| e.to_string())?;
+        if let Some((x, y)) = spot {
+            win.set_position(tauri::LogicalPosition::new(x, y)).map_err(|e| e.to_string())?;
+        }
+        return win.show().map_err(|e| e.to_string());
     }
     if !show {
         return Ok(());
     }
-    let main = app.get_webview_window("main").ok_or("finestra principale assente")?;
-    let monitor = main.current_monitor().map_err(|e| e.to_string())?;
-    let (w, h) = (PILL_W, PILL_H);
     let builder =
         WebviewWindowBuilder::new(&app, "pill", WebviewUrl::App("index.html#pill".into()))
             .title("Falco")
@@ -69,15 +81,14 @@ async fn pill(app: tauri::AppHandle, show: bool) -> Result<(), String> {
             .transparent(true)
             .shadow(false)
             .resizable(false)
-            .always_on_top(true)
+            // Figlia della finestra principale: sopra Falco (anche a schermo intero), mai sopra
+            // le altre app, e si minimizza con lui
+            .parent(&main)
+            .map_err(|e| e.to_string())?
             .skip_taskbar(true)
             .focused(false);
-    let builder = match monitor {
-        Some(m) => {
-            let s = m.scale_factor();
-            let x = f64::from(m.position().x) / s + (f64::from(m.size().width) / s - w) / 2.0;
-            builder.position(x, f64::from(m.position().y) / s)
-        }
+    let builder = match spot {
+        Some((x, y)) => builder.position(x, y),
         None => builder.center(),
     };
     builder.build().map(|_| ()).map_err(|e| e.to_string())
@@ -108,16 +119,19 @@ async fn toasts_window(
     w: f64,
     h: f64,
 ) -> Result<(), String> {
+    // Come il pulsantino: nascosta e riusata, mai distrutta mentre è in uso
+    let main = app.get_webview_window("main").ok_or("finestra principale assente")?;
     let existing = app.get_webview_window("toasts");
     if !show {
         if let Some(win) = existing {
-            win.close().map_err(|e| e.to_string())?;
+            win.hide().map_err(|e| e.to_string())?;
         }
         return Ok(());
     }
     if let Some(win) = existing {
         win.set_size(tauri::LogicalSize::new(w, h)).map_err(|e| e.to_string())?;
-        return win.set_position(tauri::LogicalPosition::new(x, y)).map_err(|e| e.to_string());
+        win.set_position(tauri::LogicalPosition::new(x, y)).map_err(|e| e.to_string())?;
+        return win.show().map_err(|e| e.to_string());
     }
     WebviewWindowBuilder::new(&app, "toasts", WebviewUrl::App("index.html#toasts".into()))
         .title("Falco")
@@ -127,7 +141,9 @@ async fn toasts_window(
         .transparent(true)
         .shadow(false)
         .resizable(false)
-        .always_on_top(true)
+        // Figlia della finestra principale, come il pulsantino: niente notifiche sopra le altre app
+        .parent(&main)
+        .map_err(|e| e.to_string())?
         .skip_taskbar(true)
         .focused(false)
         .build()

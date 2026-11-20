@@ -120,7 +120,14 @@ pub async fn install(shared: &Shared) -> anyhow::Result<()> {
     verify(&bytes, &sig, PUBLIC_KEY)?;
     let file = dir.join(if cfg!(windows) { "falco-setup.exe" } else { "falco.app.tar.gz" });
     std::fs::write(&file, &bytes)?;
-    shared.lock().await.emit(events::UPDATE_PROGRESS, json!({ "step": "installing" }));
+    {
+        let c = shared.lock().await;
+        // Finestra aperta: il core nuovo la riapre appena parte (lo avvia l'installer, nel tray)
+        if c.ui_clients > 0 {
+            let _ = std::fs::write(reopen_marker(&c.data_dir), b"");
+        }
+        c.emit(events::UPDATE_PROGRESS, json!({ "step": "installing" }));
+    }
     if cfg!(windows) {
         // NSIS silenzioso: l'installer chiude e riavvia Falco. Il core gira come utente normale e
         // l'installer è per tutto il PC: si avvia con «runas», Windows chiede la conferma (UAC)
@@ -179,18 +186,39 @@ pub async fn install(shared: &Shared) -> anyhow::Result<()> {
 }
 
 /// All'avvio e ogni 6 ore; in modalità automatica installa quando non si gioca.
+/// File lasciato prima di aggiornare se la finestra era aperta: il core nuovo la riapre.
+fn reopen_marker(data_dir: &std::path::Path) -> std::path::PathBuf {
+    data_dir.join("updates").join("reopen-ui")
+}
+
+/// Il core è appena stato aggiornato con la finestra aperta? Consuma il segnale.
+pub fn take_reopen(data_dir: &std::path::Path) -> bool {
+    std::fs::remove_file(reopen_marker(data_dir)).is_ok()
+}
+
+/// Falco è in uso? Un aggiornamento chiude core e motori: mai durante uno stream, una
+/// condivisione, un pairing, un ingresso in corso o con la finestra aperta (si riprova dopo).
+fn busy(c: &crate::core::Core) -> bool {
+    c.streaming
+        || !c.guests.is_empty()
+        || c.host_available
+        || c.joined.is_some()
+        || !c.knocks.is_empty()
+        || c.ui_clients > 0
+        || crate::invites::pairing_active()
+}
+
 pub async fn run(shared: Shared) {
     tokio::time::sleep(Duration::from_secs(20)).await;
     loop {
         let mode = shared.lock().await.config.config().general.updates;
+        let mut pending = false;
         if mode != Updates::Off {
             match check(&shared).await {
                 Ok(Some(_)) if mode == Updates::Auto => {
-                    let idle = {
-                        let c = shared.lock().await;
-                        !c.streaming && c.guests.is_empty()
-                    };
-                    if idle && let Err(e) = install(&shared).await {
+                    if busy(&*shared.lock().await) {
+                        pending = true;
+                    } else if let Err(e) = install(&shared).await {
                         shared.lock().await.record_error("update.install", &format!("{e:#}"), None);
                     }
                 }
@@ -198,7 +226,9 @@ pub async fn run(shared: Shared) {
                 Err(e) => tracing::info!("controllo aggiornamenti: {e:#}"),
             }
         }
-        tokio::time::sleep(Duration::from_secs(6 * 3600)).await;
+        // In attesa che Falco non sia in uso: si riprova presto, altrimenti ogni 6 ore
+        let wait = if pending { 10 * 60 } else { 6 * 3600 };
+        tokio::time::sleep(Duration::from_secs(wait)).await;
     }
 }
 

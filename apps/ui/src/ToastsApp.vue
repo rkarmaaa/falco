@@ -66,13 +66,18 @@ onMounted(async () => {
 </template>
 
 <style lang="scss" scoped>
+// La finestra è grande quanto le notifiche: margine e ombra compatta stanno tutti dentro,
+// altrimenti l'ombra viene tagliata dal bordo della finestra
 .stack {
   display: grid;
   gap: $sp-2;
-  padding: $sp-2;
+  padding: $sp-3 $sp-4 $sp-5;
 
   .toast {
     @include floating-card;
+    box-shadow:
+      0 6px 16px rgba(0, 0, 0, 0.5),
+      0 1px 0 rgba(255, 255, 255, 0.05) inset;
     display: flex;
     flex-wrap: wrap;
     align-items: center;

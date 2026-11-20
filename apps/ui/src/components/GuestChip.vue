@@ -91,8 +91,7 @@ function kick(): void {
 
       <UiAvatar :name="guest.name" :src="friend?.avatarUrl" :accent="friend?.accent" :size="40" />
       <span class="info">
-        <DeviceIcons v-if="!watching" :allowed="allowed" :active="social.activity" :size="14" />
-        <Eye v-else class="watch" :size="14" :stroke-width="2" :aria-label="t('guests.watching')" />
+        <DeviceIcons vertical :allowed="allowed" :active="social.activity" :size="11" />
       </span>
     </button>
 
@@ -146,9 +145,10 @@ function kick(): void {
     @include focus-ring;
     display: flex;
     align-items: center;
-    gap: $sp-2;
+    // Foto e colonna delle icone con lo stesso margine: 4 px sopra e sotto, 6 px tra le due
+    gap: 6px;
     height: 48px;
-    padding: 0 $sp-3 0 $sp-2;
+    padding: 0 6px 0 4px;
     border: 1px solid $line;
     border-radius: $r-card;
     background: $bg-2;
@@ -164,7 +164,7 @@ function kick(): void {
 
     .info {
       display: grid;
-      gap: 1px;
+      align-content: center;
       text-align: left;
 
       .name {
@@ -173,15 +173,6 @@ function kick(): void {
         font-size: $fs-small;
         font-weight: 600;
         line-height: 16px;
-      }
-
-      .watch {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        height: 22px;
-        font-size: 12px;
-        color: $text-3;
       }
     }
   }

@@ -11,8 +11,10 @@ const props = withDefaults(
     allowed: Record<Device, boolean>;
     active?: Partial<Record<Device, boolean>>;
     size?: number;
+    /** In colonna, compatte: accanto alla foto nella card dell'ospite. */
+    vertical?: boolean;
   }>(),
-  { active: () => ({}), size: 15 },
+  { active: () => ({}), size: 15, vertical: false },
 );
 const { t } = useI18n();
 
@@ -33,7 +35,7 @@ const items = computed(() =>
 </script>
 
 <template>
-  <span class="devices">
+  <span class="devices" :class="{ vertical }">
     <span
       v-for="d in items"
       :key="d.id"
@@ -76,6 +78,18 @@ const items = computed(() =>
       color: $live;
       background: $live-soft;
       box-shadow: 0 0 12px $live-glow;
+    }
+  }
+
+  // Tre righe da 13 px con 1 px tra l'una e l'altra: 41 px, centrate nella card da 48
+  &.vertical {
+    flex-direction: column;
+    gap: 1px;
+
+    .device {
+      width: 18px;
+      height: 13px;
+      border-radius: 4px;
     }
   }
 }

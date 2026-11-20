@@ -158,9 +158,17 @@ const applyInputs = () => attempt(t('errors.context.applyInputs'), () => hostApi
           {{ t(`quality.short.${quality}`) }}
           <ChevronUp :size="14" :stroke-width="2" aria-hidden="true" />
         </UiButton>
-        <UiButton variant="ghost" :size="40" :aria-pressed="stage.stats" :class="{ on: stage.stats }" @click="toggleStats">
+        <UiButton
+          variant="ghost"
+          :size="40"
+          icon
+          :aria-label="t('session.stats')"
+          :title="t('session.stats')"
+          :aria-pressed="stage.stats"
+          :class="{ on: stage.stats }"
+          @click="toggleStats"
+        >
           <Activity :size="17" :stroke-width="1.9" aria-hidden="true" />
-          {{ t('session.stats') }}
         </UiButton>
         <UiButton variant="danger" :size="40" @click="leave">
           <LogOut :size="17" :stroke-width="1.9" aria-hidden="true" />

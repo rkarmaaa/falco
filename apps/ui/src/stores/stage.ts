@@ -110,13 +110,22 @@ export async function resetStage(): Promise<void> {
   state.stats = false;
 }
 
-export async function setFullscreen(on: boolean): Promise<void> {
-  state.fullscreen = on;
-  if (isTauri()) {
+// Un cambio di schermo intero alla volta: due clic ravvicinati non si accavallano
+let fullscreenQueue: Promise<void> = Promise.resolve();
+
+export function setFullscreen(on: boolean): Promise<void> {
+  const run = async (): Promise<void> => {
+    state.fullscreen = on;
+    if (!isTauri()) return;
     const { getCurrentWindow } = await import('@tauri-apps/api/window');
-    await getCurrentWindow().setFullscreen(on);
-    await invoke('pill', { show: on });
-  }
+    const win = getCurrentWindow();
+    // Prima via il pulsantino, poi la finestra: non deve sparire mentre sta gestendo il clic
+    if (!on) await invoke('pill', { show: false }).catch(() => {});
+    if ((await win.isFullscreen()) !== on) await win.setFullscreen(on);
+    if (on) await invoke('pill', { show: true });
+  };
+  fullscreenQueue = fullscreenQueue.then(run, run);
+  return fullscreenQueue;
 }
 
 /** Statistiche: nello stream incorporato si accende l'overlay di Moonlight sopra il video. */

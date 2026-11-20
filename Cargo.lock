@@ -1336,7 +1336,7 @@ dependencies = [
 
 [[package]]
 name = "falco-core"
-version = "1.0.0-rc.11"
+version = "1.0.0-rc.12"
 dependencies = [
  "anyhow",
  "auto-launch",
@@ -1377,7 +1377,7 @@ dependencies = [
 
 [[package]]
 name = "falco-engines"
-version = "1.0.0-rc.11"
+version = "1.0.0-rc.12"
 dependencies = [
  "data-encoding",
  "serde",
@@ -1390,7 +1390,7 @@ dependencies = [
 
 [[package]]
 name = "falco-net"
-version = "1.0.0-rc.11"
+version = "1.0.0-rc.12"
 dependencies = [
  "falco-proto",
  "if-addrs",
@@ -1406,7 +1406,7 @@ dependencies = [
 
 [[package]]
 name = "falco-proto"
-version = "1.0.0-rc.11"
+version = "1.0.0-rc.12"
 dependencies = [
  "data-encoding",
  "directories",
@@ -1425,7 +1425,7 @@ dependencies = [
 
 [[package]]
 name = "falco-store"
-version = "1.0.0-rc.11"
+version = "1.0.0-rc.12"
 dependencies = [
  "rusqlite",
  "serde",
@@ -1437,7 +1437,7 @@ dependencies = [
 
 [[package]]
 name = "falco-ui"
-version = "1.0.0-rc.11"
+version = "1.0.0-rc.12"
 dependencies = [
  "falco-proto",
  "serde",

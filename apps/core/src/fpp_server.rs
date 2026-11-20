@@ -401,6 +401,34 @@ async fn notify(
     StatusCode::NO_CONTENT.into_response()
 }
 
+/// L'host della nostra sessione ha cambiato i permessi: si aggiornano quelli mostrati nella UI.
+async fn session_permissions(
+    State(s): State<Srv>,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    method: Method,
+    uri: Uri,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Response {
+    let id = match s.auth(peer, &method, &uri, &headers, &body, true).await {
+        Ok(id) => id,
+        Err((code, msg)) => return err(code, &msg),
+    };
+    let Ok(perms) = serde_json::from_slice::<falco_proto::permissions::Permissions>(&body) else {
+        return err(StatusCode::BAD_REQUEST, "permessi non validi");
+    };
+    let mut c = s.core.lock().await;
+    // Solo dall'host da cui siamo entrati, solo durante la sessione
+    let ours = c.joined.as_deref() == Some(id.to_string().as_str());
+    let Some(session) = c.session.as_mut().filter(|_| ours) else {
+        return err(StatusCode::CONFLICT, "nessuna sessione con questo host");
+    };
+    session["permissions"] = serde_json::to_value(&perms).unwrap_or_default();
+    let session = session.clone();
+    c.emit(events::SESSION_STARTED, session);
+    StatusCode::NO_CONTENT.into_response()
+}
+
 /// Un amico ci ha lasciato qualcosa sul Hub (invito): lo si legge subito, senza aspettare il giro.
 async fn hub_poke(
     State(s): State<Srv>,
@@ -515,6 +543,7 @@ fn router(s: Srv) -> Router {
         .route("/v1/friend/remove", post(friend_remove))
         .route("/v1/devices", post(devices))
         .route("/v1/hub/poke", post(hub_poke))
+        .route("/v1/session/permissions", post(session_permissions))
         .route("/v1/session/knock", post(knock))
         .route("/v1/session/leave", post(leave))
         .route("/v1/session/notify", post(notify))

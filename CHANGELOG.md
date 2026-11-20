@@ -2,6 +2,23 @@
 
 Formato [Keep a Changelog](https://keepachangelog.com/it/1.1.0/), versioni [SemVer](https://semver.org/lang/it/).
 
+## [1.0.0-rc.12] - 2026-11-20 · Beta
+
+### Corretto
+
+- Controller, mouse e tastiera dell'ospite bloccati dopo un nuovo pairing: l'host applicava i permessi solo a uno dei client associati all'amico, non sempre a quello in uso. Ora a tutti, e non ne cancella più nessuno come «duplicato».
+- Mouse nello stream: arrivavano solo i clic. Ora è il mouse da desktop remoto, con trascinamento e cursore sempre visibile.
+- Le icone dei permessi dell'ospite si aggiornano appena l'host li cambia.
+- «Non sta ospitando» accettando subito un invito: chi invita avvia prima la condivisione, e l'host aspetta che sia pronta invece di rifiutare.
+- L'aggiornamento automatico non parte più mentre Falco è in uso (sessione, condivisione, ingresso o finestra aperta); dopo un aggiornamento la finestra si riapre da sola.
+- «Esci da schermo intero» poteva bloccare il pulsantino («Non risponde»): ora viene nascosto e riusato, e i cambi di schermo intero non si accavallano.
+- Notifiche e pulsantino non compaiono più sopra le altre app; ombre non più tagliate.
+
+### Migliorato
+
+- Barra dello stream: «Statistiche» solo con l'icona, bordo di «Esci» più leggero.
+- Card dell'ospite lato host: tastiera, mouse e controller in colonna accanto alla foto, anche per gli spettatori.
+
 ## [1.0.0-rc.11] - 2026-11-20 · Beta
 
 ### Corretto
