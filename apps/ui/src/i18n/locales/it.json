@@ -356,6 +356,14 @@
       "stream": "Link di stream",
       "streamBody": "Entri subito nella sua sessione",
       "invite": "Invito"
+    },
+    "cancelled": "Collegamento annullato.",
+    "timeout": "Il collegamento non si è concluso. Riprova; se succede ancora chiedi un nuovo invito.",
+    "failed": {
+      "tailscale": "Tailscale non è collegato. Apri Tailscale e riprova.",
+      "share": "Non riesco a raggiungere il PC dell'host. Controlla che Falco sia aperto da tutti e due.",
+      "handshake": "L'host non ha accettato l'invito. Chiedigliene uno nuovo.",
+      "pairing": "Non sono riuscito ad associare i due PC. Riprova; se succede ancora chiedi un nuovo invito."
     }
   },
   "requests": {
@@ -405,7 +413,8 @@
     "no-answer": "{name} non ha risposto. Forse non ha visto la richiesta. Riprova o scrivigli.",
     "declined": "{name} ha rifiutato la richiesta. Non è il momento giusto. Riprova più tardi.",
     "unknown": "{name} non ti riconosce come amico. L'amicizia potrebbe essere stata rimossa. Chiedigli un nuovo invito.",
-    "offline": "Non riesco a raggiungere {name}. Il suo Falco o Tailscale sembra spento. Chiedigli di aprire Falco."
+    "offline": "Non riesco a raggiungere {name}. Il suo Falco o Tailscale sembra spento. Chiedigli di aprire Falco.",
+    "unrecognized": "{name} non riconosce più il tuo PC (è cambiato il collegamento a Tailscale di uno dei due). Falco prova a sistemarlo da solo; se non basta, chiedigli un nuovo invito."
   },
   "cfg": {
     "general": {
@@ -600,6 +609,7 @@
     "externalBody": "Su questo sistema lo stream si apre nella sua finestra. Le azioni restano qui sotto.",
     "joining": "Entri da {name}",
     "steps": {
+      "link": "I due PC si collegano",
       "knock": "L'host ti fa entrare",
       "connect": "Connessione diretta",
       "video": "Arriva il video"
@@ -615,7 +625,8 @@
       "title": "{name} ha interrotto lo stream",
       "body": "La condivisione è finita. Quando riparte lo vedi tra gli amici «In gioco ora».",
       "back": "Torna agli amici"
-    }
+    },
+    "linking": "Collegamento con l'host…"
   },
   "pill": {
     "label": "Azioni dello stream",

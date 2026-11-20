@@ -13,11 +13,16 @@ import { isTauri } from '@/ipc';
 
 const { t } = useI18n();
 const el = ref<HTMLElement | null>(null);
-const friend = computed(() => social.friends.find((f) => f.id === core.session.info?.friendId));
+const friend = computed(() => {
+  const id = core.session.info?.friendId ?? core.session.friendId;
+  return social.friends.find((f) => f.id === id);
+});
 const steps = computed(() => {
   const p = core.session.phase;
+  const link = core.session.linked ? [{ id: 'link', done: p !== 'linking' }] : [];
   return [
-    { id: 'knock', done: p !== 'starting' },
+    ...link,
+    { id: 'knock', done: p !== 'linking' && p !== 'starting' },
     { id: 'connect', done: p === 'connected' },
     { id: 'video', done: stage.embedded },
   ];

@@ -90,6 +90,8 @@ pub struct Presence {
 }
 
 pub const DEFAULT_PRESENCE_PORT: u16 = 47900;
+/// Porta base di Sunshine quando l'amico non l'ha ancora annunciata.
+pub const DEFAULT_SUNSHINE_PORT: u16 = 47989;
 
 /// `POST /v1/handshake`: l'ospite conclude un invito (§6 passo 5).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

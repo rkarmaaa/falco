@@ -185,14 +185,17 @@ pub async fn apply_all(shared: &Shared) {
         (api, (plan, per_client))
     };
     let (plan, per_client) = plan;
+    // Durante un pairing il client nuovo non è ancora salvato: non va scambiato per un residuo
+    let pairing = crate::invites::pairing_active();
     let learned = tokio::task::spawn_blocking(move || {
         let current = api.clients().unwrap_or_default();
         let mut learned = Vec::new();
         // (nome dell'amico, uuid del suo dispositivo) dopo il ripiego per nome
         let mut bound: Vec<(String, String)> = Vec::new();
         for Plan { friend: fid, name, uuid, enabled, keyboard, mouse, controller } in plan {
-            // Ripiego: client associato con il nome dell'amico ma uuid non registrato
-            let uuid = uuid.or_else(|| {
+            // Ripiego: client associato con il nome dell'amico ma uuid non registrato, o
+            // registrato e non più in Sunshine (pairing rifatto)
+            let uuid = uuid.filter(|u| current.iter().any(|c| c.uuid == *u)).or_else(|| {
                 // Il più recente: quelli prima sono tentativi di pairing falliti
                 let u = current.iter().rev().find(|c| c.name == name).map(|c| c.uuid.clone())?;
                 learned.push((fid, u.clone()));
@@ -209,7 +212,7 @@ pub async fn apply_all(shared: &Shared) {
         }
         // Residui di pairing falliti: client con il nome di un amico che non sono il suo
         // dispositivo (né quello di un altro amico con lo stesso nome)
-        for c in &current {
+        for c in current.iter().filter(|_| !pairing) {
             let named = bound.iter().any(|(n, _)| *n == c.name);
             let used = bound.iter().any(|(_, u)| *u == c.uuid);
             if named && !used {

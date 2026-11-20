@@ -1,5 +1,6 @@
 // Profilo, amici e inviti. Gli aggiornamenti arrivano dagli eventi del core.
-import { reactive, readonly } from 'vue';
+import { reactive, readonly, watch } from 'vue';
+import { i18n } from '@/i18n';
 import {
   getTransport,
   rpc,
@@ -293,6 +294,33 @@ export async function acceptInvite(link: string): Promise<void> {
     done: false,
   };
   await rpc('invite.accept', { link });
+}
+
+/**
+ * Fine dell'accettazione di un invito: risolve a pairing riuscito, rifiuta al primo passo fallito
+ * o dopo `timeoutMs` (il pairing lato host aspetta al massimo 2 minuti).
+ */
+export function acceptFinished(timeoutMs = 150_000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let stop: (() => void) | null = null;
+    const finish = (err?: string): void => {
+      stop?.();
+      clearTimeout(timer);
+      if (err === undefined) resolve();
+      else reject(new Error(err));
+    };
+    const check = (): void => {
+      const a = state.accept;
+      if (!a) return finish(i18n.global.t('accept.cancelled'));
+      if (a.error) return finish(a.error);
+      const failed = Object.entries(a.steps).find(([, ok]) => ok === false);
+      if (failed) return finish(i18n.global.t(`accept.failed.${failed[0]}`));
+      if (a.done) finish();
+    };
+    const timer = setTimeout(() => finish(i18n.global.t('accept.timeout')), timeoutMs);
+    stop = watch(() => state.accept, check, { deep: true });
+    check();
+  });
 }
 
 export function resetAccept(): void {

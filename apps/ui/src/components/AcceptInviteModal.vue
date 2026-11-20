@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // «Hai un invito?»: un campo per link e codici. Riconosce codice o link amico, link di stream
 // e inviti firmati; per questi ultimi mostra host e permessi, poi i passi con spunta.
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { CircleCheck, CircleDashed, CircleX, ClipboardPaste, LoaderCircle, Radio, Ticket, UserPlus } from 'lucide-vue-next';
 import UiModal from './UiModal.vue';
@@ -11,8 +11,6 @@ import PermissionList from './PermissionList.vue';
 import { acceptInvite, addFriend, findInviteLink, previewInvite, resetAccept, social, type InviteStep } from '@/stores/social';
 import { isRpcError, type InvitePreview } from '@/ipc';
 import { joinStream, ui } from '@/stores/ui';
-import { joinFriend } from '@/stores/core';
-import { attempt } from '@/stores/errors';
 
 const emit = defineEmits<{ close: [] }>();
 const { t } = useI18n();
@@ -91,17 +89,6 @@ function close(): void {
   resetAccept();
   emit('close');
 }
-
-// Link di stream: appena si è amici si entra nella sessione dell'host
-watch(
-  () => social.accept?.done,
-  (done) => {
-    const host = ui.accept.joinHost;
-    if (!done || !host) return;
-    close();
-    void attempt(t('errors.context.join', { name: host.name }), () => joinFriend(host.id, host.name), { name: host.name });
-  },
-);
 
 onMounted(async () => {
   await check();

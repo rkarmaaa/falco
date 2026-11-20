@@ -25,6 +25,8 @@ pub async fn serve(core: Shared) {
                     let (rx, tx) = transport::split(stream);
                     core.lock().await.ui_clients += 1;
                     core.lock().await.poke.notify_one();
+                    // Finestra aperta: inviti e richieste subito, non al prossimo giro del Hub
+                    crate::hub::poke();
                     if let Err(e) = connection(core.clone(), rx, tx).await {
                         tracing::debug!("connessione IPC chiusa: {e}");
                     }
@@ -215,17 +217,21 @@ struct ProfileEdit {
     clear_avatar: bool,
 }
 
-/// Indirizzo Moonlight di un amico: IP che ha risposto e porta di Sunshine dalla presenza.
-async fn friend_target(core: &Shared, id: &str) -> Result<(String, u16), RpcError> {
-    let c = core.lock().await;
-    let live = c.live.get(id).cloned().unwrap_or_default();
-    let addr = live
-        .address
-        .or_else(|| c.db.devices(id).ok()?.into_iter().find(|d| d.can_host).map(|d| d.ts_ip))
-        .ok_or_else(|| RpcError::new(codes::SESSION_FAILED, "amico non raggiungibile"))?;
-    let (ip, _) = crate::social::split_address(&addr);
-    let port = live.presence.map(|p| p.sunshine_port).unwrap_or(47989);
-    Ok((ip, port))
+/// Amico non raggiungibile, con il motivo per la UI: `offline` (nessuna risposta) o
+/// `unrecognized` (risponde ma non riconosce questo PC, per esempio dopo un nodo Tailscale nuovo).
+async fn unreachable(core: &Shared, id: &str) -> RpcError {
+    let error = core.lock().await.live.get(id).and_then(|l| l.error);
+    let reason = if error == Some(403) { "unrecognized" } else { "offline" };
+    RpcError::new(codes::SESSION_FAILED, "amico non raggiungibile")
+        .with_data(json!({ "reason": reason }))
+}
+
+/// Indirizzo di presenza di un amico, chiesto subito se non è noto.
+async fn friend_address(core: &Shared, id: &str) -> Result<String, RpcError> {
+    match crate::social::reach(core, id).await {
+        Some(a) => Ok(a),
+        None => Err(unreachable(core, id).await),
+    }
 }
 
 #[derive(Deserialize)]
@@ -243,15 +249,21 @@ struct KnockDecision {
     accept: bool,
 }
 
-/// «Entra» da un amico: bussa, poi avvia lo stream (usato da UI e tray).
+/// «Entra» da un amico: bussa, poi avvia lo stream (usato da UI e tray). Moonlight si collega allo
+/// stesso IP che ha risposto alla presenza, sulla porta di Sunshine che l'amico ha annunciato.
 pub async fn join_friend(core: &Shared, id: &str, app: &str) -> Result<(), RpcError> {
-    let (host, port) = friend_target(core, id).await?;
-    let permissions = knock_friend(core, id).await?;
-    let name = {
+    let addr = friend_address(core, id).await?;
+    let permissions = knock_friend(core, &addr).await?;
+    let (port, name) = {
         let mut c = core.lock().await;
         c.joined = Some(id.to_owned());
-        c.db.friend(id).ok().flatten().map(|f| f.name)
+        let port = c.live.get(id).and_then(|l| l.presence.as_ref()).map(|p| p.sunshine_port);
+        (
+            port.unwrap_or(falco_proto::fpp::DEFAULT_SUNSHINE_PORT),
+            c.db.friend(id).ok().flatten().map(|f| f.name),
+        )
     };
+    let (host, _) = crate::social::split_address(&addr);
     let address = crate::guest::moonlight_address(&host, port);
     let info = crate::guest::SessionInfo { friend_id: Some(id.to_owned()), name, permissions };
     crate::guest::join(core.clone(), address, app.to_owned(), info)
@@ -260,17 +272,14 @@ pub async fn join_friend(core: &Shared, id: &str, app: &str) -> Result<(), RpcEr
 }
 
 /// Bussa all'host prima di avviare Moonlight (§7); errore con il motivo se rifiutato.
-async fn knock_friend(core: &Shared, id: &str) -> Result<Option<Value>, RpcError> {
-    let (me, addr, wait) = {
+async fn knock_friend(core: &Shared, addr: &str) -> Result<Option<Value>, RpcError> {
+    let (me, wait) = {
         let c = core.lock().await;
         let me = c.me.as_ref().map(|m| m.identity.clone());
-        let addr = c.live.get(id).and_then(|l| l.address.clone());
-        (me, addr, u64::from(c.config.config().host.knock_timeout_s) + 15)
+        (me, u64::from(c.config.config().host.knock_timeout_s) + 15)
     };
-    let (Some(me), Some(addr)) = (me, addr) else {
-        return Err(RpcError::new(codes::SESSION_FAILED, "amico non raggiungibile")
-            .with_data(json!({ "reason": "offline" })));
-    };
+    let me = me.ok_or_else(|| RpcError::new(codes::SESSION_FAILED, "profilo non pronto"))?;
+    let addr = addr.to_owned();
     let (status, _, body) = tokio::task::spawn_blocking(move || {
         crate::social::fpp_call(
             &me,
@@ -476,16 +485,10 @@ async fn dispatch(core: &Shared, req: Request) -> Result<Value, RpcError> {
         }
         methods::FRIEND_NOTIFY => {
             let p: FriendRef = params(req.params)?;
-            let (me, addr) = {
-                let c = core.lock().await;
-                (
-                    c.me.as_ref().map(|m| m.identity.clone()),
-                    c.live.get(&p.id).and_then(|l| l.address.clone()),
-                )
-            };
-            let (Some(me), Some(addr)) = (me, addr) else {
-                return Err(RpcError::new(codes::SESSION_FAILED, "amico non raggiungibile"));
-            };
+            let addr = friend_address(core, &p.id).await?;
+            let me = core.lock().await.me.as_ref().map(|m| m.identity.clone());
+            let me =
+                me.ok_or_else(|| RpcError::new(codes::SESSION_FAILED, "profilo non pronto"))?;
             tokio::task::spawn_blocking(move || {
                 crate::social::fpp_call(
                     &me,

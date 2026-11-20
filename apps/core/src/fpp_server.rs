@@ -401,6 +401,22 @@ async fn notify(
     StatusCode::NO_CONTENT.into_response()
 }
 
+/// Un amico ci ha lasciato qualcosa sul Hub (invito): lo si legge subito, senza aspettare il giro.
+async fn hub_poke(
+    State(s): State<Srv>,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    method: Method,
+    uri: Uri,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Response {
+    if let Err((code, msg)) = s.auth(peer, &method, &uri, &headers, &body, true).await {
+        return err(code, &msg);
+    }
+    crate::hub::poke();
+    StatusCode::NO_CONTENT.into_response()
+}
+
 /// Perché un nodo nuovo non può sostituire quelli di un amico (ADR 0018), se non può.
 fn device_change_denied(
     friend: &FalcoId,
@@ -498,6 +514,7 @@ fn router(s: Srv) -> Router {
         .route("/v1/speedtest", get(speedtest))
         .route("/v1/friend/remove", post(friend_remove))
         .route("/v1/devices", post(devices))
+        .route("/v1/hub/poke", post(hub_poke))
         .route("/v1/session/knock", post(knock))
         .route("/v1/session/leave", post(leave))
         .route("/v1/session/notify", post(notify))

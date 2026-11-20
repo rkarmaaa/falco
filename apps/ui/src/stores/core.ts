@@ -14,7 +14,8 @@ import {
   type Status,
 } from '@/ipc';
 
-export type SessionPhase = 'idle' | 'starting' | 'connecting' | 'connected';
+/** `linking`: invito o link di stream, handshake e pairing in corso prima di bussare. */
+export type SessionPhase = 'idle' | 'linking' | 'starting' | 'connecting' | 'connected';
 
 interface CoreStore {
   ready: boolean;
@@ -24,7 +25,16 @@ interface CoreStore {
   snapshot: StateSnapshot | null;
   config: FaloConfig | null;
   host: HostState;
-  session: { phase: SessionPhase; host: string | null; info: SessionInfo | null; stats: SessionStats | null };
+  session: {
+    phase: SessionPhase;
+    host: string | null;
+    /** Amico da cui si entra, noto da subito (foto sul palco prima che parta Moonlight). */
+    friendId: string | null;
+    /** La sessione è partita da un invito: il palco mostra anche il passo del collegamento. */
+    linked: boolean;
+    info: SessionInfo | null;
+    stats: SessionStats | null;
+  };
   lastSession: { host: string; durationS: number; reason: string; latencyMs: number | null; friendId: string | null } | null;
   pairing: { host: string; pin: string; result: 'pending' | 'ok' | 'failed' } | null;
 }
@@ -36,12 +46,12 @@ const state = reactive<CoreStore>({
   snapshot: null,
   config: null,
   host: { state: 'stopped' },
-  session: { phase: 'idle', host: null, info: null, stats: null },
+  session: { phase: 'idle', host: null, friendId: null, linked: false, info: null, stats: null },
   lastSession: null,
   pairing: null,
 });
 
-const idle = (): CoreStore['session'] => ({ phase: 'idle', host: null, info: null, stats: null });
+const idle = (): CoreStore['session'] => ({ phase: 'idle', host: null, friendId: null, linked: false, info: null, stats: null });
 
 async function refresh(): Promise<void> {
   const [snapshot, { config }] = await Promise.all([
@@ -87,7 +97,7 @@ export async function initCore(): Promise<void> {
       case 'session.started':
         state.session.info = p as unknown as SessionInfo;
         state.session.host = String(p.name ?? p.host);
-        if (state.session.phase === 'idle' || state.session.phase === 'starting') state.session.phase = 'connecting';
+        if (['idle', 'linking', 'starting'].includes(state.session.phase)) state.session.phase = 'connecting';
         break;
       case 'session.stats':
         if (p.phase === 'connecting' || p.phase === 'connected') state.session.phase = p.phase;
@@ -150,8 +160,19 @@ export async function join(address: string, app = 'Desktop'): Promise<void> {
   }
 }
 
+/** Palco subito con la foto dell'host mentre un invito collega i due PC (handshake e pairing). */
+export function beginLink(friendId: string, name: string): void {
+  state.session = { ...idle(), phase: 'linking', host: name, friendId, linked: true };
+}
+
+/** Collegamento fallito o annullato: si torna alla lista. */
+export function endLink(): void {
+  if (state.session.phase === 'linking') state.session = idle();
+}
+
 export async function joinFriend(friendId: string, name: string): Promise<void> {
-  state.session = { ...idle(), phase: 'starting', host: name };
+  const linked = state.session.linked && state.session.friendId === friendId;
+  state.session = { ...idle(), phase: 'starting', host: name, friendId, linked };
   try {
     await rpc('session.join', { friendId });
   } catch (e) {

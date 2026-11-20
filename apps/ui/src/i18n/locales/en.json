@@ -356,6 +356,14 @@
       "stream": "Stream link",
       "streamBody": "You join their session right away",
       "invite": "Invite"
+    },
+    "cancelled": "Connection cancelled.",
+    "timeout": "The connection did not complete. Try again; if it keeps happening, ask for a new invite.",
+    "failed": {
+      "tailscale": "Tailscale is not connected. Open Tailscale and try again.",
+      "share": "I can't reach the host's PC. Make sure both of you have Falco open.",
+      "handshake": "The host did not accept the invite. Ask for a new one.",
+      "pairing": "I couldn't pair the two PCs. Try again; if it keeps happening, ask for a new invite."
     }
   },
   "requests": {
@@ -405,7 +413,8 @@
     "no-answer": "{name} didn't answer. Maybe they didn't see the request. Try again or message them.",
     "declined": "{name} declined the request. It's not a good time. Try again later.",
     "unknown": "{name} doesn't recognise you as a friend. The friendship may have been removed. Ask for a new invite.",
-    "offline": "I can't reach {name}. Their Falco or Tailscale seems to be off. Ask them to open Falco."
+    "offline": "I can't reach {name}. Their Falco or Tailscale seems to be off. Ask them to open Falco.",
+    "unrecognized": "{name} no longer recognizes your PC (one of you got a new Tailscale connection). Falco tries to fix it by itself; if that isn't enough, ask for a new invite."
   },
   "cfg": {
     "general": {
@@ -600,6 +609,7 @@
     "externalBody": "On this system the stream opens in its own window. Actions stay down here.",
     "joining": "Joining {name}",
     "steps": {
+      "link": "The two PCs connect",
       "knock": "The host lets you in",
       "connect": "Direct connection",
       "video": "Video arrives"
@@ -615,7 +625,8 @@
       "title": "{name} stopped the stream",
       "body": "Sharing has ended. When it starts again you will see it under \"Playing now\".",
       "back": "Back to friends"
-    }
+    },
+    "linking": "Connecting to the host…"
   },
   "pill": {
     "label": "Stream actions",

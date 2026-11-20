@@ -36,6 +36,8 @@ pub struct Live {
     pub error: Option<u16>,
     /// Ultimo invio del nostro nodo nuovo dopo un 403 (secondi Unix, ADR 0018).
     pub device_sent_at: Option<i64>,
+    /// Giri di fila senza una risposta valida.
+    pub misses: u8,
 }
 
 /// Ogni quanto riprovare ad annunciare il nodo nuovo: Tailscale segna offline il vecchio in
@@ -232,138 +234,248 @@ pub fn accept_profile(c: &Core, sp: &SignedProfile) -> bool {
     true
 }
 
-/// Aggiorna la presenza degli amici; ritorna true se qualcosa è cambiato.
+/// Attesa massima di una risposta alla presenza.
+const PRESENCE_TIMEOUT: Duration = Duration::from_secs(3);
+/// Giri di fila senza risposta prima di segnare un amico offline: un pacchetto perso non conta.
+const MISSES_OFFLINE: u8 = 2;
+
+/// Amico da interrogare: indirizzi in ordine di preferenza (LAN prima, poi Tailscale).
+#[derive(Debug, Clone)]
+struct Target {
+    id: String,
+    name: String,
+    addrs: Vec<String>,
+    etag: Option<String>,
+}
+
+/// Risposta HTTP di un indirizzo alla presenza.
+#[derive(Debug, Clone, PartialEq)]
+struct Probe {
+    addr: String,
+    status: u16,
+    etag: Option<String>,
+    body: Vec<u8>,
+    rtt_ms: u32,
+}
+
+impl Probe {
+    fn ok(&self) -> bool {
+        matches!(self.status, 200 | 304)
+    }
+
+    /// Motivo leggibile di una risposta d'errore, per il log.
+    fn reason(&self) -> String {
+        let body = String::from_utf8_lossy(&self.body[..self.body.len().min(200)]).into_owned();
+        format!("{} ha risposto {}: {body}", self.addr, self.status)
+    }
+}
+
+fn target(c: &Core, f: &FriendRow) -> Target {
+    let mut addrs: Vec<String> = Vec::new();
+    // Provider LAN: stessa rete locale, latenza minima (§9)
+    if let Some(p) = c.lan_peers.get(&f.id) {
+        addrs.push(join_address(&p.ip.to_string(), p.port));
+    }
+    // L'ultimo indirizzo che ha risposto prima degli altri dispositivi registrati
+    if let Some(a) = c.live.get(&f.id).and_then(|l| l.address.clone()) {
+        addrs.push(a);
+    }
+    addrs.extend(c.db.devices(&f.id).unwrap_or_default().into_iter().map(|d| d.ts_ip));
+    let mut seen = std::collections::HashSet::new();
+    addrs.retain(|a| seen.insert(a.clone()));
+    Target {
+        id: f.id.clone(),
+        name: f.name.clone(),
+        addrs,
+        etag: c.live.get(&f.id).and_then(|l| l.etag.clone()),
+    }
+}
+
+/// Interroga gli indirizzi in ordine e si ferma al primo che risponde 200 o 304. Se nessuno
+/// risponde bene, tiene il primo errore HTTP (un 403 dice più di un timeout). Bloccante.
+fn probe(me: &Identity, t: &Target) -> Option<Probe> {
+    let mut failed: Option<Probe> = None;
+    for addr in &t.addrs {
+        let started = std::time::Instant::now();
+        let etag = t.etag.as_deref();
+        let Ok((status, tag, body)) =
+            fpp_call(me, "GET", addr, "/v1/presence", None, etag, PRESENCE_TIMEOUT)
+        else {
+            continue;
+        };
+        let rtt_ms = u32::try_from(started.elapsed().as_millis()).unwrap_or(u32::MAX);
+        let p = Probe { addr: addr.clone(), status, etag: tag, body, rtt_ms };
+        if p.ok() {
+            return Some(p);
+        }
+        failed.get_or_insert(p);
+    }
+    failed
+}
+
+/// Nuovo stato di un amico dopo un'interrogazione. Funzione pura: tutta la logica sta qui.
+fn next_live(before: &Live, probe: Option<&Probe>) -> Live {
+    match probe {
+        Some(p) if p.status == 304 && before.presence.is_some() => Live {
+            address: Some(p.addr.clone()),
+            rtt_ms: Some(p.rtt_ms),
+            error: None,
+            misses: 0,
+            ..before.clone()
+        },
+        Some(p) if p.status == 200 => match serde_json::from_slice::<Presence>(&p.body) {
+            Ok(presence) => Live {
+                presence: Some(presence),
+                etag: p.etag.clone(),
+                address: Some(p.addr.clone()),
+                rtt_ms: Some(p.rtt_ms),
+                error: None,
+                misses: 0,
+                device_sent_at: before.device_sent_at,
+            },
+            // Risposta illeggibile (versione incompatibile?): come un errore, senza etag
+            Err(_) => Live { error: Some(p.status), ..offline(before) },
+        },
+        // 304 senza presenza in memoria (etag vecchio): al prossimo giro si chiede tutto
+        Some(p) if p.status == 304 => Live { error: None, ..offline(before) },
+        Some(p) => Live { error: Some(p.status), ..offline(before) },
+        // Nessuna risposta: si aspetta un altro giro prima di dirlo offline
+        None if before.presence.is_some() && before.misses + 1 < MISSES_OFFLINE => {
+            Live { misses: before.misses + 1, rtt_ms: None, ..before.clone() }
+        }
+        None => Live { error: Some(0), ..offline(before) },
+    }
+}
+
+/// Stato offline che conserva solo ciò che serve tra un giro e l'altro.
+fn offline(before: &Live) -> Live {
+    Live {
+        error: before.error,
+        misses: before.misses.saturating_add(1),
+        device_sent_at: before.device_sent_at,
+        ..Live::default()
+    }
+}
+
+/// Va annunciato il nostro nodo nuovo? Solo su 403 e al massimo ogni `DEVICE_RETRY_S`.
+fn should_announce(before: &Live, probe: Option<&Probe>, now: i64) -> bool {
+    probe.is_some_and(|p| p.status == 403)
+        && before.device_sent_at.is_none_or(|t| now - t >= DEVICE_RETRY_S)
+}
+
+/// Interroga un amico e aggiorna il suo stato. Ritorna true se qualcosa è cambiato.
+async fn update_friend(shared: &Shared, me: &Identity, t: Target) -> bool {
+    let (me2, t2) = (me.clone(), t.clone());
+    let result = tokio::task::spawn_blocking(move || probe(&me2, &t2)).await.ok().flatten();
+    apply_probe(shared, me, &t, result).await
+}
+
+async fn apply_probe(shared: &Shared, me: &Identity, t: &Target, result: Option<Probe>) -> bool {
+    let (changed, fetch, announce) = {
+        let mut c = shared.lock().await;
+        let before = c.live.get(&t.id).cloned().unwrap_or_default();
+        let mut live = next_live(&before, result.as_ref());
+        // Un errore si registra una volta, quando cambia, non a ogni giro
+        if live.error.is_some() && live.error != before.error {
+            let why = result.as_ref().map_or_else(|| "nessuna risposta".into(), Probe::reason);
+            tracing::warn!("presenza di {}: {why}", t.name);
+        }
+        let announce = should_announce(&before, result.as_ref(), now())
+            .then(|| result.as_ref().map(|p| p.addr.clone()))
+            .flatten();
+        if announce.is_some() {
+            live.device_sent_at = Some(now());
+        }
+        if live.presence.is_some() {
+            let _ = c.db.touch_friend(&t.id, now());
+        }
+        let fetch = live.address.clone().filter(|_| profile_outdated(&c, &t.id, &live));
+        let changed = live != before;
+        c.live.insert(t.id.clone(), live);
+        (changed, fetch, announce)
+    };
+    let mut changed = changed;
+    if let Some(addr) = fetch {
+        changed |= refresh_profile(shared, me, &addr).await;
+    }
+    if let Some(addr) = announce
+        && announce_device(shared, me, &addr).await
+    {
+        tracing::warn!("nodo nuovo registrato da {}", t.name);
+        // Ora l'amico ci riconosce: nuovo giro subito, senza aspettare l'intervallo
+        shared.lock().await.poke.notify_one();
+        changed = true;
+    }
+    changed
+}
+
+/// Serve scaricare il profilo firmato? Più recente di quello in cache, o foto ancora mancante
+/// (anche con il profilo già salvato dall'handshake).
+fn profile_outdated(c: &Core, id: &str, live: &Live) -> bool {
+    let Some(presence) = &live.presence else { return false };
+    let cached =
+        c.db.friend_profile(id)
+            .ok()
+            .flatten()
+            .and_then(|j| serde_json::from_str::<SignedProfile>(&j).ok());
+    let cached_at = cached.as_ref().map_or(0, |p| p.profile.updated_at);
+    let avatar_missing = cached
+        .as_ref()
+        .and_then(|p| p.profile.avatar.as_deref())
+        .is_some_and(|h| c.db.avatar(h).ok().flatten().is_none());
+    presence.profile_updated_at > cached_at || avatar_missing
+}
+
+/// Aggiorna la presenza degli amici, tutti in parallelo; ritorna true se qualcosa è cambiato.
 async fn poll_once(shared: &Shared, favorites_only: bool) -> bool {
     let (me, targets) = {
         let c = shared.lock().await;
         let Some(me) = c.me.as_ref().map(|m| m.identity.clone()) else { return false };
-        let targets: Vec<(FriendRow, Vec<String>, Option<String>)> = c
-            .db
-            .friends()
-            .unwrap_or_default()
-            .into_iter()
-            .filter(|f| !favorites_only || f.favorite)
-            .map(|f| {
-                let mut addrs: Vec<String> =
-                    c.db.devices(&f.id).unwrap_or_default().into_iter().map(|d| d.ts_ip).collect();
-                // Provider LAN: stessa rete locale, latenza minima (§9)
-                if let Some(p) = c.lan_peers.get(&f.id) {
-                    addrs.insert(0, join_address(&p.ip.to_string(), p.port));
-                }
-                let etag = c.live.get(&f.id).and_then(|l| l.etag.clone());
-                (f, addrs, etag)
-            })
-            .collect();
+        let targets: Vec<Target> =
+            c.db.friends()
+                .unwrap_or_default()
+                .iter()
+                .filter(|f| !favorites_only || f.favorite)
+                .map(|f| target(&c, f))
+                .collect();
         (me, targets)
     };
-
+    let mut probes = tokio::task::JoinSet::new();
+    for t in targets {
+        let me = me.clone();
+        probes.spawn_blocking(move || {
+            let r = probe(&me, &t);
+            (t, r)
+        });
+    }
     let mut changed = false;
-    let mut announce: Vec<String> = Vec::new();
-    for (friend, addrs, etag) in targets {
-        let me2 = me.clone();
-        let result = tokio::task::spawn_blocking(move || {
-            for a in addrs {
-                let started = std::time::Instant::now();
-                if let Ok(r) = fpp_call(
-                    &me2,
-                    "GET",
-                    &a,
-                    "/v1/presence",
-                    None,
-                    etag.as_deref(),
-                    Duration::from_secs(3),
-                ) {
-                    let rtt = u32::try_from(started.elapsed().as_millis()).unwrap_or(u32::MAX);
-                    return Some((a, r, rtt));
-                }
-            }
-            None
-        })
-        .await
-        .ok()
-        .flatten();
-
-        let mut c = shared.lock().await;
-        let before = c.live.get(&friend.id).cloned().unwrap_or_default();
-        let mut live = before.clone();
-        live.rtt_ms = result.as_ref().map(|r| r.2);
-        let result = result.map(|(a, r, _)| (a, r));
-        if result.is_some() {
-            live.error = None;
-        }
-        match result {
-            Some((addr, (304, _, _))) => live.address = Some(addr),
-            Some((addr, (200, tag, body))) => {
-                live.presence = serde_json::from_slice(&body).ok();
-                live.etag = tag;
-                live.address = Some(addr);
-            }
-            other => {
-                // Un 403 (nodo Tailscale cambiato) o un 401 (orologio sfasato) altrimenti
-                // risulterebbero un semplice «offline»: si registra una volta per ogni errore nuovo
-                let error = other.as_ref().map_or(0, |(_, (status, _, _))| *status);
-                if before.error != Some(error) && (error != 0 || before.address.is_some()) {
-                    let why = match &other {
-                        Some((addr, (status, _, body))) => format!(
-                            "{addr} ha risposto {status}: {}",
-                            String::from_utf8_lossy(&body[..body.len().min(200)])
-                        ),
-                        None => "nessuna risposta".into(),
-                    };
-                    tracing::warn!("presenza di {}: {why}", friend.name);
-                }
-                live = Live {
-                    error: Some(error),
-                    device_sent_at: before.device_sent_at,
-                    ..Live::default()
-                };
-                // 403: forse è cambiato il nostro nodo Tailscale e l'amico non lo conosce
-                if let Some((addr, (403, _, _))) = &other
-                    && before.device_sent_at.is_none_or(|t| now() - t >= DEVICE_RETRY_S)
-                {
-                    live.device_sent_at = Some(now());
-                    announce.push(addr.clone());
-                }
-            }
-        }
-        if live.presence.is_some() {
-            let _ = c.db.touch_friend(&friend.id, now());
-        }
-        // Profilo più recente: lo scarica e verifica la firma
-        let newer = live.presence.as_ref().map(|p| p.profile_updated_at).unwrap_or(0);
-        let cached =
-            c.db.friend_profile(&friend.id)
-                .ok()
-                .flatten()
-                .and_then(|j| serde_json::from_str::<SignedProfile>(&j).ok());
-        let cached_at = cached.as_ref().map(|p| p.profile.updated_at).unwrap_or(0);
-        // Anche con il profilo già in cache (es. dall'handshake) la foto può mancare ancora
-        let avatar_missing = cached
-            .as_ref()
-            .and_then(|p| p.profile.avatar.as_deref())
-            .is_some_and(|h| c.db.avatar(h).ok().flatten().is_none());
-        let fetch = live.presence.is_some() && (newer > cached_at || avatar_missing);
-        let address = live.address.clone();
-        if live != before {
-            changed = true;
-        }
-        c.live.insert(friend.id.clone(), live);
-        drop(c);
-        if fetch && let Some(addr) = address {
-            changed |= refresh_profile(shared, &me, &addr).await;
-        }
-        for addr in announce.drain(..) {
-            if announce_device(shared, &me, &addr).await {
-                tracing::warn!("nodo nuovo registrato da {}", friend.name);
-                // Al prossimo giro la presenza risponde: l'errore si potrà registrare di nuovo
-                if let Some(l) = shared.lock().await.live.get_mut(&friend.id) {
-                    l.error = None;
-                }
-                changed = true;
-            }
+    while let Some(done) = probes.join_next().await {
+        if let Ok((t, r)) = done {
+            changed |= apply_probe(shared, &me, &t, r).await;
         }
     }
     changed
+}
+
+/// Indirizzo di presenza raggiungibile di un amico. Se non è noto (Falco nel tray interroga solo
+/// i preferiti, o l'ultimo giro è andato a vuoto) lo chiede subito invece di arrendersi.
+pub async fn reach(shared: &Shared, id: &str) -> Option<String> {
+    let (me, t) = {
+        let c = shared.lock().await;
+        if let Some(a) =
+            c.live.get(id).filter(|l| l.presence.is_some()).and_then(|l| l.address.clone())
+        {
+            return Some(a);
+        }
+        let me = c.me.as_ref()?.identity.clone();
+        let f = c.db.friend(id).ok().flatten()?;
+        (me, target(&c, &f))
+    };
+    if update_friend(shared, &me, t).await {
+        emit_friends(&*shared.lock().await);
+    }
+    let c = shared.lock().await;
+    c.live.get(id).filter(|l| l.presence.is_some()).and_then(|l| l.address.clone())
 }
 
 /// Annuncia a un amico il nodo Tailscale attuale di questo PC (ADR 0018).
@@ -521,6 +633,64 @@ pub async fn remove_friend(shared: &Shared, id: &str, block: bool) {
 
 #[cfg(test)]
 mod tests {
+    fn presence_body() -> Vec<u8> {
+        br#"{"status":"online","canJoin":true,"hosting":null,"profileUpdatedAt":1,"sunshinePort":47989}"#
+            .to_vec()
+    }
+
+    fn probe(status: u16, body: Vec<u8>) -> Probe {
+        Probe { addr: "100.1.2.3".into(), status, etag: Some("e1".into()), body, rtt_ms: 40 }
+    }
+
+    fn online() -> Live {
+        next_live(&Live::default(), Some(&probe(200, presence_body())))
+    }
+
+    #[test]
+    fn answer_makes_friend_online_with_address_and_latency() {
+        let l = online();
+        assert!(l.presence.is_some());
+        assert_eq!(l.address.as_deref(), Some("100.1.2.3"));
+        assert_eq!((l.rtt_ms, l.error, l.misses), (Some(40), None, 0));
+        // 304: stessa presenza, latenza aggiornata
+        let mut p = probe(304, Vec::new());
+        p.rtt_ms = 55;
+        let again = next_live(&l, Some(&p));
+        assert_eq!((again.presence, again.rtt_ms), (l.presence, Some(55)));
+    }
+
+    #[test]
+    fn one_lost_answer_does_not_make_friend_offline() {
+        let once = next_live(&online(), None);
+        assert!(once.presence.is_some(), "un giro a vuoto non basta");
+        assert_eq!(once.misses, 1);
+        let twice = next_live(&once, None);
+        assert!(twice.presence.is_none() && twice.address.is_none());
+        assert_eq!(twice.error, Some(0));
+    }
+
+    #[test]
+    fn http_errors_and_bad_bodies_are_offline_at_once() {
+        let denied = next_live(&online(), Some(&probe(403, b"{}".to_vec())));
+        assert!(denied.presence.is_none());
+        assert_eq!(denied.error, Some(403));
+        let garbage = next_live(&Live::default(), Some(&probe(200, b"<html>".to_vec())));
+        assert!(garbage.presence.is_none() && garbage.etag.is_none());
+        // 304 senza presenza in memoria: niente stato inventato
+        let stale = next_live(&Live::default(), Some(&probe(304, Vec::new())));
+        assert!(stale.presence.is_none() && stale.address.is_none());
+    }
+
+    #[test]
+    fn announce_only_on_403_and_not_too_often() {
+        let p403 = probe(403, Vec::new());
+        assert!(should_announce(&Live::default(), Some(&p403), 1000));
+        assert!(!should_announce(&Live::default(), Some(&probe(401, Vec::new())), 1000));
+        assert!(!should_announce(&Live::default(), None, 1000));
+        let recent = Live { device_sent_at: Some(1000), ..Live::default() };
+        assert!(!should_announce(&recent, Some(&p403), 1000 + DEVICE_RETRY_S - 1));
+        assert!(should_announce(&recent, Some(&p403), 1000 + DEVICE_RETRY_S));
+    }
     use super::*;
 
     #[test]

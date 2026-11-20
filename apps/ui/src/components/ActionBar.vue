@@ -49,6 +49,7 @@ const inputsPending = computed(() => core.host.message === 'inputs-pending');
 
 const phaseText = computed(() => {
   const s = core.session;
+  if (s.phase === 'linking') return t('session.linking');
   if (s.phase === 'starting') return t('session.knocking');
   if (s.phase === 'connecting') return t('session.connecting');
   if (!s.stats) return t('session.connected');

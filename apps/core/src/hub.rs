@@ -14,6 +14,7 @@ use falco_proto::hub::{
 use falco_proto::ipc::{TailscaleState, events};
 use falco_proto::{Identity, Role, fpp};
 use falco_store::config::Provider;
+use serde::Deserialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 use tokio::sync::Notify;
@@ -225,7 +226,27 @@ pub async fn invite_friend(core: &Shared, id: &str) -> anyhow::Result<()> {
         expires_at: created.expires_at,
     })?;
     let _: Value = request(core, "POST", "/v1/invites".into(), Some(body)).await?;
+    poke_friend(core, id).await;
     Ok(())
+}
+
+/// Avvisa l'amico, se raggiungibile, di leggere subito il Hub: altrimenti l'invito arriva al suo
+/// prossimo giro (fino a 2 minuti con Falco nel tray). Senza risposta non cambia nulla.
+async fn poke_friend(core: &Shared, id: &str) {
+    let Some(addr) = crate::social::reach(core, id).await else { return };
+    let Some(me) = core.lock().await.me.as_ref().map(|m| m.identity.clone()) else { return };
+    let _ = tokio::task::spawn_blocking(move || {
+        crate::social::fpp_call(
+            &me,
+            "POST",
+            &addr,
+            "/v1/hub/poke",
+            Some(&json!({})),
+            None,
+            Duration::from_secs(3),
+        )
+    })
+    .await;
 }
 
 /// Invito ricevuto: il Hub lo consegna una volta sola.
@@ -268,6 +289,14 @@ pub async fn join_network(core: &Shared) -> anyhow::Result<()> {
         bail!("Tailscale non è installato");
     }
     let hostname = format!("falco-{}", code.to_lowercase());
+    // Profilo Falco di questo PC già presente (si era passati a un altro account): si torna lì.
+    // Un login nuovo creerebbe un dispositivo nuovo che gli amici non conoscono (ADR 0018)
+    if switch_to_profile(&ts, &hostname).await {
+        let c = core.lock().await;
+        c.poke.notify_one();
+        c.emit(events::PRESENCE_CHANGED, json!({ "self": { "tailscale": true } }));
+        return Ok(());
+    }
     let mut args = vec!["login"];
     if !key.login_server.is_empty() {
         args.extend(["--login-server", &key.login_server]);
@@ -282,6 +311,48 @@ pub async fn join_network(core: &Shared) -> anyhow::Result<()> {
     c.poke.notify_one();
     c.emit(events::PRESENCE_CHANGED, json!({ "self": { "tailscale": true } }));
     Ok(())
+}
+
+#[derive(Deserialize)]
+struct TsProfile {
+    id: String,
+    account: String,
+    #[serde(default)]
+    selected: bool,
+}
+
+/// Profilo Tailscale salvato per questo dispositivo Falco (`falco-<codice>` o `falco-<codice>-N`,
+/// seguito dal dominio MagicDNS), il più recente, se non è già quello attivo.
+fn falco_profile<'a>(profiles: &'a [TsProfile], hostname: &str) -> Option<&'a TsProfile> {
+    let ours = |p: &&TsProfile| {
+        p.account.strip_prefix(hostname).is_some_and(|rest| {
+            let rest = rest.split('.').next().unwrap_or_default();
+            rest.is_empty() || rest.strip_prefix('-').is_some_and(|n| n.parse::<u32>().is_ok())
+        })
+    };
+    if profiles.iter().filter(ours).any(|p| p.selected) {
+        return None;
+    }
+    profiles.iter().rev().find(ours)
+}
+
+/// Passa al profilo Falco già salvato; true se dopo il cambio si è sulla rete Falco.
+async fn switch_to_profile(ts: &falco_net::tailscale::Tailscale, hostname: &str) -> bool {
+    let Ok(out) = ts.run(&["switch", "--list", "--json"]).await else { return false };
+    let profiles: Vec<TsProfile> = serde_json::from_slice(&out).unwrap_or_default();
+    let Some(p) = falco_profile(&profiles, hostname) else { return false };
+    if let Err(e) = ts.run(&["switch", &p.id]).await {
+        tracing::warn!("profilo Tailscale {} non attivato: {e:#}", p.account);
+        return false;
+    }
+    for _ in 0..10 {
+        if on_falco_network(ts).await {
+            tracing::warn!("rete Falco: tornato al profilo Tailscale {}", p.account);
+            return true;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+    }
+    false
 }
 
 /// Questo PC è collegato alla tailnet di Falco (il suo nodo ha il tag `tag:falco`)?
@@ -360,5 +431,34 @@ pub async fn run(core: Shared) {
         let open = core.lock().await.ui_clients > 0;
         let wait = Duration::from_secs(if open { 20 } else { 120 });
         let _ = tokio::time::timeout(wait, POKE.notified()).await;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{TsProfile, falco_profile};
+
+    fn p(id: &str, account: &str, selected: bool) -> TsProfile {
+        TsProfile { id: id.into(), account: account.into(), selected }
+    }
+
+    #[test]
+    fn picks_the_newest_saved_profile_of_this_device() {
+        let list = [
+            p("6100", "someone@gmail.com", true),
+            p("5dc9", "falco-bd5b4qx4.tail837df5.ts.net", false),
+            p("2da0", "falco-bd5b4qx4-1.tail837df5.ts.net", false),
+            p("9999", "falco-bd5b4qx40.tail837df5.ts.net", false),
+            p("8888", "falco-zzzzzzzz.tail837df5.ts.net", false),
+        ];
+        assert_eq!(falco_profile(&list, "falco-bd5b4qx4").map(|x| x.id.as_str()), Some("2da0"));
+    }
+
+    #[test]
+    fn nothing_to_do_when_already_on_it_or_none_saved() {
+        let on = [p("5dc9", "falco-bd5b4qx4.tail837df5.ts.net", true)];
+        assert!(falco_profile(&on, "falco-bd5b4qx4").is_none());
+        let other = [p("6100", "someone@gmail.com", true)];
+        assert!(falco_profile(&other, "falco-bd5b4qx4").is_none());
     }
 }

@@ -2,6 +2,21 @@
 
 Formato [Keep a Changelog](https://keepachangelog.com/it/1.1.0/), versioni [SemVer](https://semver.org/lang/it/).
 
+## [1.0.0-rc.11] - 2026-11-20 · Beta
+
+### Corretto
+
+- Entrare da un amico dopo un nuovo invito dava «Certificate verification failed (401)»: l'host scambiava il pairing nuovo per un duplicato e lo cancellava.
+- Falco non crea più un dispositivo Tailscale nuovo a ogni ricollegamento alla rete Falco: torna al profilo già salvato.
+- «Entra» rispondeva «offline» con Falco nel tray (presenza aggiornata solo per i preferiti): ora l'amico viene cercato al momento.
+- Un amico non risulta più offline per una sola risposta persa; un indirizzo che risponde con un errore non blocca gli altri.
+
+### Migliorato
+
+- Inviti quasi immediati: chi invita avvisa direttamente l'amico, che non aspetta più il giro del Hub (fino a 2 minuti dal tray).
+- Una sola schermata per entrare: link di stream e inviti mostrano subito il palco con la foto dell'host e i passi, senza popup. Se l'amico non si raggiunge, Falco rifà da solo il collegamento con l'invito.
+- Messaggio chiaro quando un amico non riconosce più il tuo PC.
+
 ## [1.0.0-rc.10] - 2026-11-20 · Beta
 
 ### Corretto

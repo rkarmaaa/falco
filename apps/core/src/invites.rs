@@ -196,6 +196,35 @@ impl Drop for PairingGuard {
 }
 
 /// Lato host: Sunshine attivo e conferma del PIN appena arriva la richiesta di Moonlight.
+/// Il client creato da questo pairing: Moonlight finisce lo scambio dopo il PIN (alcune richieste,
+/// circa un secondo in rete), quindi si aspetta fino a 15 s un uuid nuovo con quel nome. Prendere
+/// il client vecchio con lo stesso nome faceva poi rimuovere quello nuovo come «duplicato» (401).
+fn wait_new_client(
+    api: &falco_engines::sunshine_api::SunshineApi,
+    name: &str,
+    known: &[String],
+) -> Option<String> {
+    for _ in 0..30 {
+        std::thread::sleep(Duration::from_millis(500));
+        if let Some(uuid) = new_client(&api.clients().unwrap_or_default(), name, known) {
+            return Some(uuid);
+        }
+    }
+    None
+}
+
+fn new_client(
+    clients: &[falco_engines::sunshine_api::PairedClient],
+    name: &str,
+    known: &[String],
+) -> Option<String> {
+    clients
+        .iter()
+        .rev()
+        .find(|c| c.name == name && !known.contains(&c.uuid))
+        .map(|c| c.uuid.clone())
+}
+
 pub async fn host_pairing(
     core: Shared,
     friend_id: String,
@@ -219,23 +248,26 @@ pub async fn host_pairing(
             for _ in 0..240 {
                 match api2.pending_pairings() {
                     Ok(list) => match list.first() {
-                        Some(req) => match api2.submit_pin(&req.id, &p, &n) {
-                            Ok(()) => {
-                                std::thread::sleep(Duration::from_millis(500));
-                                let uuid = api2
-                                    .clients()
-                                    .ok()
-                                    .and_then(|cs| cs.into_iter().rev().find(|c| c.name == n))
-                                    .map(|c| c.uuid);
-                                if uuid.is_none() {
-                                    tracing::warn!(
-                                        "pairing {n}: PIN accettato ma client non trovato"
-                                    );
+                        Some(req) => {
+                            // Client già associati prima di questo PIN: con un amico che rifà il
+                            // pairing ce n'è uno vecchio con lo stesso nome, da non confondere
+                            let known: Vec<String> = api2
+                                .clients()
+                                .map(|cs| cs.into_iter().map(|c| c.uuid).collect())
+                                .unwrap_or_default();
+                            match api2.submit_pin(&req.id, &p, &n) {
+                                Ok(()) => {
+                                    let uuid = wait_new_client(&api2, &n, &known);
+                                    if uuid.is_none() {
+                                        tracing::warn!(
+                                            "pairing {n}: PIN accettato ma client non trovato"
+                                        );
+                                    }
+                                    return uuid;
                                 }
-                                return uuid;
+                                Err(e) => last_err = format!("PIN rifiutato: {e}"),
                             }
-                            Err(e) => last_err = format!("PIN rifiutato: {e}"),
-                        },
+                        }
                         None => last_err = "nessuna richiesta di Moonlight arrivata".into(),
                     },
                     Err(e) => last_err = format!("API di Sunshine: {e}"),
@@ -442,4 +474,26 @@ async fn accept_inner(core: Shared, link: &str) -> anyhow::Result<()> {
         );
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::new_client;
+    use falco_engines::sunshine_api::PairedClient;
+
+    fn client(uuid: &str, name: &str) -> PairedClient {
+        PairedClient { uuid: uuid.into(), name: name.into(), enabled: true }
+    }
+
+    #[test]
+    fn repairing_picks_the_new_client_not_the_old_one() {
+        let known = vec!["OLD".to_string()];
+        // Moonlight non ha ancora finito: c'è solo il vecchio client con lo stesso nome
+        assert_eq!(new_client(&[client("OLD", "Marco")], "Marco", &known), None);
+        // Finito: il nuovo, anche se l'API lo elenca prima del vecchio
+        let both = [client("NEW", "Marco"), client("OLD", "Marco")];
+        assert_eq!(new_client(&both, "Marco", &known).as_deref(), Some("NEW"));
+        // Un altro amico che si associa intanto non conta
+        assert_eq!(new_client(&[client("X", "Gio")], "Marco", &[]), None);
+    }
 }
