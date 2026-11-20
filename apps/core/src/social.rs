@@ -30,6 +30,8 @@ pub struct Live {
     pub etag: Option<String>,
     /// Indirizzo (ip:porta di presenza) che ha risposto.
     pub address: Option<String>,
+    /// Andata e ritorno dell'ultima richiesta di presenza, in ms: la latenza verso l'amico.
+    pub rtt_ms: Option<u32>,
 }
 
 /// Indirizzo di presenza salvato come `ip` o `ip:porta`.
@@ -135,6 +137,8 @@ pub struct FriendView {
     pub last_seen: Option<i64>,
     pub role: Option<String>,
     pub devices: Vec<DeviceRow>,
+    /// Latenza stimata verso l'amico (presenza), se raggiungibile.
+    pub rtt_ms: Option<u32>,
 }
 
 fn live_state(row: &FriendRow, live: Option<&Live>) -> FriendLiveState {
@@ -178,6 +182,7 @@ pub fn friend_views(c: &Core) -> Vec<FriendView> {
                 last_seen: r.last_seen,
                 role: c.db.permissions(&r.id).ok().flatten().map(|p| p.0),
                 devices: c.db.devices(&r.id).unwrap_or_default(),
+                rtt_ms: c.live.get(&r.id).and_then(|l| l.rtt_ms),
             }
         })
         .collect();
@@ -249,6 +254,7 @@ async fn poll_once(shared: &Shared, favorites_only: bool) -> bool {
         let me2 = me.clone();
         let result = tokio::task::spawn_blocking(move || {
             for a in addrs {
+                let started = std::time::Instant::now();
                 if let Ok(r) = fpp_call(
                     &me2,
                     "GET",
@@ -258,7 +264,8 @@ async fn poll_once(shared: &Shared, favorites_only: bool) -> bool {
                     etag.as_deref(),
                     Duration::from_secs(3),
                 ) {
-                    return Some((a, r));
+                    let rtt = u32::try_from(started.elapsed().as_millis()).unwrap_or(u32::MAX);
+                    return Some((a, r, rtt));
                 }
             }
             None
@@ -270,6 +277,8 @@ async fn poll_once(shared: &Shared, favorites_only: bool) -> bool {
         let mut c = shared.lock().await;
         let before = c.live.get(&friend.id).cloned().unwrap_or_default();
         let mut live = before.clone();
+        live.rtt_ms = result.as_ref().map(|r| r.2);
+        let result = result.map(|(a, r, _)| (a, r));
         match result {
             Some((addr, (304, _, _))) => live.address = Some(addr),
             Some((addr, (200, tag, body))) => {

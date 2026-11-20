@@ -187,8 +187,9 @@ pub async fn stream_attach(
         let mut seen = Vec::new();
         for _ in 0..900 {
             let (stream, others, classes) = win32::find(pid);
+            // Le finestre Qt di Moonlight (avvio, errori) non devono comparire sopra Falco
+            others.into_iter().for_each(win32::hide);
             if let Some(child) = stream {
-                others.into_iter().for_each(win32::hide);
                 win32::attach(parent, child, physical(&window, rect));
                 *state.0.lock().map_err(|e| e.to_string())? = Some(child);
                 return Ok(true);

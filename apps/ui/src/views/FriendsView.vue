@@ -102,9 +102,7 @@ function enter(f: Friend): void {
       </details>
     </template>
 
-    <Teleport to="#detail-slot" defer>
-      <FriendDetail v-if="selected" :friend="selected" @close="selectedId = null" @join="enter(selected)" />
-    </Teleport>
+    <FriendDetail v-if="selected" :friend="selected" @close="selectedId = null" @join="(enter(selected), (selectedId = null))" />
   </UiPage>
 </template>
 

@@ -126,7 +126,13 @@ pub async fn install(shared: &Shared) -> anyhow::Result<()> {
         // l'installer è per tutto il PC: si avvia con «runas», Windows chiede la conferma (UAC)
         let path = file.to_string_lossy().replace('\'', "''");
         let script = format!("Start-Process -FilePath '{path}' -ArgumentList '/S' -Verb RunAs");
-        let status = std::process::Command::new("powershell")
+        let mut cmd = std::process::Command::new("powershell");
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+        }
+        let status = cmd
             .args(["-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", &script])
             .status()
             .context("installer non avviato")?;

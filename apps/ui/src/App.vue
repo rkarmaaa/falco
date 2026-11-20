@@ -22,10 +22,13 @@ import OnboardingView from '@/views/OnboardingView.vue';
 import { clearLastSession, core, initCore, joinFriend, leaveSession } from '@/stores/core';
 import { findInviteLink, initSocial, previewInvite, social } from '@/stores/social';
 import { attempt, errors, initErrors } from '@/stores/errors';
-import { focusStream, resetStage, setFullscreen, stage } from '@/stores/stage';
+import { focusStream, keepStreamFocus, resetStage, setFullscreen, stage } from '@/stores/stage';
 import { closeModal, joinStream, openAccept, openLink, ui } from '@/stores/ui';
 import { setLocale } from '@/i18n';
 import { getTransport, isTauri, rpc } from '@/ipc';
+import { Radio } from 'lucide-vue-next';
+import UiButton from '@/components/UiButton.vue';
+import { useStreamOverlay } from '@/stores/overlay';
 
 const { t } = useI18n();
 const section = ref<Section>('friends');
@@ -35,6 +38,13 @@ const seenLinks = new Set<string>();
 const onboarding = computed(() => core.ready && core.connected && social.profileLoaded && !social.profile.exists);
 const inSession = computed(() => core.session.phase !== 'idle');
 const onStage = computed(() => inSession.value && section.value === 'stream');
+watch(
+  () => onStage.value && stage.embedded,
+  (on) => keepStreamFocus(on),
+  { immediate: true },
+);
+// Sopra lo stream incorporato gli avvisi vanno nella loro finestra trasparente
+useStreamOverlay(computed(() => onStage.value && stage.embedded && !stage.fullscreen), toast, () => (toast.value = null));
 const hasToasts = computed(
   () =>
     errors.toasts.length + social.knocks.length + social.requests.length + social.playInvites.length + social.friendRequests.invites.length > 0 ||
@@ -52,6 +62,15 @@ function showToast(text: string, action?: Toast['action']): void {
 
 // Collegandosi a qualcuno si va sul palco; a fine sessione si torna dove si era
 let before: Section = 'friends';
+/** Nome dell'host che ha chiuso lo stream: schermata di fine al posto del palco. */
+const hostEnded = ref<string | null>(null);
+watch(section, (s) => {
+  if (s !== 'stream') hostEnded.value = null;
+});
+function leaveEnded(): void {
+  hostEnded.value = null;
+  section.value = before === 'stream' ? 'friends' : before;
+}
 watch(
   () => core.session.phase,
   (phase, prev) => {
@@ -63,6 +82,13 @@ watch(
       // Cambio di qualità: la sessione si riapre subito, niente avviso né cambio di sezione
       if (core.reconnecting) return;
       void resetStage();
+      // L'host ha chiuso lo stream: si resta sulla scheda con la schermata di fine, senza errori
+      if (core.lastSession?.reason === 'host-ended') {
+        hostEnded.value = core.lastSession.host;
+        section.value = 'stream';
+        clearLastSession();
+        return;
+      }
       if (section.value === 'stream') section.value = before;
       sessionEnded();
     }
@@ -168,13 +194,20 @@ onMounted(async () => {
     <div v-else class="body">
       <div v-if="onStage" class="stage-row">
         <StreamStage />
-        <ToastStack v-if="hasToasts && !stage.fullscreen" docked :toast="toast" @clear="toast = null" />
+        <!-- Nel browser (simulazione) gli avvisi restano accanto al palco -->
+        <ToastStack v-if="hasToasts && !stage.fullscreen && !isTauri()" docked :toast="toast" @clear="toast = null" />
       </div>
       <template v-else>
         <main class="content">
           <CoreOffline v-if="core.ready && !core.connected" />
           <div class="view">
-            <FriendsView v-if="section === 'friends' || (section === 'stream' && !inSession)" />
+            <section v-if="section === 'stream' && !inSession && hostEnded" class="ended">
+              <span class="icon"><Radio :size="28" :stroke-width="1.6" aria-hidden="true" /></span>
+              <h1>{{ t('session.hostEnded.title', { name: hostEnded }) }}</h1>
+              <p>{{ t('session.hostEnded.body') }}</p>
+              <UiButton variant="primary" :size="48" @click="leaveEnded">{{ t('session.hostEnded.back') }}</UiButton>
+            </section>
+            <FriendsView v-else-if="section === 'friends' || (section === 'stream' && !inSession)" />
             <HostView v-else-if="section === 'host'" />
             <InvitesView v-else-if="section === 'invites'" />
             <SettingsView v-else-if="section === 'settings'" />
@@ -262,6 +295,34 @@ onMounted(async () => {
     left: 50%;
     z-index: 60;
     transform: translateX(-50%);
+  }
+}
+
+.ended {
+  display: grid;
+  justify-items: center;
+  gap: $sp-3;
+  max-width: 440px;
+  margin: $sp-9 auto 0;
+  text-align: center;
+
+  .icon {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: $r-pill;
+    background: $bg-3;
+    color: $text-2;
+  }
+
+  h1 {
+    @include title-h1;
+  }
+
+  p {
+    margin-bottom: $sp-3;
+    color: $text-2;
   }
 }
 </style>

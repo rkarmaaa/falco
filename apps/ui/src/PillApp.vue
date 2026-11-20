@@ -13,6 +13,44 @@ async function action(a: 'exit' | 'leave'): Promise<void> {
   await invoke('pill_action', { action: a });
 }
 
+// Nascosta: resta una striscia sul bordo alto; il cursore lassù la fa scendere
+const hidden = ref(false);
+const peek = ref(false);
+let leaveTimer: ReturnType<typeof setTimeout> | undefined;
+
+async function size(collapsed: boolean): Promise<void> {
+  const { invoke } = await import('@tauri-apps/api/core');
+  await invoke('pill_collapse', { collapsed }).catch(() => {});
+}
+
+async function hide(): Promise<void> {
+  hidden.value = true;
+  peek.value = false;
+  await size(true);
+}
+
+async function enter(): Promise<void> {
+  clearTimeout(leaveTimer);
+  if (!hidden.value || peek.value) return;
+  await size(false);
+  peek.value = true;
+}
+
+function leaveWindow(): void {
+  if (!hidden.value) return;
+  clearTimeout(leaveTimer);
+  leaveTimer = setTimeout(async () => {
+    peek.value = false;
+    // Si ritira prima l'animazione, poi la finestra
+    setTimeout(() => void size(true), 220);
+  }, 700);
+}
+
+function pin(): void {
+  hidden.value = false;
+  peek.value = false;
+}
+
 onMounted(async () => {
   document.body.classList.add('pill');
   const snap = await rpc<StateSnapshot>('state.snapshot').catch(() => null);
@@ -27,15 +65,30 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="wrap" data-tauri-drag-region>
-    <StreamPill :name="name" :stats="stats" @exit="action('exit')" @leave="action('leave')" />
+  <div class="wrap" :class="{ hidden, peek }" @mouseenter="enter" @mouseleave="leaveWindow">
+    <StreamPill
+      :name="name"
+      :stats="stats"
+      :hidden="hidden"
+      @exit="action('exit')"
+      @leave="action('leave')"
+      @hide="hidden ? pin() : hide()"
+    />
   </div>
 </template>
 
 <style lang="scss" scoped>
 .wrap {
   display: grid;
-  place-items: center;
+  justify-items: center;
+  align-content: start;
   height: 100%;
+  padding-top: 12px;
+  transition: transform $t-panel $ease;
+
+  // Nascosta: scivola fuori dal bordo alto e rientra al passaggio del cursore
+  &.hidden:not(.peek) {
+    transform: translateY(-110%);
+  }
 }
 </style>

@@ -130,8 +130,6 @@ function join(id: string, name: string): void {
 
     &.request {
       flex-wrap: wrap;
-      border-color: rgba(157, 169, 255, 0.35);
-      box-shadow: 0 0 0 1px rgba(157, 169, 255, 0.1), $shadow-3;
 
       .acts {
         margin-left: auto;

@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n';
 import { Gauge, Scale, Snail, Sparkles, SlidersHorizontal, Wand2, Check, Volume2, Wifi, ShieldCheck, Image, Users, UserCheck } from 'lucide-vue-next';
 import UiButton from './UiButton.vue';
 import UiSegmented from './UiSegmented.vue';
+import SettingsForm from './SettingsForm.vue';
 import { core, hostApi, setConfig } from '@/stores/core';
 import { PROFILES, applyProfile, currentProfile, restartIfIdle } from '@/stores/share';
 import { attempt } from '@/stores/errors';
@@ -182,6 +183,12 @@ const defaultRole = computed({
         />
       </div>
     </div>
+
+    <details class="advanced">
+      <summary>{{ t('share.advanced') }}</summary>
+      <p class="hint">{{ t('share.advancedHint') }}</p>
+      <SettingsForm :sections="['host', 'stream']" />
+    </details>
 
     <p v-if="note" class="note" role="status">{{ note }}</p>
   </section>
@@ -388,6 +395,24 @@ const defaultRole = computed({
   .note {
     color: $accent-fg;
     font-size: $fs-small;
+  }
+}
+
+.advanced {
+  display: grid;
+  gap: $sp-3;
+  padding: $sp-3 $sp-5;
+  border: 1px solid $line;
+  border-radius: $r-card;
+  background: $bg-2;
+
+  summary {
+    font-weight: $fw-strong;
+    cursor: pointer;
+  }
+
+  .hint {
+    @include message($text-3);
   }
 }
 

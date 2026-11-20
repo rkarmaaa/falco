@@ -52,7 +52,6 @@ async function copy(): Promise<void> {
     @include floating-card;
     width: 100%;
     max-width: none;
-    border-color: $danger-line;
   }
 
   .icon {

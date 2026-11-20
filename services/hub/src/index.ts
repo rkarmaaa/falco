@@ -3,8 +3,8 @@
 // l'invito allegato è firmato dall'host e il core lo verifica nell'handshake (§6).
 import { codeOf, displayCode, normalizeCode, randomCode, validName, verify } from './auth';
 import { LOGO_256, LOGO_32 } from './assets';
-import { installerUrl } from './download';
-import { addPage, homePage, joinPage, missingPage } from './pages';
+import { INSTALLERS, installerUrl } from './download';
+import { addPage, homePage, joinPage, missingPage, soonPage } from './pages';
 import { ensureSchema } from './schema';
 import { authKey } from './tailscale';
 
@@ -284,13 +284,16 @@ async function api(request: Request, env: Env, url: URL): Promise<Response> {
   return handler({ env, me: auth.id, raw, origin: url.origin }, re.exec(url.pathname)?.[1] ?? '');
 }
 
-async function download(env: Env): Promise<Response> {
+async function download(env: Env, os: keyof typeof INSTALLERS): Promise<Response> {
   if (!env.GITHUB_TOKEN) throw new HttpError(503, 'download non ancora disponibile');
-  const location = await installerUrl(env.RELEASES_REPO, env.GITHUB_TOKEN).catch((e) => {
+  const location = await installerUrl(env.RELEASES_REPO, env.GITHUB_TOKEN, INSTALLERS[os]).catch((e) => {
     console.error('download', e);
     throw new HttpError(502, 'download non disponibile, riprova tra poco');
   });
-  if (!location) throw new HttpError(404, 'nessun installer pubblicato');
+  if (!location) {
+    if (os === 'mac') return html(soonPage(), 404);
+    throw new HttpError(404, 'nessun installer pubblicato');
+  }
   return Response.redirect(location, 302);
 }
 
@@ -316,7 +319,8 @@ export default {
       if (url.pathname === '/') return html(homePage(`${url.origin}/download`, repoUrl(env)));
       if (url.pathname === '/logo.png') return png(LOGO_256);
       if (url.pathname === '/favicon.png') return png(LOGO_32);
-      if (url.pathname === '/download') return await download(env);
+      if (url.pathname === '/download') return await download(env, 'windows');
+      if (url.pathname === '/download/mac') return await download(env, 'mac');
       await ensureSchema(env.DB);
       if (url.pathname.startsWith('/v1/')) return await api(request, env, url);
       if (request.method === 'GET') return await pages(env, url);

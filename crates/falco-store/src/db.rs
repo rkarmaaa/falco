@@ -372,11 +372,29 @@ impl Db {
             .optional()
     }
 
+    /// Inviti chiusi (scaduti, esauriti o revocati): solo dell'ultimo mese e al massimo 50.
+    pub fn prune_invites(&self, now: i64) -> Result<usize, DbError> {
+        let closed = "(revoked = 1 OR uses_left <= 0 OR expires_at <= ?1)";
+        let old = self.conn.execute(
+            &format!("DELETE FROM invites WHERE {closed} AND created_at < ?1 - 30 * 86400"),
+            [now],
+        )?;
+        let extra = self.conn.execute(
+            &format!(
+                "DELETE FROM invites WHERE token_hash IN (SELECT token_hash FROM invites WHERE {closed}
+                 ORDER BY created_at DESC LIMIT -1 OFFSET 50)"
+            ),
+            [now],
+        )?;
+        Ok(old + extra)
+    }
+
     pub fn invites(&self, now: i64) -> Result<Vec<InviteRow>, DbError> {
+        self.prune_invites(now)?;
         let mut stmt = self.conn.prepare(
             "SELECT token_hash, role, created_at, expires_at, uses_left, needs_approval, ts_invite_id,
                     (revoked = 0 AND uses_left > 0 AND expires_at > ?1)
-             FROM invites ORDER BY created_at DESC LIMIT 50",
+             FROM invites ORDER BY created_at DESC LIMIT 30",
         )?;
         let rows = stmt.query_map([now], |r| {
             Ok(InviteRow {

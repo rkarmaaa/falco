@@ -72,6 +72,21 @@ export function focusStream(): void {
   if (state.embedded && state.covers === 0) void invoke('stream_focus');
 }
 
+let keeper: ReturnType<typeof setInterval> | undefined;
+
+/**
+ * Finché lo stream è visibile e niente lo copre, la tastiera resta a Moonlight: se il focus torna
+ * alla pagina (succede a ogni clic sullo stream) lo si restituisce. Con un pannello aperto no,
+ * così i campi di testo di Falco funzionano.
+ */
+export function keepStreamFocus(on: boolean): void {
+  clearInterval(keeper);
+  if (!on || !isTauri()) return;
+  keeper = setInterval(() => {
+    if (document.hasFocus() && state.embedded && state.covers === 0) void invoke('stream_focus');
+  }, 300);
+}
+
 /** Nuova posizione del flusso; nascosto se qualcosa lo copre. */
 export function place(rect: StageRect | null): void {
   if (rect) state.rect = rect;

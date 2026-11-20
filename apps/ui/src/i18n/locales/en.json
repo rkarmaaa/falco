@@ -9,7 +9,7 @@
   },
   "nav": {
     "friends": "Friends",
-    "host": "Host",
+    "host": "Share",
     "invites": "Invites",
     "settings": "Settings",
     "me": "Your profile"
@@ -58,7 +58,8 @@
     "invitePlay": "Invite to play",
     "notConnected": "Not connected yet: invite them",
     "invited": "Invited",
-    "inviteOne": "Invite"
+    "inviteOne": "Invite",
+    "detailTitle": "Friend"
   },
   "host": {
     "title": "Host",
@@ -107,7 +108,9 @@
     "expires": "expires {when}",
     "created": "created {when}",
     "approval": "needs approval",
-    "revoke": "Revoke"
+    "revoke": "Revoke",
+    "showHistory": "Show recent ({n})",
+    "hideHistory": "Hide history"
   },
   "settings": {
     "title": "Settings",
@@ -386,7 +389,7 @@
     "mouse": "Mouse",
     "launchApps": "Launch or switch apps",
     "gamepads": "Controllers",
-    "enforced": "Access, schedule and expiry are enforced by your host. Controller, keyboard and mouse filtering arrives with the Falco engine.",
+    "enforced": "They apply right away, even during a stream: your host blocks the devices you have not granted.",
     "notPaired": "Your friend's device isn't paired with your host yet: permissions apply from the first connection."
   },
   "knock": {
@@ -555,7 +558,9 @@
     "share": "Share",
     "start": "Start",
     "on": "Live",
-    "stopHint": "Click to stop sharing"
+    "stopHint": "Click to stop sharing",
+    "startingShort": "Starting…",
+    "macHostSoon": "On Mac you can watch and play at friends for now: sharing is coming soon."
   },
   "guests": {
     "label": "Connected people",
@@ -605,12 +610,19 @@
     "rejoin": "Rejoin",
     "mute": "Mute",
     "unmute": "Unmute",
-    "volume": "Stream volume"
+    "volume": "Stream volume",
+    "hostEnded": {
+      "title": "{name} stopped the stream",
+      "body": "Sharing has ended. When it starts again you will see it under \"Playing now\".",
+      "back": "Back to friends"
+    }
   },
   "pill": {
     "label": "Stream actions",
     "exit": "Exit fullscreen",
-    "confirmLeave": "Confirm leave"
+    "confirmLeave": "Confirm leave",
+    "hide": "Hide: comes back when the cursor reaches the top",
+    "pin": "Keep visible"
   },
   "share": {
     "title": "Sharing quality",
@@ -699,7 +711,9 @@
     "guests": "Guests at once",
     "guestsHint": "How many people can watch or play at the same time.",
     "defaultRole": "Role for new friends",
-    "defaultRoleHint": "What people who accept your friendship can do: change it later for each one."
+    "defaultRoleHint": "What people who accept your friendship can do: change it later for each one.",
+    "advanced": "Advanced settings",
+    "advancedHint": "Every host parameter and how you receive friends' streams. The choices above are almost always enough."
   },
   "avatar": {
     "change": "Change photo",

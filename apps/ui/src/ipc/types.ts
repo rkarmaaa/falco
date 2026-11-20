@@ -135,6 +135,8 @@ export interface Friend {
   devices: readonly FriendDevice[];
   /** Amico registrato sul Falco Hub ma mai collegato a questo PC. */
   remote?: boolean;
+  /** Latenza stimata verso l'amico, in ms. */
+  rttMs?: number | null;
 }
 
 export interface MyProfile {

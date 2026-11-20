@@ -69,17 +69,21 @@ const initials = computed(() =>
     box-shadow: 0 0 0 2px $bg-1, 0 0 0 4px var(--ring);
   }
 
+  // Colori di stato semitrasparenti: si leggono senza abbagliare
   &.online {
-    --ring: #{$ok};
+    --ring: color-mix(in srgb, #{$ok} 55%, transparent);
   }
 
   &.busy {
-    --ring: #{$busy};
+    --ring: color-mix(in srgb, #{$busy} 55%, transparent);
   }
 
   &.playing {
-    --ring: #{$accent-fg};
-    @include glow;
+    --ring: color-mix(in srgb, #{$accent-fg} 65%, transparent);
+    box-shadow:
+      0 0 0 2px $bg-1,
+      0 0 0 4px var(--ring),
+      0 0 12px 1px color-mix(in srgb, #{$accent-fg} 25%, transparent);
   }
 
   &.offline {

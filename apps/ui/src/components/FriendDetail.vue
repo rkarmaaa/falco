@@ -1,7 +1,9 @@
 <script setup lang="ts">
-// Pannello destro (cassetto sotto sm): avatar 96, tag, dispositivi, ruolo, azioni
-import { ref } from 'vue';
-import { Ban, Monitor, Play, Star, Trash2, X } from 'lucide-vue-next';
+// Scheda dell'amico in un popup: foto e dati a sinistra, poi azioni, permessi e dispositivi
+import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { Ban, Monitor, Play, Send, Star, Trash2 } from 'lucide-vue-next';
+import UiModal from './UiModal.vue';
 import UiAvatar from './UiAvatar.vue';
 import UiButton from './UiButton.vue';
 import PermissionEditor from './PermissionEditor.vue';
@@ -11,7 +13,11 @@ import type { Friend } from '@/ipc';
 
 const props = defineProps<{ friend: Friend }>();
 const emit = defineEmits<{ close: []; join: [] }>();
+const { t } = useI18n();
 const confirm = ref<'remove' | 'block' | null>(null);
+const ring = computed(() =>
+  props.friend.state === 'playing' ? 'playing' : props.friend.state === 'busy' ? 'busy' : props.friend.state === 'online' ? 'online' : 'offline',
+);
 
 async function act(): Promise<void> {
   if (confirm.value === 'remove') await friendApi.remove(props.friend.id);
@@ -22,192 +28,180 @@ async function act(): Promise<void> {
 </script>
 
 <template>
-  <aside class="detail" :aria-label="friend.name">
-    <button type="button" class="close" :aria-label="$t('app.close')" @click="emit('close')">
-      <X :size="18" :stroke-width="1.75" />
-    </button>
-    <UiAvatar :name="friend.name" :src="friend.avatarUrl" :accent="friend.accent" :size="96" :status="friend.state === 'playing' ? 'playing' : null" />
-    <h2 class="name">{{ friend.name }}</h2>
-    <p class="tag">{{ friend.tag }}</p>
-    <span v-if="friend.role" class="chip" :title="$t(`role.hint.${friend.role}`)">{{ $t(`role.${friend.role}`) }}</span>
+  <UiModal :title="t('friends.detailTitle')" class="friend-modal" @close="emit('close')">
+    <header class="who">
+      <UiAvatar :name="friend.name" :src="friend.avatarUrl" :accent="friend.accent" :size="96" :status="ring" />
+      <div class="info">
+        <h2 class="name">{{ friend.name }}</h2>
+        <span class="tag">{{ friend.tag }}</span>
+        <div class="chips">
+          <span class="chip state" :class="friend.state">{{ t(`friends.state.${friend.state}`) }}</span>
+          <span v-if="friend.role" class="chip" :title="t(`role.hint.${friend.role}`)">{{ t(`role.${friend.role}`) }}</span>
+          <span v-if="friend.favorite" class="chip"><Star :size="12" :stroke-width="2" aria-hidden="true" /> {{ t('friends.favorite') }}</span>
+        </div>
+      </div>
+    </header>
 
-    <UiButton v-if="friend.canJoin" variant="primary" class="primary" @click="emit('join')">
-      <Play :size="18" :stroke-width="1.75" aria-hidden="true" />
-      {{ $t('friends.join') }}
-    </UiButton>
-    <p v-else class="muted">{{ $t(`friends.state.${friend.state}`) }}</p>
-
-    <UiButton v-if="!friend.canJoin && friend.state !== 'offline'" variant="secondary" :size="32" @click="rpc('friend.notify', { id: friend.id })">
-      {{ $t('friends.invitePlay') }}
-    </UiButton>
+    <div class="actions">
+      <UiButton v-if="friend.canJoin" variant="primary" @click="emit('join')">
+        <Play :size="18" :stroke-width="1.75" aria-hidden="true" />
+        {{ t('friends.join') }}
+      </UiButton>
+      <UiButton v-if="!friend.canJoin && friend.state !== 'offline'" variant="secondary" @click="rpc('friend.notify', { id: friend.id })">
+        <Send :size="16" :stroke-width="1.75" aria-hidden="true" />
+        {{ t('friends.invitePlay') }}
+      </UiButton>
+    </div>
 
     <PermissionEditor :friend-id="friend.id" />
 
-    <h3 class="group">{{ $t('friends.devices') }}</h3>
-    <ul class="devices">
-      <li v-for="d in friend.devices" :key="d.tsNodeId" class="device">
-        <Monitor :size="16" :stroke-width="1.75" aria-hidden="true" />
-        <span class="dname">{{ d.hostname || d.tsIp }}</span>
-        <span class="meta">{{ d.os }}</span>
-      </li>
-    </ul>
+    <section v-if="friend.devices.length" class="devices">
+      <h3 class="label">{{ t('friends.devices') }}</h3>
+      <ul>
+        <li v-for="d in friend.devices" :key="d.tsNodeId">
+          <Monitor :size="16" :stroke-width="1.75" aria-hidden="true" />
+          <span class="dname">{{ d.hostname || d.tsIp }}</span>
+          <span class="meta">{{ d.os }}</span>
+        </li>
+      </ul>
+    </section>
 
-    <div class="tools">
+    <div v-if="confirm" class="confirm" role="alert">
+      <p>{{ t(`friends.confirm.${confirm}`, { name: friend.name }) }}</p>
+      <div class="row">
+        <UiButton variant="danger" :size="32" @click="act">{{ t(`friends.${confirm}`) }}</UiButton>
+        <UiButton variant="ghost" :size="32" @click="confirm = null">{{ t('friends.cancel') }}</UiButton>
+      </div>
+    </div>
+
+    <template #actions>
       <UiButton variant="ghost" :size="32" @click="friendApi.favorite(friend.id, !friend.favorite)">
         <Star :size="16" :stroke-width="1.75" aria-hidden="true" />
-        {{ friend.favorite ? $t('friends.unfavorite') : $t('friends.makeFavorite') }}
+        {{ friend.favorite ? t('friends.unfavorite') : t('friends.makeFavorite') }}
       </UiButton>
       <UiButton variant="ghost" :size="32" @click="confirm = 'remove'">
         <Trash2 :size="16" :stroke-width="1.75" aria-hidden="true" />
-        {{ $t('friends.remove') }}
+        {{ t('friends.remove') }}
       </UiButton>
       <UiButton variant="ghost" :size="32" @click="confirm = 'block'">
         <Ban :size="16" :stroke-width="1.75" aria-hidden="true" />
-        {{ $t('friends.block') }}
+        {{ t('friends.block') }}
       </UiButton>
-    </div>
-    <div v-if="confirm" class="confirm" role="alert">
-      <p>{{ $t(`friends.confirm.${confirm}`, { name: friend.name }) }}</p>
-      <div class="row">
-        <UiButton variant="danger" :size="32" @click="act">{{ $t(`friends.${confirm}`) }}</UiButton>
-        <UiButton variant="ghost" :size="32" @click="confirm = null">{{ $t('friends.cancel') }}</UiButton>
-      </div>
-    </div>
-  </aside>
+    </template>
+  </UiModal>
 </template>
 
 <style lang="scss" scoped>
-.detail {
-  position: relative;
+.who {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: $sp-2;
-  width: $detail-w;
-  flex: 0 0 $detail-w;
-  padding: $sp-7 $sp-5;
-  // Solo in verticale: niente contenuto più largo del pannello
-  overflow: hidden auto;
+  gap: $sp-5;
 
-  > * {
-    max-width: 100%;
-    min-width: 0;
-  }
-  background: $bg-1;
-  border-left: 1px solid $line;
-
-  // Sotto sm il pannello diventa un cassetto sovrapposto
-  @include mq(sm) {
-    position: fixed;
-    top: $titlebar-h;
-    right: 0;
-    bottom: 0;
-    z-index: 10;
-    box-shadow: -16px 0 40px rgba(0, 0, 0, 0.3);
-  }
-
-  .close {
-    @include reset-button;
-    @include focus-ring;
-    position: absolute;
-    top: $sp-3;
-    right: $sp-3;
+  .info {
     display: grid;
-    place-items: center;
-    width: 32px;
-    height: 32px;
-    border-radius: $r-button;
-    color: $text-2;
+    gap: $sp-1;
+    min-width: 0;
 
-    &:hover {
-      background: $bg-3;
+    .name {
+      @include title-h1;
+      @include truncate;
+    }
+
+    .tag {
+      @include message($text-3);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: $sp-1;
+      margin-top: $sp-1;
     }
   }
+}
 
-  .name {
-    margin-top: $sp-2;
-    font-size: $fs-h2;
-    line-height: 24px;
-    font-weight: 600;
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px $sp-2;
+  border-radius: $r-pill;
+  background: $bg-3;
+  color: $text-2;
+  font-size: $fs-label;
+  font-weight: $fw-strong;
+
+  &.state.online,
+  &.state.playing {
+    background: $live-soft;
+    color: $live;
   }
 
-  .tag {
-    color: $text-2;
-    font-size: $fs-small;
-    font-variant-numeric: tabular-nums;
+  &.state.busy {
+    background: $busy-soft;
+    color: $busy;
   }
+}
 
-  .chip {
-    padding: 2px $sp-3;
-    border: 1px solid $line;
-    border-radius: $r-pill;
-    font-size: $fs-small;
-    color: $text-2;
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $sp-2;
+
+  &:empty {
+    display: none;
   }
+}
 
-  .primary {
-    align-self: stretch;
-    margin-top: $sp-3;
-  }
+.devices {
+  display: grid;
+  gap: $sp-2;
 
-  .muted {
-    margin-top: $sp-3;
-    color: $text-3;
-    font-size: $fs-small;
-  }
-
-  .group {
+  .label {
     @include label;
-    align-self: flex-start;
-    margin-top: $sp-5;
   }
 
-  .devices {
-    align-self: stretch;
+  ul {
     display: grid;
     gap: $sp-1;
     margin: 0;
     padding: 0;
     list-style: none;
-
-    .device {
-      display: flex;
-      align-items: center;
-      gap: $sp-2;
-      font-size: $fs-small;
-
-      .dname {
-        @include truncate;
-        flex: 1;
-      }
-
-      .meta {
-        color: $text-3;
-      }
-    }
   }
 
-  .tools {
-    align-self: stretch;
-    display: grid;
-    margin-top: auto;
-    padding-top: $sp-5;
-    justify-items: start;
-  }
-
-  .confirm {
-    align-self: stretch;
-    display: grid;
+  li {
+    display: flex;
+    align-items: center;
     gap: $sp-2;
-    padding: $sp-3;
-    border: 1px solid $danger;
-    border-radius: $r-card;
-    font-size: $fs-small;
+    color: $text-2;
 
-    .row {
-      display: flex;
-      gap: $sp-2;
+    .dname {
+      @include truncate;
+      color: $text-1;
     }
+
+    .meta {
+      @include message($text-3);
+      margin-left: auto;
+    }
+  }
+}
+
+.confirm {
+  display: grid;
+  gap: $sp-2;
+  padding: $sp-3 $sp-4;
+  border-radius: $r-card;
+  background: $danger-soft;
+
+  p {
+    @include message($text-1);
+  }
+
+  .row {
+    display: flex;
+    gap: $sp-2;
   }
 }
 </style>

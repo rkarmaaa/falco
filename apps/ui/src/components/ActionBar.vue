@@ -91,6 +91,8 @@ async function pickProfile(p: HostProfile): Promise<void> {
   setTimeout(() => (profileNote.value = null), 5000);
 }
 
+// Beta su Mac: si guarda e si gioca dagli amici, condividere arriverà dopo
+const isMac = navigator.userAgent.includes('Mac');
 const stop = () => attempt(t('errors.context.stopShare'), () => setHostAvailable(false));
 const leave = () => attempt(t('errors.context.leave'), () => leaveSession());
 const applyInputs = () => attempt(t('errors.context.applyInputs'), () => hostApi.applyInputs());
@@ -193,12 +195,12 @@ const applyInputs = () => attempt(t('errors.context.applyInputs'), () => hostApi
           class="power"
           :class="{ on: hosting }"
           :aria-pressed="hosting"
-          :title="hosting ? t('bar.stopHint') : undefined"
-          :disabled="starting"
+          :title="hosting ? t('bar.stopHint') : isMac ? t('bar.macHostSoon') : undefined"
+          :disabled="starting || (isMac && !hosting)"
           @click="hosting ? stop() : openModal('share')"
         >
           <Power :size="17" :stroke-width="2.2" aria-hidden="true" />
-          {{ hosting ? t('bar.on') : starting ? t('host.state.starting') : t('bar.start') }}
+          {{ hosting ? t('bar.on') : starting ? t('bar.startingShort') : t('bar.start') }}
         </UiButton>
       </template>
     </div>
@@ -274,8 +276,8 @@ const applyInputs = () => attempt(t('errors.context.applyInputs'), () => hostApi
     background: $line;
   }
 
+  // Senza position: gli avvisi assoluti si posizionano sulla barra e non vengono tagliati qui
   .middle {
-    position: relative;
     display: flex;
     flex: 1;
     align-items: center;
@@ -293,16 +295,24 @@ const applyInputs = () => attempt(t('errors.context.applyInputs'), () => hostApi
 
     .note,
     .pending {
-      padding: 6px $sp-3;
+      position: absolute;
+      bottom: calc(100% + #{$sp-2});
+      left: 50%;
+      z-index: 5;
+      padding: 4px $sp-3;
+      border: 1px solid $line-strong;
       border-radius: $r-pill;
-      background: $accent-soft;
+      background: $bg-float;
+      backdrop-filter: blur(12px);
+      box-shadow: $shadow-2;
       color: $accent-fg;
-      font-size: 12px;
+      font-size: $fs-label;
+      font-weight: $fw-strong;
       white-space: nowrap;
+      transform: translateX(-50%);
     }
 
     .pending {
-      background: rgba(245, 184, 61, 0.12);
       color: $busy;
 
       .link {

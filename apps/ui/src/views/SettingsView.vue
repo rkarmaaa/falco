@@ -15,8 +15,8 @@ import { core, setConfig, setStatus } from '@/stores/core';
 import { clearAvatar, rename, setAvatar, social } from '@/stores/social';
 import { isRpcError, rpc, type DoctorCheck, type Status } from '@/ipc';
 
-type Tab = 'profile' | 'streaming' | 'network' | 'host' | 'permissions' | 'advanced' | 'about';
-const tabs: Tab[] = ['profile', 'streaming', 'network', 'host', 'permissions', 'advanced', 'about'];
+type Tab = 'profile' | 'network' | 'advanced' | 'about';
+const tabs: Tab[] = ['profile', 'network', 'advanced', 'about'];
 const soon: Partial<Record<Tab, string>> = {};
 
 const { t } = useI18n();
@@ -100,6 +100,18 @@ async function importConfig(e: Event): Promise<void> {
 
 const update = ref<{ available: { version: string; notes: string } | null; current: string; enabled: boolean } | null>(null);
 const updating = ref(false);
+// Dal pulsante in alto: controlla e mostra il risultato in «Info»
+const checking = ref(false);
+async function checkFromHeader(): Promise<void> {
+  checking.value = true;
+  try {
+    await checkUpdate();
+    tab.value = 'about';
+  } finally {
+    checking.value = false;
+  }
+}
+
 async function checkUpdate(): Promise<void> {
   update.value = await rpc('update.check');
 }
@@ -154,6 +166,25 @@ function openTab(next: Tab): void {
 
 <template>
   <UiPage class="settings" :title="$t('settings.title')" narrow>
+    <template #actions>
+      <UiButton variant="ghost" :size="32" icon :title="$t('settings.website')" :aria-label="$t('settings.website')" @click="rpc('app.openWeb', { target: 'site' })">
+        <Globe :size="17" :stroke-width="1.75" aria-hidden="true" />
+      </UiButton>
+      <UiButton variant="ghost" :size="32" icon title="GitHub" aria-label="GitHub" @click="rpc('app.openWeb', { target: 'github' })">
+        <Github :size="17" :stroke-width="1.75" aria-hidden="true" />
+      </UiButton>
+      <UiButton
+        variant="ghost"
+        :size="32"
+        icon
+        :class="{ spinning: checking }"
+        :title="$t('update.check')"
+        :aria-label="$t('update.check')"
+        @click="checkFromHeader"
+      >
+        <RefreshCw :size="17" :stroke-width="1.75" aria-hidden="true" />
+      </UiButton>
+    </template>
     <template #meta>
       <span class="saved" :class="{ show: saved }" aria-live="polite">{{ saved ? $t('settings.saved') : '' }}</span>
     </template>
@@ -252,20 +283,6 @@ function openTab(next: Tab): void {
         </UiButton>
       </template>
 
-      <template v-else-if="tab === 'streaming'">
-        <SettingsForm :sections="['stream']" @saved="flashSaved" />
-      </template>
-
-      <template v-else-if="tab === 'host'">
-        <h2 class="subtitle">{{ $t('settings.hostParams') }}</h2>
-        <SettingsForm :sections="['host']" @saved="flashSaved" />
-      </template>
-
-      <template v-else-if="tab === 'permissions'">
-        <p class="muted">{{ $t('settings.permissionsIntro') }}</p>
-        <SettingsForm :sections="['host']" @saved="flashSaved" />
-      </template>
-
       <template v-else-if="tab === 'advanced'">
         <SettingsForm :sections="['general', 'performance', 'advanced']" @saved="flashSaved" />
         <div class="io">
@@ -281,16 +298,6 @@ function openTab(next: Tab): void {
 
       <template v-else-if="tab === 'about'">
         <p>{{ $t('settings.version', { version: core.snapshot?.version ?? '–', milestone: core.snapshot?.milestone ?? '–' }) }}</p>
-        <div class="io">
-          <UiButton variant="secondary" :size="32" @click="rpc('app.openWeb', { target: 'site' })">
-            <Globe :size="16" :stroke-width="1.75" aria-hidden="true" />
-            {{ $t('settings.website') }}
-          </UiButton>
-          <UiButton variant="secondary" :size="32" @click="rpc('app.openWeb', { target: 'github' })">
-            <Github :size="16" :stroke-width="1.75" aria-hidden="true" />
-            GitHub
-          </UiButton>
-        </div>
         <p class="muted">{{ $t('settings.license') }}</p>
         <div class="io">
           <UiButton variant="secondary" :size="32" @click="checkUpdate">{{ $t('update.check') }}</UiButton>
@@ -463,6 +470,16 @@ function openTab(next: Tab): void {
       list-style: none;
       border-radius: $r-card;
     }
+  }
+}
+
+.spinning :deep(svg) {
+  animation: settings-spin 0.9s linear infinite;
+}
+
+@keyframes settings-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 </style>

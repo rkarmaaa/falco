@@ -23,9 +23,13 @@ const steps = computed(() => {
   ];
 });
 
+// Il video sta sempre dentro il palco: rettangolo 16:9 centrato, mai più largo o più alto
 function rect() {
   const r = el.value?.getBoundingClientRect();
-  return r ? { x: r.left, y: r.top, w: r.width, h: r.height } : null;
+  if (!r || r.width <= 0 || r.height <= 0) return null;
+  const w = Math.min(r.width, (r.height * 16) / 9);
+  const h = Math.min(r.height, (r.width * 9) / 16);
+  return { x: r.left + (r.width - w) / 2, y: r.top + (r.height - h) / 2, w, h };
 }
 
 useResizeObserver(el, () => place(rect()));

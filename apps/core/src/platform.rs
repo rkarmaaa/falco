@@ -70,10 +70,13 @@ pub async fn install_tailscale(download_dir: &std::path::Path) -> anyhow::Result
         let script = format!(
             "Start-Process msiexec -Verb RunAs -Wait -ArgumentList '/i \"{path}\" /quiet /norestart'"
         );
-        tokio::process::Command::new("powershell")
-            .args(["-NoProfile", "-Command", &script])
-            .status()
-            .await?
+        no_window(tokio::process::Command::new("powershell").args([
+            "-NoProfile",
+            "-Command",
+            &script,
+        ]))
+        .status()
+        .await?
     } else {
         let script = format!(
             "do shell script \"installer -pkg '{path}' -target /\" with administrator privileges"
@@ -84,6 +87,13 @@ pub async fn install_tailscale(download_dir: &std::path::Path) -> anyhow::Result
     Ok(())
 }
 
+/// Nessuna finestra di console per i comandi di servizio (su Windows lampeggerebbe).
+fn no_window(cmd: &mut tokio::process::Command) -> &mut tokio::process::Command {
+    #[cfg(windows)]
+    cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+    cmd
+}
+
 /// Il pacchetto deve essere firmato da Tailscale (Authenticode su Windows, notarizzazione su macOS).
 async fn verify_signature(file: &std::path::Path) -> anyhow::Result<()> {
     let path = file.to_string_lossy().into_owned();
@@ -91,10 +101,13 @@ async fn verify_signature(file: &std::path::Path) -> anyhow::Result<()> {
         let script = format!(
             "$s = Get-AuthenticodeSignature '{path}'; $s.Status -eq 'Valid' -and $s.SignerCertificate.Subject -like '*Tailscale*'"
         );
-        let out = tokio::process::Command::new("powershell")
-            .args(["-NoProfile", "-Command", &script])
-            .output()
-            .await?;
+        let out = no_window(tokio::process::Command::new("powershell").args([
+            "-NoProfile",
+            "-Command",
+            &script,
+        ]))
+        .output()
+        .await?;
         String::from_utf8_lossy(&out.stdout).trim().eq_ignore_ascii_case("true")
     } else {
         let out = tokio::process::Command::new("pkgutil")

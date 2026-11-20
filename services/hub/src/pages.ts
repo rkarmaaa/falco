@@ -24,6 +24,7 @@ p{color:var(--muted)}
 .btn{display:flex;align-items:center;justify-content:center;gap:10px;height:52px;border-radius:12px;font-weight:600;text-decoration:none;color:#fff;background:linear-gradient(135deg,#4c5fd6,#32409a 55%,#263078);box-shadow:0 8px 24px rgba(50,64,154,.35);transition:transform .15s,filter .15s}
 .btn:hover{transform:translateY(-1px);filter:brightness(1.08)}
 .btn svg{width:20px;height:20px}
+.btn.alt{background:rgba(255,255,255,.06);border:1px solid var(--line);box-shadow:none}
 .btn.off{background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--faint);box-shadow:none;cursor:not-allowed}
 .btn.off:hover{transform:none;filter:none}
 .btn small{font-weight:500;opacity:.8}
@@ -47,8 +48,9 @@ const head = (title: string, body: string) =>
 
 const downloads = (download: string) => `<div class="actions">
 <a class="btn" href="${esc(download)}">${WINDOWS}Scarica per Windows</a>
-<span class="btn off" aria-disabled="true">${APPLE}macOS <small>· presto</small></span>
-</div>`;
+<a class="btn alt" href="${esc(download)}/mac">${APPLE}Scarica per macOS <small>· beta, per guardare</small></a>
+</div>
+<p class="foot">Mac: al primo avvio apri Impostazioni di Sistema → Privacy e sicurezza → «Apri comunque».</p>`;
 
 const footer = (repo: string) =>
   `<p class="foot">Gratis e open source · <a href="${esc(repo)}">GitHub</a></p>`;
@@ -87,6 +89,9 @@ export const joinPage = (name: string, code: string, download: string, repo: str
     download,
     repo,
   );
+
+export const soonPage = () =>
+  shell('Falco per macOS · in arrivo', head('Falco per macOS', '<p>La versione per Mac è in preparazione: torna tra poco.</p>'));
 
 export const missingPage = (download: string, repo: string) =>
   shell(

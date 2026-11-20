@@ -60,7 +60,7 @@ async fn pill(app: tauri::AppHandle, show: bool) -> Result<(), String> {
     }
     let main = app.get_webview_window("main").ok_or("finestra principale assente")?;
     let monitor = main.current_monitor().map_err(|e| e.to_string())?;
-    let (w, h) = (480.0, 56.0);
+    let (w, h) = (PILL_W, PILL_H);
     let builder =
         WebviewWindowBuilder::new(&app, "pill", WebviewUrl::App("index.html#pill".into()))
             .title("Falco")
@@ -76,11 +76,63 @@ async fn pill(app: tauri::AppHandle, show: bool) -> Result<(), String> {
         Some(m) => {
             let s = m.scale_factor();
             let x = f64::from(m.position().x) / s + (f64::from(m.size().width) / s - w) / 2.0;
-            builder.position(x, f64::from(m.position().y) / s + 12.0)
+            builder.position(x, f64::from(m.position().y) / s)
         }
         None => builder.center(),
     };
     builder.build().map(|_| ()).map_err(|e| e.to_string())
+}
+
+const PILL_W: f64 = 480.0;
+/// Pulsantino visibile (con 12 px di margine dal bordo) e nascosto: una striscia di pochi pixel
+/// sul bordo alto, che lo fa ricomparire quando ci arriva il cursore senza coprire lo stream.
+const PILL_H: f64 = 68.0;
+const PILL_STRIP_H: f64 = 6.0;
+
+/// Nasconde o mostra il pulsantino ridimensionando la sua finestra.
+#[tauri::command]
+fn pill_collapse(app: tauri::AppHandle, collapsed: bool) -> Result<(), String> {
+    let w = app.get_webview_window("pill").ok_or("pulsantino assente")?;
+    let h = if collapsed { PILL_STRIP_H } else { PILL_H };
+    w.set_size(tauri::LogicalSize::new(PILL_W, h)).map_err(|e| e.to_string())
+}
+
+/// Finestra delle notifiche sopra lo stream (coordinate logiche dello schermo): trasparente,
+/// sempre in primo piano, grande quanto le notifiche. `show: false` la chiude.
+#[tauri::command]
+async fn toasts_window(
+    app: tauri::AppHandle,
+    show: bool,
+    x: f64,
+    y: f64,
+    w: f64,
+    h: f64,
+) -> Result<(), String> {
+    let existing = app.get_webview_window("toasts");
+    if !show {
+        if let Some(win) = existing {
+            win.close().map_err(|e| e.to_string())?;
+        }
+        return Ok(());
+    }
+    if let Some(win) = existing {
+        win.set_size(tauri::LogicalSize::new(w, h)).map_err(|e| e.to_string())?;
+        return win.set_position(tauri::LogicalPosition::new(x, y)).map_err(|e| e.to_string());
+    }
+    WebviewWindowBuilder::new(&app, "toasts", WebviewUrl::App("index.html#toasts".into()))
+        .title("Falco")
+        .inner_size(w, h)
+        .position(x, y)
+        .decorations(false)
+        .transparent(true)
+        .shadow(false)
+        .resizable(false)
+        .always_on_top(true)
+        .skip_taskbar(true)
+        .focused(false)
+        .build()
+        .map(|_| ())
+        .map_err(|e| e.to_string())
 }
 
 /// Azione scelta nel pulsantino: la esegue la finestra principale.
@@ -127,6 +179,8 @@ fn main() {
             embed::stream_place,
             embed::stream_detach,
             embed::stream_focus,
+            pill_collapse,
+            toasts_window,
             embed::stream_stats,
             volume::stream_volume
         ])

@@ -56,12 +56,22 @@ fn local_offset_s() -> i64 {
 
 #[cfg(windows)]
 fn system_offset_s() -> i64 {
+    // Una sola volta per esecuzione: prima partiva PowerShell (con un lampo di finestra) a ogni
+    // controllo dei permessi
+    static OFFSET: std::sync::OnceLock<i64> = std::sync::OnceLock::new();
+    *OFFSET.get_or_init(read_offset_s)
+}
+
+#[cfg(windows)]
+fn read_offset_s() -> i64 {
+    use std::os::windows::process::CommandExt;
     let out = std::process::Command::new("powershell")
         .args([
             "-NoProfile",
             "-Command",
             "[int][TimeZoneInfo]::Local.GetUtcOffset([DateTime]::Now).TotalMinutes",
         ])
+        .creation_flags(0x0800_0000) // CREATE_NO_WINDOW
         .output();
     out.ok()
         .and_then(|o| String::from_utf8_lossy(&o.stdout).trim().parse::<i64>().ok())

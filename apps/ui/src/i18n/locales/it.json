@@ -9,7 +9,7 @@
   },
   "nav": {
     "friends": "Amici",
-    "host": "Ospita",
+    "host": "Condividi",
     "invites": "Inviti",
     "settings": "Impostazioni",
     "me": "Il tuo profilo"
@@ -58,7 +58,8 @@
     "invitePlay": "Invitalo a giocare",
     "notConnected": "Non ancora collegato: invitalo",
     "invited": "Invitato",
-    "inviteOne": "Invita"
+    "inviteOne": "Invita",
+    "detailTitle": "Amico"
   },
   "host": {
     "title": "Ospita",
@@ -107,7 +108,9 @@
     "expires": "scade il {when}",
     "created": "creato il {when}",
     "approval": "con approvazione",
-    "revoke": "Revoca"
+    "revoke": "Revoca",
+    "showHistory": "Mostra i recenti ({n})",
+    "hideHistory": "Nascondi lo storico"
   },
   "settings": {
     "title": "Impostazioni",
@@ -386,7 +389,7 @@
     "mouse": "Mouse",
     "launchApps": "Avviare o cambiare app",
     "gamepads": "Controller",
-    "enforced": "Ingresso, orari e scadenza sono applicati dal tuo host. Il filtro di controller, tastiera e mouse arriva con il motore Falco.",
+    "enforced": "Valgono subito, anche durante lo stream: il tuo host blocca i dispositivi che non hai concesso.",
     "notPaired": "Il dispositivo dell'amico non è ancora associato al tuo host: i permessi valgono dal primo collegamento."
   },
   "knock": {
@@ -555,7 +558,9 @@
     "share": "Condividi",
     "start": "Avvia",
     "on": "Attivo",
-    "stopHint": "Clic per fermare la condivisione"
+    "stopHint": "Clic per fermare la condivisione",
+    "startingShort": "Avvio…",
+    "macHostSoon": "Su Mac per ora puoi guardare e giocare dagli amici: condividere arriverà presto."
   },
   "guests": {
     "label": "Persone collegate",
@@ -605,12 +610,19 @@
     "rejoin": "Rientra",
     "mute": "Disattiva audio",
     "unmute": "Riattiva audio",
-    "volume": "Volume dello stream"
+    "volume": "Volume dello stream",
+    "hostEnded": {
+      "title": "{name} ha interrotto lo stream",
+      "body": "La condivisione è finita. Quando riparte lo vedi tra gli amici «In gioco ora».",
+      "back": "Torna agli amici"
+    }
   },
   "pill": {
     "label": "Azioni dello stream",
     "exit": "Esci da schermo intero",
-    "confirmLeave": "Conferma uscita"
+    "confirmLeave": "Conferma uscita",
+    "hide": "Nascondi: riappare portando il cursore in alto",
+    "pin": "Tieni sempre visibile"
   },
   "share": {
     "title": "Qualità della condivisione",
@@ -699,7 +711,9 @@
     "guests": "Ospiti insieme",
     "guestsHint": "Quante persone possono guardare o giocare nello stesso momento.",
     "defaultRole": "Ruolo dei nuovi amici",
-    "defaultRoleHint": "Cosa può fare chi accetta la tua amicizia: lo cambi poi per ognuno."
+    "defaultRoleHint": "Cosa può fare chi accetta la tua amicizia: lo cambi poi per ognuno.",
+    "advanced": "Impostazioni avanzate",
+    "advancedHint": "Tutti i parametri dell'host e di come ricevi gli stream degli amici. Le scelte qui sopra bastano quasi sempre."
   },
   "avatar": {
     "change": "Cambia foto",

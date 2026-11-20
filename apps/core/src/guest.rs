@@ -354,6 +354,10 @@ pub async fn join(
                 }
             }
         }
+        // Fine inattesa: se l'host ha smesso di condividere non è un errore, è la fine dello stream
+        if !matches!(reason.as_str(), "0" | "closed" | "left") && host_stopped(&core).await {
+            reason = "host-ended".into();
+        }
         let mut c = core.lock().await;
         c.streaming = false;
         c.session = None;
@@ -385,7 +389,7 @@ pub async fn join(
             path: "direct".into(),
         });
         // Fine inattesa (codice diverso da 0): errore con il motivo di Moonlight
-        if !matches!(reason.as_str(), "0" | "closed" | "left") {
+        if !matches!(reason.as_str(), "0" | "closed" | "left" | "host-ended") {
             c.record_error(
                 "session",
                 &format!("sessione terminata: {reason}"),
@@ -409,6 +413,35 @@ pub async fn join(
         );
     });
     Ok(())
+}
+
+/// L'host della sessione ha smesso di condividere (o ha chiuso Falco)? Chiede la sua presenza.
+async fn host_stopped(core: &Shared) -> bool {
+    let (me, addr) = {
+        let c = core.lock().await;
+        let me = c.me.as_ref().map(|m| m.identity.clone());
+        let addr = c.joined.as_ref().and_then(|f| c.live.get(f)).and_then(|l| l.address.clone());
+        (me, addr)
+    };
+    let (Some(me), Some(addr)) = (me, addr) else { return false };
+    let presence = tokio::task::spawn_blocking(move || {
+        crate::social::fpp_call(
+            &me,
+            "GET",
+            &addr,
+            "/v1/presence",
+            None,
+            None,
+            Duration::from_secs(3),
+        )
+    })
+    .await;
+    match presence {
+        Ok(Ok((200, _, body))) => serde_json::from_slice::<falco_proto::fpp::Presence>(&body)
+            .is_ok_and(|p| p.hosting.is_none() || !p.can_join),
+        // Non risponde più: ha chiuso Falco
+        _ => true,
+    }
 }
 
 #[cfg(test)]

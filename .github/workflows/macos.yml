@@ -1,0 +1,90 @@
+name: macOS
+
+# Pacchetto macOS universale (Apple Silicon e Intel) per una release già pubblicata da Windows:
+# aggiunge .dmg e .app.tar.gz firmato per l'updater, e le voci darwin a latest.json.
+# Beta: su Mac si guarda e si gioca dagli amici (Moonlight incluso); condividere arriverà dopo.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release a cui aggiungere il Mac (es. beta-1.0.0-rc.9)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  mac:
+    runs-on: macos-14
+    env:
+      FALCO_HUB_URL: https://falcoapp.pages.dev
+      # Chiave minisign dell'updater (segreti del repository, ADR 0008)
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/ui/package-lock.json
+
+      - name: Core universale
+        run: |
+          cargo build --release -p falco-core --target aarch64-apple-darwin
+          cargo build --release -p falco-core --target x86_64-apple-darwin
+          mkdir -p apps/ui/src-tauri/binaries
+          lipo -create -output apps/ui/src-tauri/binaries/falco-core-universal-apple-darwin \
+            target/aarch64-apple-darwin/release/falco-core target/x86_64-apple-darwin/release/falco-core
+
+      # Moonlight ufficiale (universale) dentro Falco.app/Contents/Helpers
+      - name: Moonlight
+        run: |
+          gh release download --repo moonlight-stream/moonlight-qt --pattern 'Moonlight-*.dmg' --dir "$RUNNER_TEMP/ml"
+          dmg=$(ls "$RUNNER_TEMP"/ml/Moonlight-*.dmg | head -1)
+          hdiutil attach -nobrowse -readonly -mountpoint "$RUNNER_TEMP/mlmount" "$dmg"
+          mkdir -p target/macos-helpers
+          cp -R "$RUNNER_TEMP/mlmount/Moonlight.app" target/macos-helpers/
+          hdiutil detach "$RUNNER_TEMP/mlmount"
+          # La cartella dei motori di Windows non esiste qui: vuota, per la configurazione comune
+          mkdir -p target/release/engines
+
+      - name: Interfaccia e pacchetto
+        working-directory: apps/ui
+        run: |
+          npm ci
+          npx tauri build --target universal-apple-darwin --bundles app,dmg \
+            --config src-tauri/tauri.bundle.json \
+            --config '{"bundle":{"createUpdaterArtifacts":true,"macOS":{"signingIdentity":"-","files":{"Helpers/Moonlight.app":"../../../target/macos-helpers/Moonlight.app"}}}}'
+
+      - name: Pubblicazione nella release
+        run: |
+          tag="${{ inputs.tag }}"
+          b=target/universal-apple-darwin/release/bundle
+          dmg=$(ls $b/dmg/*.dmg | head -1)
+          tgz=$(ls $b/macos/*.app.tar.gz | head -1)
+          name="Falco_${tag#beta-}_universal"
+          cp "$dmg" "$RUNNER_TEMP/$name.dmg"
+          cp "$tgz" "$RUNNER_TEMP/$name.app.tar.gz"
+          cp "$tgz.sig" "$RUNNER_TEMP/$name.app.tar.gz.sig"
+          gh release upload "$tag" "$RUNNER_TEMP/$name.dmg" "$RUNNER_TEMP/$name.app.tar.gz" "$RUNNER_TEMP/$name.app.tar.gz.sig" --clobber
+          # latest.json: le voci darwin puntano allo stesso pacchetto universale
+          gh release download "$tag" --pattern latest.json --dir "$RUNNER_TEMP/m" --clobber
+          node -e '
+            const fs = require("fs");
+            const [file, sig, url] = process.argv.slice(1);
+            const m = JSON.parse(fs.readFileSync(file, "utf8"));
+            const entry = { signature: fs.readFileSync(sig, "utf8").trim(), url };
+            m.platforms["darwin-aarch64"] = entry;
+            m.platforms["darwin-x86_64"] = entry;
+            fs.writeFileSync(file, JSON.stringify(m, null, 2));
+          ' "$RUNNER_TEMP/m/latest.json" "$RUNNER_TEMP/$name.app.tar.gz.sig" \
+            "https://github.com/${GITHUB_REPOSITORY}/releases/download/$tag/$name.app.tar.gz"
+          gh release upload "$tag" "$RUNNER_TEMP/m/latest.json" --clobber

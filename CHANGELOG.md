@@ -2,6 +2,25 @@
 
 Formato [Keep a Changelog](https://keepachangelog.com/it/1.1.0/), versioni [SemVer](https://semver.org/lang/it/).
 
+## [1.0.0-rc.9] - 2026-11-20 · Beta
+
+### Migliorato
+
+- «Ospita» diventa **Condividi**: profili, opzioni principali e «Impostazioni avanzate» (host e streaming) in un posto solo; tolto il riquadro iniziale. Le schede Streaming, Host e Permessi escono dalle Impostazioni.
+- Notifiche sopra lo stream in una finestra trasparente, senza togliere spazio al video; stesso stile per tutte, anche gli errori.
+- Barra in alto a schermo intero più leggibile, con pulsante per nasconderla: riappare portando il cursore in alto.
+- Scheda dell'amico in un popup centrale; Inviti con storico su richiesta (ultimi 10, al massimo 50 conservati per un mese).
+- Ospiti nella barra in basso compatti: foto e dispositivi, nome e latenza al passaggio del mouse; avvisi della barra galleggianti; anelli di stato più tenui.
+- Impostazioni: Sito web, GitHub e aggiornamenti come icone in alto a destra. Pulsante «Avvio…» mentre parte.
+- Controller tradotti automaticamente: DualSense e DualShock diventano un DualShock 4, gli altri un Xbox 360.
+
+### Corretto
+
+- Tastiera dell'ospite: il focus torna sempre allo stream (ogni clic lo riportava alla pagina di Falco).
+- Quando l'host chiude lo stream compare subito «Stream interrotto», senza messaggio d'errore.
+- Finestre del terminale che lampeggiavano cambiando stream o permessi.
+- Finestre di Moonlight che a volte comparivano fuori da Falco; video sempre contenuto nel palco.
+
 ## [1.0.0-rc.8] - 2026-11-20 · Beta
 
 ### Corretto

@@ -88,9 +88,14 @@ pub fn detect_gpu() -> GpuVendor {
     if cfg!(target_os = "macos") {
         return GpuVendor::Apple;
     }
-    let out = std::process::Command::new("powershell")
-        .args(["-NoProfile", "-Command", "(Get-CimInstance Win32_VideoController).Name"])
-        .output();
+    let mut cmd = std::process::Command::new("powershell");
+    cmd.args(["-NoProfile", "-Command", "(Get-CimInstance Win32_VideoController).Name"]);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+    }
+    let out = cmd.output();
     let names = out.map(|o| String::from_utf8_lossy(&o.stdout).to_lowercase()).unwrap_or_default();
     vendor_from_names(&names)
 }
@@ -185,7 +190,9 @@ pub fn generate_conf(s: &HostSettings, gpu: GpuVendor, platform: Platform) -> St
     match platform {
         Platform::MacOs => put("vt_realtime", "enabled".into()),
         Platform::Windows => {
-            put("gamepad", "x360".into());
+            // Automatico: DualSense e DualShock diventano un DualShock 4 (touchpad e giroscopio),
+            // tutti gli altri un Xbox 360, che i giochi su Windows riconoscono sempre
+            put("gamepad", "auto".into());
             if s.audio_onscreen {
                 put("audio_capture", "onscreen".into());
             }
@@ -254,7 +261,7 @@ mod tests {
             "fec_percentage = 20",
             "amd_usage = ultralowlatency",
             "amd_rc = cbr",
-            "gamepad = x360",
+            "gamepad = auto",
             "origin_web_ui_allowed = pc",
             "min_log_level = 3",
             "system_tray = disabled",

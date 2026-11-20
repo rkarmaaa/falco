@@ -21,6 +21,17 @@ const allowed = computed<Record<Device, boolean>>(() => ({
   mouse: !!perms.value?.mouse,
   controller: (perms.value?.gamepads ?? 0) > 0,
 }));
+// Nuvoletta con nome e latenza, centrata sopra la foto
+const tip = ref<{ x: number; y: number } | null>(null);
+function showTip(e: Event): void {
+  const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+  tip.value = { x: r.left + r.width / 2, y: r.top - 8 };
+}
+
+const pingLevel = computed(() => {
+  const ms = friend.value?.rttMs;
+  return ms == null ? '' : ms < 40 ? 'good' : ms <= 90 ? 'fair' : 'bad';
+});
 const watching = computed(() => !allowed.value.keyboard && !allowed.value.mouse && !allowed.value.controller);
 
 function open(e: MouseEvent): void {
@@ -68,19 +79,29 @@ function kick(): void {
       class="main"
       :aria-haspopup="'menu'"
       :aria-expanded="!!menu"
-      :title="t('guests.hint')"
+      :aria-label="`${guest.name} · ${t('guests.hint')}`"
       @click="open"
       @contextmenu.prevent="open"
       @keydown.shift.f10.prevent="openFromKeyboard"
+      @mouseenter="showTip"
+      @mouseleave="tip = null"
+      @focus="showTip"
+      @blur="tip = null"
     >
-      <UiAvatar :name="guest.name" :src="friend?.avatarUrl" :accent="friend?.accent" :size="32" />
+
+      <UiAvatar :name="guest.name" :src="friend?.avatarUrl" :accent="friend?.accent" :size="40" />
       <span class="info">
-        <span class="name">{{ guest.name }}</span>
-        <DeviceIcons v-if="!watching" :allowed="allowed" :active="social.activity" :size="13" />
-        <span v-else class="watch"><Eye :size="12" :stroke-width="2" aria-hidden="true" />{{ t('guests.watching') }}</span>
+        <DeviceIcons v-if="!watching" :allowed="allowed" :active="social.activity" :size="14" />
+        <Eye v-else class="watch" :size="14" :stroke-width="2" :aria-label="t('guests.watching')" />
       </span>
     </button>
 
+    <Teleport to="body">
+      <div v-if="tip && !menu" class="guest-tip" role="tooltip" :style="{ left: `${tip.x}px`, top: `${tip.y}px` }">
+        <strong>{{ guest.name }}</strong>
+        <span :class="pingLevel">{{ friend?.rttMs != null ? `${friend.rttMs} ms` : '–' }}</span>
+      </div>
+    </Teleport>
     <ContextMenu v-if="menu" :x="menu.x" :y="menu.y" :label="t('guests.menu', { name: guest.name })" @close="menu = null">
       <div class="head">
         <strong>{{ guest.name }}</strong>
@@ -177,6 +198,37 @@ function kick(): void {
 @keyframes guest-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+// Nome e latenza sopra la foto (in un livello sopra la pagina, la barra non la taglia)
+.guest-tip {
+  position: fixed;
+  z-index: 70;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: $sp-1 $sp-3;
+  border: 1px solid $line-strong;
+  border-radius: $r-button;
+  background: $bg-float;
+  backdrop-filter: blur(12px);
+  box-shadow: $shadow-2;
+  font-size: $fs-small;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+
+  .good {
+    color: $ok;
+  }
+
+  .fair {
+    color: $busy;
+  }
+
+  .bad {
+    color: $danger;
   }
 }
 </style>

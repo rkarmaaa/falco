@@ -1,15 +1,18 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import EmptyState from '@/components/EmptyState.vue';
 import UiButton from '@/components/UiButton.vue';
 import UiPage from '@/components/UiPage.vue';
 import { loadInvites, revokeInvite, social } from '@/stores/social';
 import { openModal } from '@/stores/ui';
+import { History, Ticket } from 'lucide-vue-next';
 
 const { t, d } = useI18n();
 const active = computed(() => social.invites.filter((i) => i.active));
-const history = computed(() => social.invites.filter((i) => !i.active));
+// Storico solo su richiesta e solo i più recenti
+const history = computed(() => social.invites.filter((i) => !i.active).slice(0, 10));
+const showHistory = ref(false);
 const when = (ts: number) => d(new Date(ts * 1000), { dateStyle: 'medium', timeStyle: 'short' } as never);
 
 onMounted(() => void loadInvites());
@@ -24,10 +27,10 @@ onMounted(() => void loadInvites());
     <EmptyState v-if="social.invites.length === 0" :title="$t('invites.emptyTitle')" :body="$t('invites.emptyBody')" />
 
     <template v-else>
-      <h2 class="label">{{ $t('invites.active') }}</h2>
       <p v-if="active.length === 0" class="muted">{{ $t('invites.noneActive') }}</p>
-      <ul class="list">
-        <li v-for="i in active" :key="i.tokenHash" class="row">
+      <ul v-else class="list">
+        <li v-for="i in active" :key="i.tokenHash" class="card">
+          <span class="icon"><Ticket :size="18" :stroke-width="1.8" aria-hidden="true" /></span>
           <div class="info">
             <span class="name">{{ $t(`role.${i.role}`) }}</span>
             <span class="meta">
@@ -35,13 +38,16 @@ onMounted(() => void loadInvites());
               <template v-if="i.needsApproval"> · {{ $t('invites.approval') }}</template>
             </span>
           </div>
-          <UiButton variant="danger" :size="32" @click="revokeInvite(i.tokenHash)">{{ $t('invites.revoke') }}</UiButton>
+          <UiButton variant="ghost" :size="32" @click="revokeInvite(i.tokenHash)">{{ $t('invites.revoke') }}</UiButton>
         </li>
       </ul>
 
-      <h2 v-if="history.length" class="label">{{ $t('invites.history') }}</h2>
-      <ul class="list">
-        <li v-for="i in history" :key="i.tokenHash" class="row past">
+      <UiButton v-if="history.length" variant="ghost" :size="32" class="toggle" @click="showHistory = !showHistory">
+        <History :size="16" :stroke-width="1.75" aria-hidden="true" />
+        {{ showHistory ? $t('invites.hideHistory') : $t('invites.showHistory', { n: history.length }) }}
+      </UiButton>
+      <ul v-if="showHistory" class="list past">
+        <li v-for="i in history" :key="i.tokenHash" class="card">
           <div class="info">
             <span class="name">{{ $t(`role.${i.role}`) }}</span>
             <span class="meta">{{ $t('invites.created', { when: when(i.createdAt) }) }}</span>
@@ -54,14 +60,12 @@ onMounted(() => void loadInvites());
 
 <style lang="scss" scoped>
 .invites {
-  .label {
-    @include label;
-    margin-top: $sp-3;
+  .muted {
+    @include message;
   }
 
-  .muted {
-    color: $text-3;
-    font-size: $fs-small;
+  .toggle {
+    justify-self: start;
   }
 
   .list {
@@ -71,31 +75,41 @@ onMounted(() => void loadInvites());
     padding: 0;
     list-style: none;
 
-    .row {
+    .card {
       @include surface(2);
       display: flex;
       align-items: center;
-      justify-content: space-between;
       gap: $sp-3;
       padding: $sp-3 $sp-4;
       border-radius: $r-card;
 
+      .icon {
+        display: grid;
+        place-items: center;
+        width: 36px;
+        height: 36px;
+        border-radius: $r-button;
+        background: $accent-soft;
+        color: $accent-fg;
+      }
+
       .info {
         display: grid;
+        flex: 1;
+        min-width: 0;
 
         .name {
-          font-weight: 600;
+          font-weight: $fw-strong;
         }
 
         .meta {
-          font-size: $fs-small;
-          color: $text-2;
+          @include message($text-3);
         }
       }
+    }
 
-      &.past {
-        opacity: 0.6;
-      }
+    &.past .card {
+      opacity: 0.7;
     }
   }
 }
