@@ -288,7 +288,9 @@ pub async fn join(
     };
     let args = moonlight::stream_args(&req);
     tracing::info!("stream: {}", args.join(" "));
-    let spawned = EngineProcess::spawn(&bin, &args, Priority::AboveNormal);
+    // Output di Moonlight su file: controller rilevati, errori di rete e decoder (report di debug)
+    let log = core.lock().await.data_dir.join("moonlight").join("stream.log");
+    let spawned = EngineProcess::spawn_logged(&bin, &args, Priority::AboveNormal, Some(&log));
     let (mut child, mut events) = match spawned {
         Ok(p) => p.into_parts(),
         Err(e) => {

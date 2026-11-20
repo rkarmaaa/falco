@@ -28,7 +28,7 @@ const json = (v: unknown) => JSON.stringify(v, null, 2);
 
 const sections = computed(() => {
   const r = report.value ?? {};
-  const logs = (r.logs ?? {}) as { core?: string[]; sunshine?: string[] };
+  const logs = (r.logs ?? {}) as { core?: string[]; sunshine?: string[]; moonlight?: string[] };
   const list: { id: string; title: string; text: string }[] = [
     { id: 'error', title: t('debug.sections.error'), text: describe(props.error) + (props.error.technical.stack ? `\n\n${props.error.technical.stack}` : '') },
     {
@@ -59,6 +59,7 @@ const sections = computed(() => {
       { id: 'config', title: t('debug.sections.config'), text: json(r.config) },
       { id: 'coreLog', title: t('debug.sections.coreLog'), text: (logs.core ?? []).join('\n') || '—' },
       { id: 'sunshineLog', title: t('debug.sections.sunshineLog'), text: (logs.sunshine ?? []).join('\n') || '—' },
+      { id: 'moonlightLog', title: t('debug.sections.moonlightLog'), text: (logs.moonlight ?? []).join('\n') || '—' },
     );
   }
   return list;

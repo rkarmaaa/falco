@@ -131,10 +131,12 @@ pub async fn report(shared: &Shared, logs_dir: &Path) -> Value {
     let c = shared.lock().await;
     let mut v = snapshot(&c, &net);
     let sunshine_log = c.data_dir.join("sunshine").join("sunshine.log");
+    let moonlight_log = c.data_dir.join("moonlight").join("stream.log");
     drop(c);
     v["logs"] = json!({
         "core": latest_log(logs_dir).map(|p| tail(&p, 200)).unwrap_or_default(),
         "sunshine": tail(&sunshine_log, 60),
+        "moonlight": tail(&moonlight_log, 80),
     });
     v
 }

@@ -543,7 +543,8 @@
       "coreErrors": "Errori recenti del servizio",
       "config": "Impostazioni",
       "coreLog": "Log del servizio",
-      "sunshineLog": "Log del motore host"
+      "sunshineLog": "Log del motore host",
+      "moonlightLog": "Log del motore client (ultimo stream)"
     }
   },
   "top": {
@@ -626,7 +627,8 @@
       "body": "La condivisione è finita. Quando riparte lo vedi tra gli amici «In gioco ora».",
       "back": "Torna agli amici"
     },
-    "linking": "Collegamento con l'host…"
+    "linking": "Collegamento con l'host…",
+    "mouseGranted": "Ora puoi usare il mouse: rientra per muoverlo nello stream."
   },
   "pill": {
     "label": "Azioni dello stream",

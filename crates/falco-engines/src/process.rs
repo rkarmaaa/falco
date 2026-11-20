@@ -73,11 +73,24 @@ pub struct EngineProcess {
     pub events: mpsc::Receiver<EngineEvent>,
 }
 
-fn forward<R: AsyncRead + Unpin + Send + 'static>(reader: R, tx: mpsc::Sender<EngineEvent>) {
+/// File su cui copiare l'output del motore (per il report di debug), condiviso da stdout e stderr.
+type LogFile = Option<std::sync::Arc<std::sync::Mutex<std::fs::File>>>;
+
+fn forward<R: AsyncRead + Unpin + Send + 'static>(
+    reader: R,
+    tx: mpsc::Sender<EngineEvent>,
+    log: LogFile,
+) {
     tokio::spawn(async move {
         let mut lines = BufReader::new(reader).lines();
         let mut stats = StatsCollector::default();
         while let Ok(Some(line)) = lines.next_line().await {
+            if let Some(f) = &log
+                && let Ok(mut f) = f.lock()
+            {
+                use std::io::Write;
+                let _ = writeln!(f, "{line}");
+            }
             let ev = stats.feed(&line).map(EngineEvent::Summary).or_else(|| parse_event(&line));
             if let Some(ev) = ev
                 && tx.send(ev).await.is_err()
@@ -91,15 +104,29 @@ fn forward<R: AsyncRead + Unpin + Send + 'static>(reader: R, tx: mpsc::Sender<En
 impl EngineProcess {
     /// Lancia il motore; le righe di stdout e stderr diventano `EngineEvent`.
     pub fn spawn(bin: &Path, args: &[String], priority: Priority) -> std::io::Result<Self> {
+        Self::spawn_logged(bin, args, priority, None)
+    }
+
+    /// Come `spawn`, copiando anche tutto l'output in `log` (riscritto a ogni avvio). Senza il
+    /// file il motore parte lo stesso: il log serve solo alla diagnosi.
+    pub fn spawn_logged(
+        bin: &Path,
+        args: &[String],
+        priority: Priority,
+        log: Option<&Path>,
+    ) -> std::io::Result<Self> {
         let mut cmd = command(bin, args, priority);
         cmd.stdout(Stdio::piped()).stderr(Stdio::piped());
         let mut child = cmd.spawn()?;
+        let file = log
+            .and_then(|p| std::fs::File::create(p).ok())
+            .map(|f| std::sync::Arc::new(std::sync::Mutex::new(f)));
         let (tx, events) = mpsc::channel(32);
         if let Some(out) = child.stdout.take() {
-            forward(out, tx.clone());
+            forward(out, tx.clone(), file.clone());
         }
         if let Some(err) = child.stderr.take() {
-            forward(err, tx);
+            forward(err, tx, file);
         }
         Ok(Self { child, events })
     }

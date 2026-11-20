@@ -543,7 +543,8 @@
       "coreErrors": "Recent service errors",
       "config": "Settings",
       "coreLog": "Service log",
-      "sunshineLog": "Host engine log"
+      "sunshineLog": "Host engine log",
+      "moonlightLog": "Client engine log (last stream)"
     }
   },
   "top": {
@@ -626,7 +627,8 @@
       "body": "Sharing has ended. When it starts again you will see it under \"Playing now\".",
       "back": "Back to friends"
     },
-    "linking": "Connecting to the host…"
+    "linking": "Connecting to the host…",
+    "mouseGranted": "You can now use the mouse: rejoin to move it in the stream."
   },
   "pill": {
     "label": "Stream actions",

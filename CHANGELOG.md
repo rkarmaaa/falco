@@ -2,6 +2,18 @@
 
 Formato [Keep a Changelog](https://keepachangelog.com/it/1.1.0/), versioni [SemVer](https://semver.org/lang/it/).
 
+## [1.0.0-rc.13] - 2026-11-20 · Beta
+
+### Corretto
+
+- Il cursore spariva sopra il video senza il permesso del mouse (introdotto nella rc.12): il mouse da desktop remoto torna solo per chi ha il permesso.
+- Mouse concesso a sessione avviata: un avviso propone di rientrare, perché Moonlight sceglie la modalità del mouse all'ingresso.
+- «Esci» nella barra a schermo intero non la fa più uscire dalla finestra: «Esci da schermo intero» è un'icona e il nome si accorcia.
+
+### Migliorato
+
+- Il report di debug include il log di Moonlight dell'ultimo stream (controller rilevati, errori di rete e decoder).
+
 ## [1.0.0-rc.12] - 2026-11-20 · Beta
 
 ### Corretto

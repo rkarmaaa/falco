@@ -19,7 +19,7 @@ import HostView from '@/views/HostView.vue';
 import InvitesView from '@/views/InvitesView.vue';
 import SettingsView from '@/views/SettingsView.vue';
 import OnboardingView from '@/views/OnboardingView.vue';
-import { clearLastSession, core, initCore, joinFriend, leaveSession } from '@/stores/core';
+import { clearLastSession, core, initCore, joinFriend, leaveSession, reconnectSession } from '@/stores/core';
 import { findInviteLink, initSocial, previewInvite, social } from '@/stores/social';
 import { attempt, errors, initErrors } from '@/stores/errors';
 import { focusStream, keepStreamFocus, resetStage, setFullscreen, stage } from '@/stores/stage';
@@ -59,6 +59,17 @@ function showToast(text: string, action?: Toast['action']): void {
     if (toast.value?.text === text) toast.value = null;
   }, 7000);
 }
+
+// Mouse concesso a sessione avviata: Moonlight sceglie la modalità del mouse all'avvio, quindi
+// per muoverlo (non solo cliccare) bisogna rientrare. Lo si dice, con il pulsante per farlo
+watch(
+  () => core.session.info?.permissions?.mouse,
+  (now, before) => {
+    if (now === true && before === false && core.session.phase === 'connected') {
+      showToast(t('session.mouseGranted'), { label: t('session.rejoin'), run: () => void attempt(t('errors.context.join', { name: core.session.host ?? '' }), reconnectSession) });
+    }
+  },
+);
 
 // Collegandosi a qualcuno si va sul palco; a fine sessione si torna dove si era
 let before: Section = 'friends';

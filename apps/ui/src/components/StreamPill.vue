@@ -56,9 +56,8 @@ function leave(): void {
       <Pin v-if="hidden" :size="15" :stroke-width="2" aria-hidden="true" />
       <EyeOff v-else :size="15" :stroke-width="2" aria-hidden="true" />
     </button>
-    <button type="button" class="btn" :title="t('pill.exit')" @click="emit('exit')">
+    <button type="button" class="btn icon" :title="t('pill.exit')" :aria-label="t('pill.exit')" @click="emit('exit')">
       <Minimize2 :size="15" :stroke-width="2" aria-hidden="true" />
-      <span>{{ t('pill.exit') }}</span>
     </button>
     <button type="button" class="btn danger" :class="{ confirm: confirmLeave }" :title="t('session.leave')" @click="leave">
       <LogOut :size="15" :stroke-width="2" aria-hidden="true" />
@@ -72,6 +71,7 @@ function leave(): void {
   display: inline-flex;
   align-items: center;
   gap: $sp-2;
+  max-width: calc(100vw - #{$sp-4});
   height: 40px;
   padding: 0 4px 0 $sp-3;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -106,6 +106,9 @@ function leave(): void {
 
   .name {
     @include truncate;
+    // Si accorcia il nome, mai la barra: deve restare tutta dentro la sua finestra
+    flex: 0 1 auto;
+    min-width: 0;
     max-width: 110px;
     font-weight: 650;
   }
@@ -136,6 +139,7 @@ function leave(): void {
   .btn {
     @include reset-button;
     @include focus-ring;
+    flex: none;
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -149,6 +153,12 @@ function leave(): void {
     &:hover {
       background: rgba(255, 255, 255, 0.08);
       color: $text-1;
+    }
+
+    &.icon {
+      justify-content: center;
+      width: 32px;
+      padding: 0;
     }
 
     &.danger:hover,
