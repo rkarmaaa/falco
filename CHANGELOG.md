@@ -2,6 +2,12 @@
 
 Formato [Keep a Changelog](https://keepachangelog.com/it/1.1.0/), versioni [SemVer](https://semver.org/lang/it/).
 
+## [1.0.0-rc.15] - 2026-11-20 · Beta
+
+### Corretto
+
+- «Entra» dava «core non raggiungibile» dopo 15 secondi mentre si aspettava l'host, e lo stream partiva poi senza finestra: la finestra di Falco ora aspetta fino a 3 minuti l'ingresso, e più a lungo anche aggiornamento e collegamento alla rete Falco.
+
 ## [1.0.0-rc.14] - 2026-11-20 · Beta
 
 ### Corretto
