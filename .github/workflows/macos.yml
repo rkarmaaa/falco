@@ -41,6 +41,10 @@ jobs:
           cargo build --release -p falco-core --target aarch64-apple-darwin
           cargo build --release -p falco-core --target x86_64-apple-darwin
           mkdir -p apps/ui/src-tauri/binaries
+          # Tauri compila ogni architettura a parte e cerca il core di ognuna, poi quello universale
+          for t in aarch64-apple-darwin x86_64-apple-darwin; do
+            cp "target/$t/release/falco-core" "apps/ui/src-tauri/binaries/falco-core-$t"
+          done
           lipo -create -output apps/ui/src-tauri/binaries/falco-core-universal-apple-darwin \
             target/aarch64-apple-darwin/release/falco-core target/x86_64-apple-darwin/release/falco-core
 
