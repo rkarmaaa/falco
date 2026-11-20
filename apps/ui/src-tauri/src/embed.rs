@@ -4,6 +4,8 @@
 //!
 //! Unico punto con codice `unsafe` della UI: poche chiamate Win32 documentate.
 #![allow(unsafe_code)]
+// Fuori da Windows il flusso resta nella finestra di Moonlight: parte del codice non serve
+#![cfg_attr(not(windows), allow(dead_code, unused_imports))]
 
 use std::sync::Mutex;
 use std::time::Duration;
