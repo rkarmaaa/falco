@@ -145,15 +145,34 @@ pub async fn install(shared: &Shared) -> anyhow::Result<()> {
             .nth(3)
             .context("bundle non trovato")?
             .to_path_buf();
-        let parent = app.parent().context("cartella delle applicazioni")?.to_path_buf();
+        // Estrae a parte e poi sostituisce il pacchetto intero: niente file vecchi che
+        // invaliderebbero la firma. Si riapre dopo la chiusura di questa istanza (istanza singola)
+        let parent = app.parent().context("cartella delle applicazioni")?;
+        let staging = parent.join(".falco-update");
+        let _ = std::fs::remove_dir_all(&staging);
+        std::fs::create_dir_all(&staging)?;
         let status = std::process::Command::new("tar")
             .arg("-xzf")
             .arg(&file)
             .arg("-C")
-            .arg(&parent)
+            .arg(&staging)
             .status()?;
         anyhow::ensure!(status.success(), "aggiornamento non estratto");
-        std::process::Command::new("open").arg("-n").arg(&app).spawn()?;
+        let new_app = std::fs::read_dir(&staging)?
+            .filter_map(Result::ok)
+            .map(|e| e.path())
+            .find(|p| p.extension().is_some_and(|x| x == "app"))
+            .context("pacchetto dell'aggiornamento vuoto")?;
+        let old = app.with_extension("app.old");
+        let _ = std::fs::remove_dir_all(&old);
+        std::fs::rename(&app, &old).context("Falco non è aggiornabile in questa cartella")?;
+        if let Err(e) = std::fs::rename(&new_app, &app) {
+            let _ = std::fs::rename(&old, &app);
+            return Err(e).context("aggiornamento non installato");
+        }
+        let _ = std::fs::remove_dir_all(&old);
+        let _ = std::fs::remove_dir_all(&staging);
+        std::process::Command::new("sh").arg("-c").arg("sleep 2; open \"$0\"").arg(&app).spawn()?;
     }
     shared.lock().await.shutdown().await;
     std::process::exit(0);
